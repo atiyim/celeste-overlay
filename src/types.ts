@@ -30,6 +30,8 @@ export interface Player {
   titleId?: string | null;
   rank: Rank;
   party?: string | null;
+  partySure: boolean;
+  together: { puuid: string; count: number; of: number }[];
   smurf: number;
   loadout: Loadout;
   isSelf: boolean;
@@ -55,7 +57,16 @@ export interface Snapshot {
 export interface Status { riotClient: boolean; valorant: boolean; data: boolean; fault?: string | null; detail?: string | null }
 
 export interface StoreOffer { itemId: string; price?: number | null; discounted?: number | null; discountPercent?: number | null }
-export interface Store { daily: StoreOffer[]; dailyRemaining?: number | null; night: StoreOffer[]; nightRemaining?: number | null }
+export interface Wallet { vp?: number | null; rp?: number | null; kc?: number | null }
+export interface Store { daily: StoreOffer[]; dailyRemaining?: number | null; night: StoreOffer[]; nightRemaining?: number | null; wallet?: Wallet | null }
+
+export interface MissionState { id: string; complete: boolean; objectives: { id: string; value: number }[]; expiresAt?: string | null }
+export interface ContractState { id: string; level: number; xpTowardNext: number; totalXp: number }
+export interface Owned { skins: string[]; chromas: string[]; charms: string[]; sprays: string[]; cards: string[]; titles: string[] }
+export interface Account {
+  wallet?: Wallet | null; missions: MissionState[]; weeklyRefill?: string | null;
+  contracts: ContractState[]; activeContract?: string | null; owned: Owned;
+}
 
 export interface MyMatch {
   matchId: string; mapId: string; agentId: string; queue: string; won: boolean;
@@ -72,7 +83,7 @@ export interface ReportPlayer {
   puuid: string; name?: string | null; hidden: boolean; team: string; agentId: string; isSelf: boolean; tier: number;
   score: number; rounds: number; kills: number; deaths: number; assists: number;
   headshots: number; bodyshots: number; legshots: number; damage: number; firstKills: number; firstDeaths: number;
-  killed: PairCount[]; killedBy: PairCount[];
+  killed: PairCount[]; killedBy: PairCount[]; party?: string | null;
 }
 export interface ReportTeam { teamId: string; won: boolean; roundsWon: number }
 export interface MatchReport { matchId: string; mapId: string; queue: string; started: number; teams: ReportTeam[]; players: ReportPlayer[] }

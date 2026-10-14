@@ -37,6 +37,7 @@ function Tile({ w, p, a }: { w: WeaponInfo; p: Player; a: Assets }) {
 
 interface PanelProps {
   p: Player;
+  lobby: Player[];
   assets: Assets;
   entry?: Entry;
   onLabel: (label: string) => void;
@@ -67,7 +68,7 @@ function WeaponTable({ title, list, assets, unit }: { title: string; list: Weapo
   );
 }
 
-export function LoadoutPanel({ p, assets, entry, onLabel, onTag, onClose, onCopy }: PanelProps) {
+export function LoadoutPanel({ p, lobby, assets, entry, onLabel, onTag, onClose, onCopy }: PanelProps) {
   const [draft, setDraft] = useState(entry?.label ?? "");
   const [tab, setTab] = useState<Tab>("guns");
   const [premier, setPremier] = useState<PremierTeam | null | "loading" | "error">("loading");
@@ -269,6 +270,24 @@ export function LoadoutPanel({ p, assets, entry, onLabel, onTag, onClose, onCopy
                   </div>
                 </>
               )}
+            {p.together.length > 0 && (
+              <>
+                <h3 className="h2">Son maçlarda birlikte<span className="hv">Aynı partide girilen maç</span></h3>
+                <div className="tb">
+                  {p.together.slice(0, 4).map((t) => {
+                    const mate = lobby.find((x) => x.puuid === t.puuid);
+                    const now = p.partySure && mate?.partySure && mate.party === p.party;
+                    return (
+                      <div className="tr tog" key={t.puuid}>
+                        <span className="pair"><b>{mate ? (mate.hiddenName && !mate.isSelf ? "İsim gizli" : mate.name ?? "…") : "?"}</b></span>
+                        <span className="num">{t.count}/{t.of} maç</span>
+                        {now ? <span className="bd win">Şu an aynı parti</span> : <span />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
             {anonymous && (
               <>
                 <h3 className="h2">Kendi notun</h3>

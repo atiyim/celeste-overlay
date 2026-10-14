@@ -54,8 +54,12 @@ pub struct Player {
     pub card_id: Option<String>,
     pub title_id: Option<String>,
     pub rank: Rank,
-    /// Tahmini parti etiketi (ortak maç geçmişinden çıkarılır).
+    /// Parti harfi. `party_sure` doğruysa Riot'un parti kimliğinden gelir (kesin);
+    /// değilse son maçlarda sık birlikte oynamaktan gelir (yalnızca geçmiş bilgisi).
     pub party: Option<String>,
+    pub party_sure: bool,
+    /// Bu lobideki takım arkadaşlarıyla son maçlarda aynı partide girilen maç sayıları.
+    pub together: Vec<Together>,
     /// 0-100 arası smurf olasılığı (sezgisel).
     pub smurf: u8,
     pub loadout: Loadout,
@@ -72,6 +76,15 @@ pub struct Player {
     pub last_match_at: Option<u64>,
     /// Bu maçlardaki toplam öldürme / ölüm oranı.
     pub kd: Option<f32>,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Together {
+    pub puuid: String,
+    /// Aynı parti kimliğini paylaştıkları maç sayısı / bu oyuncunun incelenen maç sayısı.
+    pub count: u32,
+    pub of: u32,
 }
 
 #[derive(Serialize, Clone, Debug, Default)]
@@ -168,6 +181,62 @@ pub struct Store {
     pub daily_remaining: Option<u64>,
     pub night: Vec<StoreOffer>,
     pub night_remaining: Option<u64>,
+    pub wallet: Option<Wallet>,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Wallet {
+    pub vp: Option<u32>,
+    pub rp: Option<u32>,
+    pub kc: Option<u32>,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ObjectiveProgress {
+    pub id: String,
+    pub value: u32,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct MissionState {
+    pub id: String,
+    pub complete: bool,
+    pub objectives: Vec<ObjectiveProgress>,
+    pub expires_at: Option<String>,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ContractState {
+    pub id: String,
+    pub level: u32,
+    pub xp_toward_next: u32,
+    pub total_xp: u64,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Owned {
+    pub skins: Vec<String>,
+    pub chromas: Vec<String>,
+    pub charms: Vec<String>,
+    pub sprays: Vec<String>,
+    pub cards: Vec<String>,
+    pub titles: Vec<String>,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Account {
+    pub wallet: Option<Wallet>,
+    pub missions: Vec<MissionState>,
+    pub weekly_refill: Option<String>,
+    pub contracts: Vec<ContractState>,
+    pub active_contract: Option<String>,
+    pub owned: Owned,
 }
 
 #[derive(Serialize, Clone, Debug, Default)]
@@ -242,6 +311,8 @@ pub struct ReportPlayer {
     /// En çok öldürdüğü / tarafından en çok öldürüldüğü oyuncular.
     pub killed: Vec<PairCount>,
     pub killed_by: Vec<PairCount>,
+    /// Maçtaki gerçek parti harfi (aynı parti kimliğini paylaşan 2+ oyuncu); solo ise boş.
+    pub party: Option<String>,
 }
 
 #[derive(Serialize, Clone, Debug, Default)]

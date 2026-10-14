@@ -104,6 +104,7 @@ export function ReportPanel({ assets, matchId, onClose }: { assets: Assets; matc
                 <div className="who2">
                   {ag && <img className="agent" src={ag.icon} alt={ag.name} />}
                   <span className="n">{p.name ?? (p.hidden ? "İsim gizli" : "…")}</span>
+                  {p.party && <span className="p mini" title="Maçta aynı partideydi">{p.party}</span>}
                   {a === top && <span className="bd gold mvp">MVP</span>}
                 </div>
                 <div className="num">{tier && p.tier > 0 ? <img className="rk" src={tier.icon} alt={tier.name} title={tier.name} style={{ filter: `drop-shadow(0 0 4px ${tierColor(tier.color)}55)` }} /> : <span className="d">–</span>}</div>

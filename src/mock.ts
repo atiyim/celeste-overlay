@@ -33,6 +33,8 @@ export function mockSnapshot(a: Assets): Snapshot {
       agentId: pick(agents, i * 5),
       rank: { current: cur, peak: cur + (i % 3), rr: 20 + i * 7, wins: 9 + i, games: 17 + i, totalWins: 80 + i, totalGames: 150 + i },
       party: i === 0 || i === 1 ? "A" : i === 5 || i === 6 ? "B" : null,
+      partySure: i === 0 || i === 1,
+      together: i === 0 ? [{ puuid: "mock-1", count: 5, of: 5 }] : i === 1 ? [{ puuid: "mock-0", count: 5, of: 5 }] : i === 5 ? [{ puuid: "mock-6", count: 3, of: 5 }] : i === 6 ? [{ puuid: "mock-5", count: 3, of: 5 }] : [],
       smurf: i === 6 ? 78 : 5,
       loadout: { weapons, sprays: [0, 1, 2, 3].map((s) => ({ socketId: `s${s}`, sprayId: pick(sprays, i * 11 + s) })) },
       isSelf: i === 0,

@@ -14,6 +14,17 @@ const SOCKET_CHROMA: &str = "3ad1b2b2-acdb-4524-852f-954a76ddae0a";
 const SOCKET_CHARM: &str = "dd3bf334-87f3-40bd-b043-682a57a8dc3a";
 const SOCKET_CHARM_LEVEL: &str = "77258665-71d1-4623-bc72-44db9bd5b3b3";
 
+// Cüzdan para birimi ve envanter öğe türü kimlikleri.
+const CUR_VP: &str = "85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741";
+const CUR_RP: &str = "e59aa87c-4cbf-517a-5983-6e81511be9b7";
+const CUR_KC: &str = "85ca954a-41f2-ce94-9b45-8ca3dd39a00d";
+const ENT_SKIN_LEVEL: &str = "e7c63390-eda7-46e0-bb7a-a6abdacd2433";
+const ENT_CHROMA: &str = "3ad1b2b2-acdb-4524-852f-954a76ddae0a";
+const ENT_CHARM: &str = "dd3bf334-87f3-40bd-b043-682a57a8dc3a";
+const ENT_SPRAY: &str = "d5f120f8-ff8c-4aac-92ea-f2b5acbe9475";
+const ENT_CARD: &str = "3f296c07-64c3-494c-923b-fe692a4fa1bd";
+const ENT_TITLE: &str = "de7caa6b-adf7-4588-bbd1-143831e786c6";
+
 const CACHE_TTL: Duration = Duration::from_secs(600);
 
 #[derive(Clone, Default)]
@@ -94,6 +105,7 @@ fn parse_combat(v: &Value) -> HashMap<String, Combat> {
 #[derive(Default, Clone)]
 struct Pd {
     puuid: String,
+    party_id: String,
     team: String,
     agent: String,
     kills: u32,
@@ -150,6 +162,7 @@ fn parse_detail(v: &Value) -> Detail {
             .filter_map(|p| {
                 Some(Pd {
                     puuid: p["subject"].as_str()?.to_string(),
+                    party_id: p["partyId"].as_str().unwrap_or("").to_lowercase(),
                     team: p["teamId"].as_str().unwrap_or("").to_string(),
                     agent: p["characterId"].as_str().unwrap_or("").to_string(),
                     kills: n(&p["stats"]["kills"]),
@@ -194,6 +207,8 @@ fn to_rank(m: &Mmr) -> Rank {
 #[derive(Default)]
 struct State {
     debug_match: Option<String>,
+    debug_party: Option<String>,
+    debug_pre: Option<String>,
     session: Option<Session>,
     mmr: HashMap<String, (Instant, Mmr)>,
     history: HashMap<String, (Instant, Vec<(String, String)>)>, // (maç kimliği, kuyruk)
@@ -352,6 +367,24 @@ impl Engine {
             .flatten()
             .map(|v| basic_player(v, &team, &s.puuid))
             .collect();
+        // Ajan seçiminde kaplamalar: bu uç her sürümde olmayabilir; yoksa kaplamalar oyun başlayınca gelir.
+        let loadouts = self.get(s, &s.glz, &format!("/pregame/v1/matches/{mid}/loadouts")).await.unwrap_or(None);
+        if st.debug_pre.as_deref() != Some(mid) {
+            st.debug_pre = Some(mid.to_string());
+            let text = match loadouts.as_ref() {
+                Some(l) => shape(l, 7), // yalnızca yapı, değer yok
+                None => "pregame loadouts yanıtı alınamadı".to_string(),
+            };
+            write_text("pregame-loadouts-shape.txt", &text);
+        }
+        if let Some(l) = loadouts.as_ref() {
+            for p in players.iter_mut() {
+                if let Some(e) = loadout_entries(l).iter().find(|e| entry_subject(e) == Some(p.puuid.as_str())) {
+                    p.loadout = parse_loadout(loadout_node(e));
+                    collect_uuids(e, &mut p.loadout.all_ids);
+                }
+            }
+        }
         self.enrich(st, s, &mut players, "").await;
         Ok(Snapshot {
             phase: Phase::Pregame,
@@ -480,7 +513,7 @@ impl Engine {
                 None => p.form_loading = true,
             }
         }
-        assign_parties(players, &st.history);
+        self.assign_parties(st, s, players).await;
         st.hidden_now = players.iter().filter(|p| p.hidden_name && !p.is_self).map(|p| p.puuid.clone()).collect();
     }
 
@@ -594,10 +627,12 @@ impl Engine {
                 *by.entry(b.clone()).or_default().entry(a.clone()).or_default() += c;
             }
         }
+        let letters = party_letters(&d.players);
         let players = d
             .players
             .iter()
             .map(|p| ReportPlayer {
+                party: letters.get(&p.puuid).cloned(),
                 puuid: p.puuid.clone(),
                 name: if hides(&p.puuid) { None } else { st.names.get(&p.puuid).cloned() },
                 hidden: hides(&p.puuid),
@@ -729,7 +764,81 @@ impl Engine {
             }
             Err(e) => return Err(format!("Mağaza alınamadı: {e}")),
         };
-        Ok(parse_store(&v))
+        let mut store = parse_store(&v);
+        store.wallet = self.wallet(&s).await;
+        Ok(store)
+    }
+
+    /// Cüzdan: VP, Radianite (RP) ve Kingdom Credits. Alınamazsa mağaza yine de görünür.
+    async fn wallet(&self, s: &Session) -> Option<Wallet> {
+        let v = self.get(s, &s.pd, &format!("/store/v1/wallet/{}", s.puuid)).await.ok()??;
+        let b = &v["Balances"];
+        let n = |id: &str| b[id].as_u64().map(|x| x as u32);
+        Some(Wallet { vp: n(CUR_VP), rp: n(CUR_RP), kc: n(CUR_KC) })
+    }
+
+    /// Hesap özeti: cüzdan, görevler, battle pass ilerlemesi ve sahip olunan öğeler.
+    pub async fn account(&self) -> Result<Account, String> {
+        let mut st = self.state.lock().await;
+        let s = self.session(&mut st).await.map_err(|e| {
+            st.session = None;
+            friendly(&e)
+        })?;
+        let sr = &s;
+        let types = [ENT_SKIN_LEVEL, ENT_CHROMA, ENT_CHARM, ENT_SPRAY, ENT_CARD, ENT_TITLE];
+        let ents = join_all(types.iter().map(|t| async move {
+            let v = self.get(sr, &sr.pd, &format!("/store/v1/entitlements/{}/{t}", sr.puuid)).await.ok().flatten();
+            v.map(|v| {
+                v["Entitlements"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|e| e["ItemID"].as_str().map(|x| x.to_lowercase()))
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default()
+        }))
+        .await;
+        let mut it = ents.into_iter();
+        let owned = Owned {
+            skins: it.next().unwrap_or_default(),
+            chromas: it.next().unwrap_or_default(),
+            charms: it.next().unwrap_or_default(),
+            sprays: it.next().unwrap_or_default(),
+            cards: it.next().unwrap_or_default(),
+            titles: it.next().unwrap_or_default(),
+        };
+        let wallet = self.wallet(&s).await;
+        let contracts = self.get(&s, &s.pd, &format!("/contracts/v1/contracts/{}", s.puuid)).await.ok().flatten();
+        let mut acc = Account { wallet, owned, ..Default::default() };
+        if let Some(c) = contracts {
+            for m in c["Missions"].as_array().into_iter().flatten() {
+                let Some(id) = m["ID"].as_str() else { continue };
+                acc.missions.push(MissionState {
+                    id: id.to_lowercase(),
+                    complete: m["Complete"].as_bool().unwrap_or(false),
+                    objectives: m["Objectives"]
+                        .as_object()
+                        .into_iter()
+                        .flatten()
+                        .map(|(k, v)| ObjectiveProgress { id: k.to_lowercase(), value: v.as_u64().unwrap_or(0) as u32 })
+                        .collect(),
+                    expires_at: m["ExpirationTime"].as_str().map(|x| x.to_string()),
+                });
+            }
+            acc.weekly_refill = c["MissionMetadata"]["WeeklyRefillTime"].as_str().map(|x| x.to_string());
+            acc.active_contract = c["ActiveSpecialContract"].as_str().map(|x| x.to_lowercase());
+            for k in c["Contracts"].as_array().into_iter().flatten() {
+                let Some(id) = k["ContractDefinitionID"].as_str() else { continue };
+                acc.contracts.push(ContractState {
+                    id: id.to_lowercase(),
+                    level: k["ProgressionLevelReached"].as_u64().unwrap_or(0) as u32,
+                    xp_toward_next: k["ProgressionTowardsNextLevel"].as_u64().unwrap_or(0) as u32,
+                    total_xp: k["ContractProgression"]["TotalProgressionEarned"].as_u64().unwrap_or(0),
+                });
+            }
+        }
+        Ok(acc)
     }
 
     /// Kendi son maçların: harita, ajan, K/D/A, ACS ve (rekabette) RR değişimi.
@@ -873,6 +982,7 @@ fn parse_store(v: &Value) -> Store {
         daily_remaining: layout["SingleItemOffersRemainingDurationInSeconds"].as_u64(),
         night,
         night_remaining: bonus["BonusStoreRemainingDurationInSeconds"].as_u64(),
+        wallet: None,
     }
 }
 
@@ -1031,43 +1141,151 @@ fn smurf_score(level: Option<u32>, rank: &Rank) -> u8 {
     score.clamp(0, 100) as u8
 }
 
-/// Aynı takımdaki oyuncuların ortak son maçlarına bakarak tahmini parti grupları çıkarır.
-fn assign_parties(players: &mut [Player], history: &HashMap<String, (Instant, Vec<(String, String)>)>) {
-    let n = players.len();
-    let mut parent: Vec<usize> = (0..n).collect();
-    fn find(p: &mut Vec<usize>, x: usize) -> usize {
-        if p[x] != x {
-            let r = find(p, p[x]);
-            p[x] = r;
+/// Maç kaydındaki parti kimliklerinden gerçek parti harfleri (A, B, ...). Solo oyuncuya harf verilmez.
+fn party_letters(players: &[Pd]) -> HashMap<String, String> {
+    let mut order: Vec<&str> = Vec::new();
+    for p in players {
+        if !p.party_id.is_empty() && !order.contains(&p.party_id.as_str()) {
+            order.push(&p.party_id);
         }
-        p[x]
     }
-    for i in 0..n {
-        for j in (i + 1)..n {
-            if players[i].team != players[j].team {
+    let mut out = HashMap::new();
+    let mut label = b'A';
+    for id in order {
+        let members: Vec<&Pd> = players.iter().filter(|p| p.party_id == id).collect();
+        if members.len() > 1 {
+            for m in members {
+                out.insert(m.puuid.clone(), (label as char).to_string());
+            }
+            label += 1;
+        }
+    }
+    out
+}
+
+fn find(p: &mut Vec<usize>, x: usize) -> usize {
+    if p[x] != x {
+        let r = find(p, p[x]);
+        p[x] = r;
+    }
+    p[x]
+}
+
+/// Geçmişte aynı partide girilen maç sayısı eşiği ("sık birlikte").
+const TOGETHER_MIN: u32 = 3;
+
+impl Engine {
+    /// Parti bilgisi yalnızca kesin kaynaklardan gelir:
+    /// 1) Riot Client'ın canlı parti kimliği (kesin), 2) geçmiş maç kayıtlarındaki parti kimliği
+    /// (yalnızca "son maçlarda birlikte girdiler" bilgisi; şu anki lobi için kanıt sayılmaz).
+    async fn assign_parties(&self, st: &mut State, s: &Session, players: &mut [Player]) {
+        let n = players.len();
+
+        // 1) Canlı parti kimliği
+        let live = s.party_ids().await;
+        let ids: HashMap<String, String> = live.as_ref().map(|(_, m)| m.clone()).unwrap_or_default();
+        let mut label = b'A';
+        let mut order: Vec<String> = Vec::new();
+        for p in players.iter() {
+            if let Some(id) = ids.get(&p.puuid) {
+                if !order.contains(id) {
+                    order.push(id.clone());
+                }
+            }
+        }
+        for id in &order {
+            let idx: Vec<usize> = (0..n).filter(|&i| ids.get(&players[i].puuid) == Some(id)).collect();
+            if idx.len() > 1 {
+                for i in idx {
+                    players[i].party = Some((label as char).to_string());
+                    players[i].party_sure = true;
+                }
+                label += 1;
+            }
+        }
+
+        // Tanı: bu lobide canlı parti verisi geldi mi? (yalnızca sayılar, kimlik yok)
+        let key = {
+            let mut v: Vec<&str> = players.iter().map(|p| p.puuid.as_str()).collect();
+            v.sort();
+            v.join(",")
+        };
+        if st.debug_party.as_deref() != Some(key.as_str()) {
+            st.debug_party = Some(key);
+            let text = match &live {
+                None => "Riot Client sohbet listesi (presences) alınamadı.".to_string(),
+                Some((total, map)) => {
+                    let found = players.iter().filter(|p| map.contains_key(&p.puuid)).count();
+                    let mut sizes: HashMap<&String, usize> = HashMap::new();
+                    for p in players.iter() {
+                        if let Some(id) = map.get(&p.puuid) {
+                            *sizes.entry(id).or_default() += 1;
+                        }
+                    }
+                    let mut sz: Vec<usize> = sizes.into_values().collect();
+                    sz.sort_unstable_by(|a, b| b.cmp(a));
+                    format!(
+                        "Listedeki Valorant kaydı: {total}\nLobideki oyuncu: {n}\nParti kimliği bulunan lobi oyuncusu: {found}\nParti grup boyutları: {sz:?}\n"
+                    )
+                }
+            };
+            write_text("party-check.txt", &text);
+        }
+
+        // 2) Geçmiş: aynı takımdaki iki oyuncunun son maçlarında ortak parti kimliği
+        let mut parent: Vec<usize> = (0..n).collect();
+        for i in 0..n {
+            players[i].together.clear();
+            let Some((_, h)) = st.history.get(&players[i].puuid) else { continue };
+            let ds: Vec<&Detail> = form_ids(h).iter().filter_map(|(id, _)| st.details.get(id)).collect();
+            if ds.is_empty() {
                 continue;
             }
-            let (Some((_, a)), Some((_, b))) = (history.get(&players[i].puuid), history.get(&players[j].puuid)) else { continue };
-            let set: HashSet<&String> = a.iter().take(10).map(|(id, _)| id).collect();
-            if b.iter().take(10).filter(|(m, _)| set.contains(m)).count() >= 2 {
-                let (ri, rj) = (find(&mut parent, i), find(&mut parent, j));
-                parent[ri] = rj;
+            for j in 0..n {
+                if i == j || players[i].team != players[j].team {
+                    continue;
+                }
+                let count = ds
+                    .iter()
+                    .filter(|d| {
+                        let a = d.players.iter().find(|x| x.puuid == players[i].puuid).map(|x| x.party_id.as_str());
+                        let b = d.players.iter().find(|x| x.puuid == players[j].puuid).map(|x| x.party_id.as_str());
+                        matches!((a, b), (Some(a), Some(b)) if !a.is_empty() && a == b)
+                    })
+                    .count() as u32;
+                if count > 0 {
+                    players[i].together.push(Together { puuid: players[j].puuid.clone(), count, of: ds.len() as u32 });
+                }
+            }
+            players[i].together.sort_by(|a, b| b.count.cmp(&a.count));
+        }
+        for i in 0..n {
+            for t in &players[i].together {
+                if t.count >= TOGETHER_MIN {
+                    if let Some(j) = players.iter().position(|p| p.puuid == t.puuid) {
+                        let (ri, rj) = (find(&mut parent, i), find(&mut parent, j));
+                        parent[ri] = rj;
+                    }
+                }
             }
         }
-    }
-    let mut groups: HashMap<usize, Vec<usize>> = HashMap::new();
-    for i in 0..n {
-        let r = find(&mut parent, i);
-        groups.entry(r).or_default().push(i);
-    }
-    let mut label = b'A';
-    let mut ordered: Vec<Vec<usize>> = groups.into_values().filter(|g| g.len() > 1).collect();
-    ordered.sort_by_key(|g| g[0]);
-    for g in ordered {
-        for i in g {
-            players[i].party = Some((label as char).to_string());
+        let mut groups: HashMap<usize, Vec<usize>> = HashMap::new();
+        for i in 0..n {
+            let r = find(&mut parent, i);
+            groups.entry(r).or_default().push(i);
         }
-        label += 1;
+        let mut ordered: Vec<Vec<usize>> = groups.into_values().filter(|g| g.len() > 1).collect();
+        ordered.sort_by_key(|g| g[0]);
+        for g in ordered {
+            // Canlı parti kimliği olan oyuncuların etiketi değişmez.
+            if g.iter().any(|&i| players[i].party_sure) {
+                continue;
+            }
+            for i in g {
+                players[i].party = Some((label as char).to_string());
+            }
+            label += 1;
+        }
     }
 }
 

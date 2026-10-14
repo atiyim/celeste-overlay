@@ -204,6 +204,38 @@ impl Session {
         Some(obj.values().any(|e| e["productId"].as_str() == Some("valorant")))
     }
 
+    /// Riot Client'ın yerel sohbet listesinden oyuncuların parti kimliklerini okur.
+    /// Dönüş: (listedeki Valorant kaydı sayısı, oyuncu → partyId). Liste alınamazsa None.
+    pub async fn party_ids(&self) -> Option<(usize, std::collections::HashMap<String, String>)> {
+        let r = self
+            .local
+            .get(format!("https://127.0.0.1:{}/chat/v4/presences", self.port))
+            .basic_auth("riot", Some(&self.password))
+            .send()
+            .await
+            .ok()?;
+        if !r.status().is_success() {
+            return None;
+        }
+        let v: Value = r.json().await.ok()?;
+        let mut total = 0;
+        let mut map = std::collections::HashMap::new();
+        for e in v["presences"].as_array()? {
+            if e["product"].as_str() != Some("valorant") {
+                continue;
+            }
+            total += 1;
+            let (Some(puuid), Some(raw)) = (e["puuid"].as_str(), e["private"].as_str()) else { continue };
+            let Ok(bytes) = STANDARD.decode(raw) else { continue };
+            let Ok(p) = serde_json::from_slice::<Value>(&bytes) else { continue };
+            let id = p["partyId"].as_str().or_else(|| p["partyPresenceData"]["partyId"].as_str()).filter(|x| !x.is_empty());
+            if let Some(id) = id {
+                map.insert(puuid.to_lowercase(), id.to_lowercase());
+            }
+        }
+        Some((total, map))
+    }
+
     pub fn headers(&self) -> HeaderMap {
         let platform = STANDARD.encode(
             r#"{"platformType":"PC","platformOS":"Windows","platformOSVersion":"10.0.19042.1.256.64bit","platformChipset":"Unknown"}"#,

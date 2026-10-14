@@ -122,7 +122,7 @@ export function PlayerRow({ p, index, assets, entry, cols, template, onOpen, onC
       )}
       {cols.skins && (
         <div className="thumbs">
-          {thumbs.map((t, i) =>
+          {p.loadout.weapons.length === 0 && (p.loadout.allIds?.length ?? 0) === 0 ? <span className="d">Oyun başlayınca görünür</span> : thumbs.map((t, i) =>
             t ? (
               <img
                 key={i}
@@ -136,7 +136,16 @@ export function PlayerRow({ p, index, assets, entry, cols, template, onOpen, onC
           )}
         </div>
       )}
-      {cols.party && <div>{p.party ? <span className="p" title="Tahmini parti (ortak maç geçmişi)">{p.party}</span> : null}</div>}
+      {cols.party && (
+        <div>
+          {p.party ? (
+            <span
+              className={p.partySure ? "p" : "p soft"}
+              title={p.partySure ? "Aynı partide (Riot verisi)" : "Son maçlarda sık birlikte girdiler (şu an aynı partide olduklarının kanıtı değil)"}
+            >{p.party}</span>
+          ) : null}
+        </div>
+      )}
       {cols.badges && (
         <div className="bdg">
           {badges.map((b) => <span key={b.text} className={`bd ${b.tone}`} title={b.tip}>{b.text}</span>)}

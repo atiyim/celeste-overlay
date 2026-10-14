@@ -4,7 +4,7 @@ const BASE = "https://valorant-api.com/v1";
 const LANG = "language=tr-TR";
 
 /* Büyük JSON'lar (kaplamalar vb.) Cache API'de tutulur; oyun sürümü değişince temizlenir. */
-async function cachedJson<T>(path: string): Promise<T> {
+export async function cachedJson<T>(path: string): Promise<T> {
   const url = `${BASE}${path}${path.includes("?") ? "&" : "?"}${LANG}`;
   try {
     const cache = await caches.open("valo-assets");
@@ -34,6 +34,8 @@ export interface Img { name: string; icon: string }
 export interface Tier { name: string; icon: string; color: string }
 export interface WeaponInfo { id: string; name: string; category: string; icon: string; defaultSkinId: string }
 export interface SkinInfo { name: string; icon: string }
+export interface SkinMeta { id: string; name: string; icon: string; weapon: string; tierId: string; levels: string[] }
+export interface ContentTier { name: string; color: string; rank: number }
 export interface ChromaInfo { name: string; render: string; swatch: string; index: number }
 
 export interface Assets {
@@ -48,6 +50,9 @@ export interface Assets {
   titles: Map<string, string>;
   tiers: Map<number, Tier>;
   maps: Map<string, string>;
+  skinMeta: Map<string, SkinMeta>; // yalnızca ana kaplama kimliği
+  levelToSkin: Map<string, string>; // seviye ve chroma kimliği → ana kaplama kimliği
+  contentTiers: Map<string, ContentTier>;
 }
 
 const k = (s?: string | null) => (s ?? "").toLowerCase();
@@ -55,7 +60,7 @@ const k = (s?: string | null) => (s ?? "").toLowerCase();
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function loadAssets(): Promise<Assets> {
   await invalidateOnNewVersion();
-  const [agents, weapons, buddies, sprays, cards, titles, tiers, maps, flex] = await Promise.all([
+  const [agents, weapons, buddies, sprays, cards, titles, tiers, maps, flex, ctiers] = await Promise.all([
     cachedJson<any[]>("/agents?isPlayableCharacter=true"),
     cachedJson<any[]>("/weapons"),
     cachedJson<any[]>("/buddies"),
@@ -65,12 +70,16 @@ export async function loadAssets(): Promise<Assets> {
     cachedJson<any[]>("/competitivetiers"),
     cachedJson<any[]>("/maps"),
     cachedJson<any[]>("/flex").catch(() => [] as any[]),
+    cachedJson<any[]>("/contenttiers").catch(() => [] as any[]),
   ]);
 
   const a: Assets = {
     agents: new Map(), weapons: [], skins: new Map(), chromas: new Map(), charms: new Map(),
     sprays: new Map(), flex: new Map(), cards: new Map(), titles: new Map(), tiers: new Map(), maps: new Map(),
+    skinMeta: new Map(), levelToSkin: new Map(), contentTiers: new Map(),
   };
+  const TIER_RANK: Record<string, number> = { Select: 1, Deluxe: 2, Premium: 3, Ultra: 4, Exclusive: 5 };
+  for (const t of ctiers ?? []) a.contentTiers.set(k(t.uuid), { name: t.displayName, color: `#${String(t.highlightColor ?? "888888").slice(0, 6)}`, rank: TIER_RANK[t.devName] ?? 0 });
 
   for (const x of agents) a.agents.set(k(x.uuid), { name: x.displayName, icon: x.displayIcon });
 
@@ -82,12 +91,15 @@ export async function loadAssets(): Promise<Assets> {
     for (const s of w.skins ?? []) {
       const info: SkinInfo = { name: s.displayName, icon: s.displayIcon ?? s.chromas?.[0]?.fullRender ?? "" };
       a.skins.set(k(s.uuid), info);
-      for (const l of s.levels ?? []) a.skins.set(k(l.uuid), { name: info.name, icon: l.displayIcon ?? info.icon });
+      a.skinMeta.set(k(s.uuid), { id: k(s.uuid), name: info.name, icon: info.icon, weapon: w.displayName, tierId: k(s.contentTierUuid), levels: (s.levels ?? []).map((l: any) => k(l.uuid)) });
+      a.levelToSkin.set(k(s.uuid), k(s.uuid));
+      for (const l of s.levels ?? []) { a.skins.set(k(l.uuid), { name: info.name, icon: l.displayIcon ?? info.icon }); a.levelToSkin.set(k(l.uuid), k(s.uuid)); }
       (s.chromas ?? []).forEach((c: any, i: number) => {
         a.chromas.set(k(c.uuid), {
           name: c.displayName, render: c.fullRender ?? c.displayIcon ?? info.icon, swatch: c.swatch ?? "", index: i,
         });
         a.skins.set(k(c.uuid), { name: info.name, icon: c.fullRender ?? c.displayIcon ?? info.icon });
+        a.levelToSkin.set(k(c.uuid), k(s.uuid));
       });
     }
   }

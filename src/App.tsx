@@ -15,6 +15,7 @@ import { LoadoutPanel } from "./LoadoutPanel";
 import { QuickChat } from "./QuickChat";
 import { Settings } from "./Settings";
 import { StatusBar } from "./StatusBar";
+import { AccountPanel } from "./AccountPanel";
 import { StorePanel } from "./StorePanel";
 import { StatsPanel } from "./StatsPanel";
 import { ReportPanel } from "./ReportPanel";
@@ -27,7 +28,7 @@ const SIDE_QUEUES = ["competitive", "unrated", "swiftplay", "spikerush", "premie
 const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
 const NAV = [
-  ["roster", "Oyuncular"], ["report", "Son maç"], ["store", "Mağaza"], ["stats", "İstatistik"], ["chat", "Sohbet"], ["settings", "Ayarlar"],
+  ["roster", "Oyuncular"], ["report", "Son maç"], ["store", "Mağaza"], ["account", "Hesabım"], ["stats", "İstatistik"], ["chat", "Sohbet"], ["settings", "Ayarlar"],
 ] as const;
 type View = (typeof NAV)[number][0];
 
@@ -366,6 +367,8 @@ export function App() {
           assets ? <ReportPanel assets={assets} matchId={lastMatch} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "store" ? (
           assets ? <StorePanel assets={assets} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
+        ) : view === "account" ? (
+          assets ? <AccountPanel assets={assets} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "stats" ? (
           assets ? <StatsPanel assets={assets} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "chat" ? (
@@ -373,6 +376,7 @@ export function App() {
         ) : active && assets ? (
           <LoadoutPanel
             p={active}
+            lobby={snap.players}
             assets={assets}
             entry={seen[active.puuid]}
             onLabel={(l) => setSeen(setLabel(active.puuid, l))}
@@ -429,6 +433,12 @@ export function App() {
               ) : null,
             )}
             <p className="mode">İsme tıkla: adı kopyala · Satıra tıkla: ayrıntılar · Başlığı sürükle: taşı</p>
+            {snap.players.some((x) => x.party) && (
+              <p className="mode legend">
+                <span className="p mini">A</span>Aynı parti
+                {snap.players.some((x) => x.party && !x.partySure) && <><span className="p mini soft">A</span>Son maçlarda sık birlikte</>}
+              </p>
+            )}
           </>
         )
       )}
