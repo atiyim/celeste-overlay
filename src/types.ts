@@ -36,6 +36,9 @@ export interface Player {
   form: FormEntry[];
   formLoading: boolean;
   rrTrend: number[];
+  played24h: number;
+  played24hCapped: boolean;
+  lastMatchAt?: number | null;
   kd?: number | null;
 }
 
@@ -60,3 +63,16 @@ export interface MyMatch {
   rrDelta?: number | null; tierAfter?: number | null; started: number;
 }
 export interface MyStats { matches: MyMatch[]; rank: Rank }
+
+export interface PremierMember { puuid: string; name?: string | null; hidden: boolean }
+export interface PremierTeam { name: string; tag: string; members: PremierMember[] }
+
+export interface PairCount { puuid: string; count: number }
+export interface ReportPlayer {
+  puuid: string; name?: string | null; hidden: boolean; team: string; agentId: string; isSelf: boolean; tier: number;
+  score: number; rounds: number; kills: number; deaths: number; assists: number;
+  headshots: number; bodyshots: number; legshots: number; damage: number; firstKills: number; firstDeaths: number;
+  killed: PairCount[]; killedBy: PairCount[];
+}
+export interface ReportTeam { teamId: string; won: boolean; roundsWon: number }
+export interface MatchReport { matchId: string; mapId: string; queue: string; started: number; teams: ReportTeam[]; players: ReportPlayer[] }

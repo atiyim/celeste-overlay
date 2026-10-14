@@ -3,7 +3,7 @@ import type { Assets } from "./assets";
 import { lookup, resolveSkin } from "./assets";
 import { TAGS, type Entry } from "./seen";
 import type { ColId } from "./theme";
-import { analyze, formBadge, styleBadge } from "./playstyle";
+import { activityBadge, analyze, formBadge, styleBadge } from "./playstyle";
 import type { Player } from "./types";
 
 interface Props {
@@ -70,7 +70,7 @@ export function PlayerRow({ p, index, assets, entry, cols, template, onOpen, onC
   });
 
   const play = analyze(p);
-  const badges = [styleBadge(play), formBadge(p)].filter((b): b is NonNullable<typeof b> => !!b);
+  const badges = [styleBadge(play), formBadge(p), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b);
 
   const stop = (fn: () => void) => (e: MouseEvent) => { e.stopPropagation(); fn(); };
   const key = (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };

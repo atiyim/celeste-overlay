@@ -38,6 +38,9 @@ export function mockSnapshot(a: Assets): Snapshot {
       isSelf: i === 0,
       form: [0, 1, 2, 3, 4].map((j) => ({ mapId: [...a.maps.keys()][j % a.maps.size], agentId: pick(agents, i * 5 + (j % 2)), queue: "competitive", won: (i + j) % 3 !== 0, kills: 10 + ((i * j) % 14), deaths: 8 + ((i + j) % 9), assists: 2 + ((i * 3 + j) % 8), rounds: 22, headshots: 18 + ((i * 5 + j) % 20), bodyshots: 70, legshots: 8, damage: 3300 + i * 90, firstKills: (i + j) % 4, firstDeaths: (i * 2 + j) % 3, weaponKills: [{ weaponId: a.weapons[(i + j) % a.weapons.length].id, count: 5 + j }], bought: [{ weaponId: a.weapons[i % a.weapons.length].id, count: 14 }] })),
       formLoading: false,
+      played24h: i === 3 ? 11 : 2 + (i % 4),
+      played24hCapped: false,
+      lastMatchAt: Date.now() - (5 + i * 9) * 60000,
       rrTrend: i % 3 === 0 ? [-21, -18, -19, 12, -15] : i % 3 === 1 ? [22, 19, 25, -14, 20] : [10, -12, 15, -9, 11],
       kd: 0.8 + (i % 7) * 0.12,
     };

@@ -82,3 +82,17 @@ export function formBadge(p: Player): Badge | null {
   }
   return null;
 }
+
+/* Son 24 saatteki maç sayısı: uzun seansları gösterir. Satırda yalnızca 8 ve üstünde rozet çıkar. */
+export function activityBadge(p: Player): Badge | null {
+  if (p.played24h < 8) return null;
+  return { text: `24 saatte ${p.played24h}${p.played24hCapped ? "+" : ""} maç`, tone: "info", tip: "Son 24 saatte oynadığı maç sayısı (son 15 maç içinden). Uzun seans: yorgun ya da tilt'te olabilir." };
+}
+
+export function ago(ms?: number | null): string {
+  if (!ms) return "–";
+  const m = Math.max(0, Math.floor((Date.now() - ms) / 60000));
+  if (m < 60) return `${m} dk`;
+  if (m < 1440) return `${Math.floor(m / 60)} sa ${m % 60} dk`;
+  return `${Math.floor(m / 1440)} gün`;
+}

@@ -198,6 +198,10 @@ struct State {
     mmr: HashMap<String, (Instant, Mmr)>,
     history: HashMap<String, (Instant, Vec<(String, String)>)>, // (maç kimliği, kuyruk)
     trend: HashMap<String, (Instant, Vec<i32>)>,
+    activity: HashMap<String, (u32, bool, Option<u64>)>,
+    hidden_now: HashSet<String>,
+    lobbies: HashMap<String, HashSet<String>>, // maç kimliği -> ismini gizleyenler
+    premier: HashMap<String, (Instant, Option<PremierTeam>)>,
     details: HashMap<String, Detail>,
     block_until: Option<Instant>,
     names: HashMap<String, String>,
@@ -323,6 +327,8 @@ impl Engine {
             players.push(p);
         }
         self.enrich(st, s, &mut players, &season).await;
+        let hidden = st.hidden_now.clone();
+        st.lobbies.insert(mid.to_string(), hidden);
         Ok(Snapshot {
             phase: Phase::Ingame,
             match_id: Some(mid.to_string()),
@@ -396,8 +402,9 @@ impl Engine {
             .map(|p| p.puuid.clone())
             .collect();
         for (id, h) in join_all(stale_hist.iter().map(|id| async move { (id.clone(), self.fetch_history(s, id, 15).await) })).await {
-            if let Some(h) = h {
-                st.history.insert(id, (Instant::now(), h));
+            if let Some((h, act)) = h {
+                st.history.insert(id.clone(), (Instant::now(), h));
+                st.activity.insert(id, act);
             }
         }
 
@@ -449,6 +456,11 @@ impl Engine {
                 p.rank = to_rank(m);
             }
             p.smurf = smurf_score(p.level, &p.rank);
+            if let Some((c, cap, last)) = st.activity.get(&p.puuid) {
+                p.played_24h = *c;
+                p.played_24h_capped = *cap;
+                p.last_match_at = *last;
+            }
             p.rr_trend = st.trend.get(&p.puuid).map(|(_, t)| t.clone()).unwrap_or_default();
             match st.history.get(&p.puuid) {
                 Some((_, h)) => {
@@ -469,6 +481,7 @@ impl Engine {
             }
         }
         assign_parties(players, &st.history);
+        st.hidden_now = players.iter().filter(|p| p.hidden_name && !p.is_self).map(|p| p.puuid.clone()).collect();
     }
 
     async fn fetch_mmr(&self, s: &Session, puuid: &str, season: &str) -> Option<Mmr> {
@@ -509,15 +522,19 @@ impl Engine {
         Some(v["Matches"].as_array()?.iter().filter_map(|m| m["RankedRatingEarned"].as_i64().map(|x| x as i32)).collect())
     }
 
-    async fn fetch_history(&self, s: &Session, puuid: &str, n: usize) -> Option<Vec<(String, String)>> {
+    async fn fetch_history(&self, s: &Session, puuid: &str, n: usize) -> Option<(Vec<(String, String)>, (u32, bool, Option<u64>))> {
         let v = self.get(s, &s.pd, &format!("/match-history/v1/history/{puuid}?startIndex=0&endIndex={n}")).await.ok()??;
-        Some(
-            v["History"]
-                .as_array()?
-                .iter()
-                .filter_map(|h| Some((h["MatchID"].as_str()?.to_string(), h["QueueID"].as_str().unwrap_or("").to_lowercase())))
-                .collect(),
-        )
+        let arr = v["History"].as_array()?;
+        let list: Vec<(String, String)> = arr
+            .iter()
+            .filter_map(|h| Some((h["MatchID"].as_str()?.to_string(), h["QueueID"].as_str().unwrap_or("").to_lowercase())))
+            .collect();
+        let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0);
+        let starts: Vec<u64> = arr.iter().filter_map(|h| h["GameStartTime"].as_u64()).collect();
+        let day = 24 * 3600 * 1000;
+        let count = starts.iter().filter(|t| now.saturating_sub(**t) <= day).count() as u32;
+        let capped = !starts.is_empty() && count as usize == starts.len() && starts.len() >= n.min(arr.len()) && arr.len() >= n;
+        Some((list, (count, capped, starts.iter().max().copied())))
     }
 
     async fn fetch_detail(&self, s: &Session, id: &str) -> Result<Detail> {
@@ -528,6 +545,161 @@ impl Engine {
     }
 
     /// Kendi mağazan ve gece mağazan. Valorant'ın açık olması gerekmez; Riot Client açık ve giriş yapılmış olmalı.
+    /// Verilen oyuncuların isimlerini önbelleğe alır. Çağıran, ismini gizleyenleri listeye KOYMAMALIDIR.
+    async fn load_names(&self, st: &mut State, s: &Session, ids: &[String]) {
+        let need: Vec<&String> = ids.iter().filter(|i| !st.names.contains_key(*i)).collect();
+        if need.is_empty() {
+            return;
+        }
+        if let Ok(r) = self.http.put(format!("{}/name-service/v2/players", s.pd)).headers(s.headers()).json(&need).send().await {
+            if let Ok(arr) = r.json::<Vec<Value>>().await {
+                for e in arr {
+                    if let (Some(id), Some(n), Some(t)) = (e["Subject"].as_str(), e["GameName"].as_str(), e["TagLine"].as_str()) {
+                        st.names.insert(id.to_string(), format!("{n}#{t}"));
+                    }
+                }
+            }
+        }
+    }
+
+    /// Bitmiş bir maçın tam raporu (10 oyuncunun hepsi). Maç kaydı hazır değilse hata döner; arayüz tekrar dener.
+    pub async fn match_report(&self, match_id: &str) -> Result<MatchReport, String> {
+        let mut st = self.state.lock().await;
+        let s = self.session(&mut st).await.map_err(|e| friendly(&e))?;
+        let v = match self.get(&s, &s.pd, &format!("/match-details/v1/matches/{match_id}")).await {
+            Ok(Some(v)) => v,
+            Ok(None) => return Err("Maç kaydı henüz hazır değil.".into()),
+            Err(e) => return Err(friendly(&e)),
+        };
+        let d = parse_detail(&v);
+        if d.players.is_empty() {
+            return Err("Maç kaydı henüz hazır değil.".into());
+        }
+        let pairs = parse_pairs(&v);
+        // İsmini gizleyenlerin ismi gösterilmez. Lobi bilgisi yoksa yalnızca kendi ismin gösterilir.
+        let known = st.lobbies.get(match_id).cloned();
+        let hides = |p: &str| p != s.puuid && known.as_ref().map_or(true, |h| h.contains(p));
+        let ids: Vec<String> = d.players.iter().filter(|p| !hides(&p.puuid)).map(|p| p.puuid.clone()).collect();
+        self.load_names(&mut st, &s, &ids).await;
+        let tiers: HashMap<String, u32> = v["players"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|p| Some((p["subject"].as_str()?.to_string(), p["competitiveTier"].as_u64().unwrap_or(0) as u32)))
+            .collect();
+        // pairs: killer -> victim; killed_by: victim -> killer
+        let mut by: HashMap<String, HashMap<String, u32>> = HashMap::new();
+        for (a, vs) in &pairs {
+            for (b, c) in vs {
+                *by.entry(b.clone()).or_default().entry(a.clone()).or_default() += c;
+            }
+        }
+        let players = d
+            .players
+            .iter()
+            .map(|p| ReportPlayer {
+                puuid: p.puuid.clone(),
+                name: if hides(&p.puuid) { None } else { st.names.get(&p.puuid).cloned() },
+                hidden: hides(&p.puuid),
+                team: p.team.clone(),
+                agent_id: p.agent.clone(),
+                is_self: p.puuid == s.puuid,
+                tier: tiers.get(&p.puuid).copied().unwrap_or(0),
+                score: p.score,
+                rounds: p.rounds,
+                kills: p.kills,
+                deaths: p.deaths,
+                assists: p.assists,
+                headshots: p.combat.hs,
+                bodyshots: p.combat.body,
+                legshots: p.combat.leg,
+                damage: p.combat.damage,
+                first_kills: p.combat.fk,
+                first_deaths: p.combat.fd,
+                killed: top_pairs(pairs.get(&p.puuid)),
+                killed_by: top_pairs(by.get(&p.puuid)),
+            })
+            .collect();
+        let teams = v["teams"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|t| ReportTeam {
+                team_id: t["teamId"].as_str().unwrap_or("").to_string(),
+                won: t["won"].as_bool().unwrap_or(false),
+                rounds_won: t["roundsWon"].as_u64().unwrap_or(0) as u32,
+            })
+            .collect();
+        Ok(MatchReport {
+            match_id: match_id.to_string(),
+            map_id: d.map_id.clone(),
+            queue: v["matchInfo"]["queueID"].as_str().unwrap_or("").to_string(),
+            started: d.started,
+            teams,
+            players,
+        })
+    }
+
+    /// Oyuncunun Premier takımı (varsa). İsmini gizleyen oyuncular için sorgu YAPILMAZ.
+    pub async fn premier(&self, puuid: &str) -> Result<Option<PremierTeam>, String> {
+        let mut st = self.state.lock().await;
+        if st.hidden_now.contains(puuid) {
+            return Ok(None);
+        }
+        if let Some((t, v)) = st.premier.get(puuid) {
+            if t.elapsed() < Duration::from_secs(1800) {
+                return Ok(v.clone());
+            }
+        }
+        let s = self.session(&mut st).await.map_err(|e| friendly(&e))?;
+        let pl = match self.get(&s, &s.pd, &format!("/premier/v1/players/{puuid}")).await {
+            Ok(Some(v)) => v,
+            Ok(None) => {
+                st.premier.insert(puuid.to_string(), (Instant::now(), None));
+                return Ok(None);
+            }
+            Err(e) => return Err(friendly(&e)),
+        };
+        write_text("premier-player-shape.txt", &shape(&pl, 4)); // yalnızca yapı, değer yok
+        let rid = ["rosterId", "rosterID", "RosterID", "roster_id"]
+            .iter()
+            .find_map(|k| pl[*k].as_str())
+            .or_else(|| pl["roster"]["id"].as_str())
+            .map(String::from);
+        let Some(rid) = rid.filter(|r| !r.is_empty()) else {
+            st.premier.insert(puuid.to_string(), (Instant::now(), None));
+            return Ok(None);
+        };
+        let ro = match self.get(&s, &s.pd, &format!("/premier/v1/rosters/{rid}")).await {
+            Ok(Some(v)) => v,
+            Ok(None) => return Ok(None),
+            Err(e) => return Err(friendly(&e)),
+        };
+        write_text("premier-roster-shape.txt", &shape(&ro, 4));
+        let ids: Vec<String> = ro["members"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|m| ["puuid", "subject", "id"].iter().find_map(|k| m[*k].as_str()).map(String::from))
+            .collect();
+        let show: Vec<String> = ids.iter().filter(|i| !st.hidden_now.contains(*i)).cloned().collect();
+        self.load_names(&mut st, &s, &show).await;
+        let team = PremierTeam {
+            name: ro["name"].as_str().unwrap_or("").to_string(),
+            tag: ro["tag"].as_str().unwrap_or("").to_string(),
+            members: ids
+                .iter()
+                .map(|i| {
+                    let hidden = st.hidden_now.contains(i);
+                    PremierMember { puuid: i.clone(), name: if hidden { None } else { st.names.get(i).cloned() }, hidden }
+                })
+                .collect(),
+        };
+        let out = if team.name.is_empty() && team.members.is_empty() { None } else { Some(team) };
+        st.premier.insert(puuid.to_string(), (Instant::now(), out.clone()));
+        Ok(out)
+    }
+
     pub async fn store(&self) -> Result<Store, String> {
         let mut st = self.state.lock().await;
         let s = self.session(&mut st).await.map_err(|e| {
@@ -568,8 +740,8 @@ impl Engine {
             friendly(&e)
         })?;
         let hist = match self.fetch_history(&s, &s.puuid, 25).await {
-            Some(h) => h,
-            None => self.fetch_history(&s, &s.puuid, 15).await.ok_or_else(|| "Maç geçmişi alınamadı.".to_string())?,
+            Some((h, _)) => h,
+            None => self.fetch_history(&s, &s.puuid, 15).await.ok_or_else(|| "Maç geçmişi alınamadı.".to_string())?.0,
         };
         let ids: Vec<(String, String)> =
             hist.into_iter().filter(|(_, q)| FORM_QUEUES.contains(&q.as_str())).take(20).collect();
@@ -636,6 +808,27 @@ impl Engine {
 const VP: &str = "85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741";
 
 /// Fiyat haritasından (para birimi → miktar) VP miktarını alır.
+fn parse_pairs(v: &Value) -> HashMap<String, HashMap<String, u32>> {
+    let mut m: HashMap<String, HashMap<String, u32>> = HashMap::new();
+    for r in v["roundResults"].as_array().into_iter().flatten() {
+        for ps in r["playerStats"].as_array().into_iter().flatten() {
+            for k in ps["kills"].as_array().into_iter().flatten() {
+                if let (Some(a), Some(b)) = (k["killer"].as_str(), k["victim"].as_str()) {
+                    *m.entry(a.to_string()).or_default().entry(b.to_string()).or_default() += 1;
+                }
+            }
+        }
+    }
+    m
+}
+
+fn top_pairs(m: Option<&HashMap<String, u32>>) -> Vec<PairCount> {
+    let mut v: Vec<PairCount> = m.into_iter().flatten().map(|(k, c)| PairCount { puuid: k.clone(), count: *c }).collect();
+    v.sort_by(|a, b| b.count.cmp(&a.count).then(a.puuid.cmp(&b.puuid)));
+    v.truncate(3);
+    v
+}
+
 fn vp(cost: &Value) -> Option<u32> {
     cost[VP]
         .as_u64()

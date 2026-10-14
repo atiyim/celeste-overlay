@@ -17,6 +17,7 @@ import { Settings } from "./Settings";
 import { StatusBar } from "./StatusBar";
 import { StorePanel } from "./StorePanel";
 import { StatsPanel } from "./StatsPanel";
+import { ReportPanel } from "./ReportPanel";
 import { useUpdater } from "./updater";
 import { applyTheme, COLS, gridTemplate, loadTheme, overlayWidth } from "./theme";
 
@@ -26,7 +27,7 @@ const SIDE_QUEUES = ["competitive", "unrated", "swiftplay", "spikerush", "premie
 const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
 const NAV = [
-  ["roster", "Oyuncular"], ["store", "Mağaza"], ["stats", "İstatistik"], ["chat", "Sohbet"], ["settings", "Ayarlar"],
+  ["roster", "Oyuncular"], ["report", "Son maç"], ["store", "Mağaza"], ["stats", "İstatistik"], ["chat", "Sohbet"], ["settings", "Ayarlar"],
 ] as const;
 type View = (typeof NAV)[number][0];
 
@@ -50,6 +51,10 @@ export function App() {
   const [autoHidden, setAutoHidden] = useState(false);
   const [assetsFailed, setAssetsFailed] = useState(false);
   const updater = useUpdater();
+  const [lastMatch, setLastMatch] = useState<string | null>(() => {
+    try { return localStorage.getItem("overlay-last-match"); } catch { return null; }
+  });
+  const prevPhase = useRef<string>("offline");
   const rootRef = useRef<HTMLElement>(null);
   const lastSize = useRef("");
   const autoHiddenRef = useRef(false);
@@ -94,6 +99,20 @@ export function App() {
       ),
     );
   }, [snap.matchId, snap.phase, snap.players]);
+
+  // Maç bitince (oyundan menüye ya da kapanışa geçince) rapor kendiliğinden açılır.
+  useEffect(() => {
+    if (snap.phase === "ingame" && snap.matchId) {
+      setLastMatch(snap.matchId);
+      try { localStorage.setItem("overlay-last-match", snap.matchId); } catch { /* depolama dolu */ }
+    }
+    if (prevPhase.current === "ingame" && snap.phase !== "ingame" && (snap.phase === "menu" || snap.phase === "offline")) {
+      setSelected(null);
+      setCollapsed(false);
+      setView("report");
+    }
+    prevPhase.current = snap.phase;
+  }, [snap.phase, snap.matchId]);
 
   // F2 (Rust tarafında) overlay'i öne aldığında: şeridi aç ve tıklamayı overlay'e ver.
   useEffect(() => {
@@ -343,6 +362,8 @@ export function App() {
       {!collapsed && (
         view === "settings" ? (
           <Settings updater={updater} theme={theme} onChange={setTheme} onClose={() => setView("roster")} />
+        ) : view === "report" ? (
+          assets ? <ReportPanel assets={assets} matchId={lastMatch} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "store" ? (
           assets ? <StorePanel assets={assets} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "stats" ? (

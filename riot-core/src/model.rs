@@ -65,6 +65,11 @@ pub struct Player {
     pub form_loading: bool,
     /// Son rekabet maçlarındaki RR değişimi (en yeni başta).
     pub rr_trend: Vec<i32>,
+    /// Son 24 saatte oynadığı maç sayısı (son 15 maç içinde; hepsi 24 saat içindeyse `played_24h_capped`).
+    pub played_24h: u32,
+    pub played_24h_capped: bool,
+    /// Son maçının başlangıç zamanı (ms, unix).
+    pub last_match_at: Option<u64>,
     /// Bu maçlardaki toplam öldürme / ölüm oranı.
     pub kd: Option<f32>,
 }
@@ -187,4 +192,73 @@ pub struct MyMatch {
 pub struct MyStats {
     pub matches: Vec<MyMatch>,
     pub rank: Rank,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PremierMember {
+    pub puuid: String,
+    pub name: Option<String>,
+    pub hidden: bool,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PremierTeam {
+    pub name: String,
+    pub tag: String,
+    pub members: Vec<PremierMember>,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PairCount {
+    pub puuid: String,
+    pub count: u32,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ReportPlayer {
+    pub puuid: String,
+    /// Maç öncesi ismini gizleyen oyuncuların ismi burada da gösterilmez.
+    pub name: Option<String>,
+    pub hidden: bool,
+    pub team: String,
+    pub agent_id: String,
+    pub is_self: bool,
+    pub tier: u32,
+    pub score: u32,
+    pub rounds: u32,
+    pub kills: u32,
+    pub deaths: u32,
+    pub assists: u32,
+    pub headshots: u32,
+    pub bodyshots: u32,
+    pub legshots: u32,
+    pub damage: u32,
+    pub first_kills: u32,
+    pub first_deaths: u32,
+    /// En çok öldürdüğü / tarafından en çok öldürüldüğü oyuncular.
+    pub killed: Vec<PairCount>,
+    pub killed_by: Vec<PairCount>,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ReportTeam {
+    pub team_id: String,
+    pub won: bool,
+    pub rounds_won: u32,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct MatchReport {
+    pub match_id: String,
+    pub map_id: String,
+    pub queue: String,
+    pub started: u64,
+    pub teams: Vec<ReportTeam>,
+    pub players: Vec<ReportPlayer>,
 }
