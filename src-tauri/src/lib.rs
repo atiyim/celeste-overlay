@@ -1,4 +1,4 @@
-use riot_core::{Account, Engine, MatchReport, MyStats, PremierTeam, Snapshot, Store};
+use riot_core::{Account, Engine, HealthEntry, MatchReport, MyStats, PremierTeam, Snapshot, Store};
 use std::sync::Arc;
 use tauri::{
     menu::{Menu, MenuItem},
@@ -24,6 +24,16 @@ async fn get_store(state: State<'_, AppState>) -> Result<Store, String> {
 #[tauri::command]
 async fn get_account(state: State<'_, AppState>) -> Result<Account, String> {
     state.engine.account().await
+}
+
+#[tauri::command]
+async fn get_health(state: State<'_, AppState>) -> Result<Vec<HealthEntry>, String> {
+    Ok(state.engine.health().await)
+}
+
+#[tauri::command]
+async fn get_diagnostics(state: State<'_, AppState>) -> Result<String, String> {
+    Ok(state.engine.diagnostics().await)
 }
 
 #[tauri::command]
@@ -90,7 +100,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState { engine: Arc::new(Engine::new()) })
-        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_my_stats, get_match_report, get_premier])
+        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier])
         .setup(move |app| {
             // F2 başka bir uygulamada kayıtlıysa uygulama yine açılır, tepsi simgesi çalışmaya devam eder.
             if let Err(e) = app.global_shortcut().register(f2) {

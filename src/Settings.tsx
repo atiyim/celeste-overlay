@@ -1,9 +1,21 @@
 import type { useUpdater } from "./updater";
-import { ACCENTS, COLS, DEFAULT_THEME, HIDE_AFTER_OPTIONS, type Theme } from "./theme";
+import { Fragment } from "react";
+import { ACCENTS, COLS, DEFAULT_THEME, DEFAULT_TH, HIDE_AFTER_OPTIONS, type Theme, type Thresholds } from "./theme";
+import { copyDiagnostics } from "./StatusBar";
 
-interface Props { updater: ReturnType<typeof useUpdater>; theme: Theme; onChange: (t: Theme) => void; onClose: () => void }
+const TH_FIELDS: { key: keyof Thresholds; label: string; hint: string; unit: string }[] = [
+  { key: "hs", label: "Kafa avcısı", hint: "Kafa isabeti en az", unit: "%" },
+  { key: "adr", label: "Yüksek hasar", hint: "Round başına hasar en az", unit: "" },
+  { key: "fk", label: "Öncü", hint: "İlk kan, round oranı en az", unit: "%" },
+  { key: "fd", label: "İlk ölen", hint: "İlk ölüm, round oranı en az", unit: "%" },
+  { key: "lowHs", label: "Düşük HS", hint: "Kafa isabeti en çok", unit: "%" },
+  { key: "smurfLevel", label: "Smurf: seviye", hint: "Bu seviyenin altı + Altın üstü rank", unit: "" },
+  { key: "smurfWr", label: "Smurf: kazanma", hint: "Bu orandan yüksek, en az 10 maç", unit: "%" },
+];
 
-export function Settings({ updater, theme, onChange, onClose }: Props) {
+interface Props { updater: ReturnType<typeof useUpdater>; theme: Theme; onChange: (t: Theme) => void; onToast: (t: string) => void; onClose: () => void }
+
+export function Settings({ updater, theme, onChange, onToast, onClose }: Props) {
   return (
     <div className="panel" role="dialog" aria-label="Ayarlar">
       <div className="ph">
@@ -60,6 +72,28 @@ export function Settings({ updater, theme, onChange, onClose }: Props) {
             <span>Taraf oyundakinin tersi görünüyorsa değiştir</span>
           </label>
           <p className="m">Taraf, takım rengine göre belirlenir ve yalnızca ilk yarıda doğrudur.</p>
+
+          <h2 className="h">Rozet eşikleri</h2>
+          <details className="ths">
+            <summary>Sayıları düzenle</summary>
+            <div className="thg">
+              {TH_FIELDS.map((f) => (
+                <Fragment key={f.key}>
+                  <label htmlFor={`th-${f.key}`}>{f.label}<small>{f.hint}{f.unit ? ` (${f.unit})` : ""}</small></label>
+                  <input
+                    id={`th-${f.key}`}
+                    type="number"
+                    min={0}
+                    value={theme.th[f.key]}
+                    onChange={(e) => { const v = Number(e.target.value); if (Number.isFinite(v) && v >= 0) onChange({ ...theme, th: { ...theme.th, [f.key]: v } }); }}
+                  />
+                </Fragment>
+              ))}
+            </div>
+            <div className="note"><button className="x" type="button" onClick={() => onChange({ ...theme, th: DEFAULT_TH })}>Varsayılana dön</button></div>
+          </details>
+          <p className="m">Rozetler, son 5 maçta ölçülen değer bu sınırı aşınca çıkar.</p>
+
         </div>
 
         <div>
@@ -112,6 +146,7 @@ export function Settings({ updater, theme, onChange, onClose }: Props) {
 
           <h2 className="h">Hakkında</h2>
           <p className="m">Celeste Overlay, Riot Games ile bağlantılı değildir. Oyuna dokunmaz; yalnızca açık Riot Client oturumunu okur. Etiketler ve notlar yalnızca bu bilgisayarda saklanır.</p>
+          <p className="m"><button className="x" type="button" onClick={() => copyDiagnostics(updater.version, [], onToast)}>Tanı bilgisini kopyala</button></p>
         </div>
       </div>
     </div>

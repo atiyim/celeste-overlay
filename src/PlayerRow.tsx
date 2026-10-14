@@ -2,9 +2,9 @@ import type { KeyboardEvent, MouseEvent } from "react";
 import type { Assets } from "./assets";
 import { lookup, resolveSkin } from "./assets";
 import { TAGS, type Entry } from "./seen";
-import type { ColId } from "./theme";
+import type { ColId, Thresholds } from "./theme";
 import { tierColor } from "./LoadoutPanel";
-import { activityBadge, analyze, formBadge, styleBadge } from "./playstyle";
+import { activityBadge, analyze, formBadge, smurfBadge, smurfSigns, styleBadge } from "./playstyle";
 import type { Player } from "./types";
 
 interface Props {
@@ -13,6 +13,7 @@ interface Props {
   assets: Assets;
   entry?: Entry; // bu oyuncuyla karşılaşma geçmişi ve kişisel not
   cols: Record<ColId, boolean>;
+  th: Thresholds;
   template: string;
   onOpen: () => void;
   onCopy: (name: string | null) => void;
@@ -27,7 +28,7 @@ const THUMBS = [
   { id: "2f59173c-4bed-b6c3-2191-dea9b58be9c7", name: "Melee", category: "Melee" },
 ];
 
-export function PlayerRow({ p, index, assets, entry, cols, template, onOpen, onCopy, onTracker }: Props) {
+export function PlayerRow({ p, index, assets, entry, cols, th, template, onOpen, onCopy, onTracker }: Props) {
   const agent = assets.agents.get(lookup(p.agentId));
   const cur = assets.tiers.get(p.rank.current);
   const peak = assets.tiers.get(p.rank.peak);
@@ -52,7 +53,6 @@ export function PlayerRow({ p, index, assets, entry, cols, template, onOpen, onC
   const sub = [
     anonymous ? (label ? "İsim gizli, kendi notun" : "İsim gizli") : null,
     prevText,
-    p.smurf >= 60 ? `Olası smurf %${p.smurf}` : null,
     p.level != null ? `Seviye ${p.level}` : null,
   ].filter(Boolean).join(" · ");
 
@@ -71,7 +71,7 @@ export function PlayerRow({ p, index, assets, entry, cols, template, onOpen, onC
   });
 
   const play = analyze(p);
-  const badges = [formBadge(p), styleBadge(play), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 2); // satır sade kalsın: en önemli iki rozet
+  const badges = [smurfBadge(smurfSigns(p, th, assets.tiers.get(p.rank.current)?.name ?? "")), formBadge(p), styleBadge(play, th), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 2); // satır sade kalsın: en önemli iki rozet
 
   const stop = (fn: () => void) => (e: MouseEvent) => { e.stopPropagation(); fn(); };
   const key = (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };

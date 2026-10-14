@@ -14,6 +14,18 @@ export const COLS: ColDef[] = [
   { id: "tracker", label: "Tracker düğmesi", px: 56 },
 ];
 
+/* Rozet ve smurf eşikleri. Rozetler yalnızca ölçülen değerler bu sınırları aşınca çıkar. */
+export interface Thresholds {
+  hs: number;       // "Kafa avcısı": kafa isabeti % (en az)
+  adr: number;      // "Yüksek hasar": round başına hasar (en az)
+  fk: number;       // "Öncü": round'ların yüzde kaçında ilk kan (en az)
+  fd: number;       // "İlk ölen": round'ların yüzde kaçında ilk ölüm (en az)
+  lowHs: number;    // "Düşük HS": kafa isabeti % (en çok)
+  smurfLevel: number; // Smurf işareti: bu seviyenin altı + yüksek rank
+  smurfWr: number;  // Smurf işareti: bu kazanma oranının (%) üstü
+}
+export const DEFAULT_TH: Thresholds = { hs: 28, adr: 165, fk: 15, fd: 15, lowHs: 12, smurfLevel: 60, smurfWr: 62 };
+
 export interface Theme {
   accent: string;
   alpha: number;
@@ -21,6 +33,7 @@ export interface Theme {
   autoHide: boolean;
   hideAfter: number; // maç başladıktan kaç saniye sonra gizlensin
   cols: Record<ColId, boolean>;
+  th: Thresholds;
 }
 
 const ALL_ON = Object.fromEntries(COLS.map((c) => [c.id, true])) as Record<ColId, boolean>;
@@ -32,6 +45,7 @@ export const DEFAULT_THEME: Theme = {
   autoHide: true,
   hideAfter: 10,
   cols: ALL_ON,
+  th: DEFAULT_TH,
 };
 export const ACCENTS = ["#38bdf8", "#a78bfa", "#34d399", "#fbbf24", "#fb7185", "#ededed"];
 export const HIDE_AFTER_OPTIONS = [5, 10, 15, 30];
@@ -49,6 +63,12 @@ export function loadTheme(): Theme {
       autoHide: t.autoHide !== false,
       hideAfter: HIDE_AFTER_OPTIONS.includes(t.hideAfter as number) ? (t.hideAfter as number) : DEFAULT_THEME.hideAfter,
       cols: { ...ALL_ON, ...(t.cols ?? {}) },
+      th: Object.fromEntries(
+        (Object.keys(DEFAULT_TH) as (keyof Thresholds)[]).map((k) => {
+          const v = (t.th as Partial<Thresholds> | undefined)?.[k];
+          return [k, typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : DEFAULT_TH[k]];
+        }),
+      ) as unknown as Thresholds,
     };
   } catch { return DEFAULT_THEME; }
 }

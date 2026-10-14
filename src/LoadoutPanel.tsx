@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { Assets, WeaponInfo } from "./assets";
 import { charmIcon, lookup, resolveFlex, resolveSkin, resolveSprays } from "./assets";
-import { ago, analyze, formBadge, styleBadge, type WeaponStat } from "./playstyle";
+import { ago, analyze, formBadge, smurfSigns, styleBadge, type WeaponStat } from "./playstyle";
+import { DEFAULT_TH, type Thresholds } from "./theme";
 import { TAGS, type Entry, type TagId } from "./seen";
 import type { Player, PremierTeam } from "./types";
 
@@ -38,6 +39,7 @@ function Tile({ w, p, a }: { w: WeaponInfo; p: Player; a: Assets }) {
 interface PanelProps {
   p: Player;
   lobby: Player[];
+  th?: Thresholds;
   assets: Assets;
   entry?: Entry;
   onLabel: (label: string) => void;
@@ -68,7 +70,7 @@ function WeaponTable({ title, list, assets, unit }: { title: string; list: Weapo
   );
 }
 
-export function LoadoutPanel({ p, lobby, assets, entry, onLabel, onTag, onClose, onCopy }: PanelProps) {
+export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel, onTag, onClose, onCopy }: PanelProps) {
   const [draft, setDraft] = useState(entry?.label ?? "");
   const [tab, setTab] = useState<Tab>("guns");
   const [premier, setPremier] = useState<PremierTeam | null | "loading" | "error">("loading");
@@ -102,7 +104,8 @@ export function LoadoutPanel({ p, lobby, assets, entry, onLabel, onTag, onClose,
 
   const play = analyze(p);
   const fb = formBadge(p);
-  const sb = styleBadge(play);
+  const sb = styleBadge(play, th);
+  const smurf = smurfSigns(p, th, cur?.name ?? "");
   const rrSum = p.rrTrend.reduce((a, b) => a + b, 0);
   const sameAgent = p.form.filter((f) => lookup(f.agentId) === lookup(p.agentId));
   const sameKd = (() => {
@@ -240,6 +243,12 @@ export function LoadoutPanel({ p, lobby, assets, entry, onLabel, onTag, onClose,
             {sprays.length ? sprays.map((s) => (
               <div className="chrow" key={s.name}><img src={s.icon} alt="" loading="lazy" /><span>{s.name}</span></div>
             )) : <None />}
+            {smurf.length > 0 && (
+              <>
+                <h3 className="h2">Smurf işaretleri</h3>
+                <ul className="signs">{smurf.map((x) => <li key={x.text}>{x.text}</li>)}</ul>
+              </>
+            )}
           </div>
           <div>
             <h3 className="h2">Flex</h3>

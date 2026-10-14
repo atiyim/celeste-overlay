@@ -1,3 +1,4 @@
+import { DEFAULT_TH, type Thresholds } from "./theme";
 import type { Player } from "./types";
 
 /* Oyuncunun son maçlarından (en fazla 5) çıkarılan ölçülmüş oynayış verisi. Tahmin yok:
@@ -47,23 +48,45 @@ export function analyze(p: Player): Play | null {
   };
 }
 
-export interface Badge { text: string; tone: "pos" | "neg" | "gold" | "orange" | "teal" | "violet"; tip: string }
+export interface Badge { text: string; tone: "pos" | "neg" | "gold" | "orange" | "teal" | "violet" | "gray"; tip: string }
 
 /* Nişan / oynayış rozeti: ölçülen eşikleri aşan en belirgin özellik. */
-export function styleBadge(play: Play | null): Badge | null {
+export function styleBadge(play: Play | null, th: Thresholds = DEFAULT_TH): Badge | null {
   if (!play) return null;
   const scope = `son ${play.matches} maç, ${play.rounds} round`;
-  if (play.hsPct != null && play.hsPct >= 28)
-    return { text: "Kafa avcısı", tone: "gold", tip: `Kafa isabeti %${play.hsPct.toFixed(0)} (${scope}). Eşik: %28 ve üstü.` };
-  if (play.adr != null && play.adr >= 165)
-    return { text: "Yüksek hasar", tone: "orange", tip: `Round başına ${play.adr.toFixed(0)} hasar (${scope}). Eşik: 165 ve üstü.` };
-  if (play.fkRate >= 0.15)
-    return { text: "Öncü", tone: "teal", tip: `${play.rounds} round'un ${play.firstKills}'inde ilk kanı aldı (${scope}). Eşik: her 7 round'da 1.` };
-  if (play.fdRate >= 0.15)
-    return { text: "İlk ölen", tone: "neg", tip: `${play.rounds} round'un ${play.firstDeaths}'inde ilk ölen oldu (${scope}). Eşik: her 7 round'da 1.` };
-  if (play.hsPct != null && play.hsPct <= 12)
-    return { text: "Düşük HS", tone: "neg", tip: `Kafa isabeti %${play.hsPct.toFixed(0)} (${scope}). Eşik: %12 ve altı.` };
+  if (play.hsPct != null && play.hsPct >= th.hs)
+    return { text: "Kafa avcısı", tone: "gold", tip: `Kafa isabeti %${play.hsPct.toFixed(0)} (${scope}). Eşik: %${th.hs} ve üstü.` };
+  if (play.adr != null && play.adr >= th.adr)
+    return { text: "Yüksek hasar", tone: "orange", tip: `Round başına ${play.adr.toFixed(0)} hasar (${scope}). Eşik: ${th.adr} ve üstü.` };
+  if (play.fkRate * 100 >= th.fk)
+    return { text: "Öncü", tone: "teal", tip: `${play.rounds} round'un ${play.firstKills}'inde ilk kanı aldı (${scope}). Eşik: %${th.fk} ve üstü.` };
+  if (play.fdRate * 100 >= th.fd)
+    return { text: "İlk ölen", tone: "neg", tip: `${play.rounds} round'un ${play.firstDeaths}'inde ilk ölen oldu (${scope}). Eşik: %${th.fd} ve üstü.` };
+  if (play.hsPct != null && play.hsPct <= th.lowHs)
+    return { text: "Düşük HS", tone: "neg", tip: `Kafa isabeti %${play.hsPct.toFixed(0)} (${scope}). Eşik: %${th.lowHs} ve altı.` };
   return null;
+}
+
+/* Smurf işaretleri: yüzde yok, yalnızca ölçülen gerçekler. Her işaret tek kısa cümledir.
+   `strong` işaretler tek başına satırda rozet çıkarır; zayıf işaret rozet için yalnız yetmez. */
+export interface SmurfSign { text: string; strong: boolean }
+
+export function smurfSigns(p: Player, th: Thresholds, rankName: string): SmurfSign[] {
+  const out: SmurfSign[] = [];
+  const high = p.rank.current >= 12; // Altın 1 ve üstü
+  if (p.level != null && p.level < th.smurfLevel && high) out.push({ text: `Seviye ${p.level}, ${rankName}`, strong: true });
+  const { wins, games } = p.rank;
+  if (games >= 10 && (100 * wins) / games > th.smurfWr) out.push({ text: `Kazanma %${Math.round((100 * wins) / games)} (${games} maç)`, strong: false });
+  else if (games > 0 && games < 10 && p.rank.current >= 15) out.push({ text: `Bu act ${games} maç, ${rankName}`, strong: false });
+  return out;
+}
+
+/* Satırda ve takım özetinde sayılma koşulu: en az bir güçlü işaret ya da iki işaret birden. */
+export const smurfShown = (s: SmurfSign[]) => s.some((x) => x.strong) || s.length >= 2;
+
+export function smurfBadge(signs: SmurfSign[]): Badge | null {
+  if (!smurfShown(signs)) return null;
+  return { text: `Smurf işareti${signs.length > 1 ? ` ×${signs.length}` : ""}`, tone: "violet", tip: signs.map((x) => x.text).join(" · ") };
 }
 
 /* Form / tilt: art arda sonuçlar ve son rekabet maçlarındaki RR toplamı. */
@@ -86,7 +109,7 @@ export function formBadge(p: Player): Badge | null {
 /* Son 24 saatteki maç sayısı: uzun seansları gösterir. Satırda yalnızca 8 ve üstünde rozet çıkar. */
 export function activityBadge(p: Player): Badge | null {
   if (p.played24h < 8) return null;
-  return { text: `24 saatte ${p.played24h}${p.played24hCapped ? "+" : ""} maç`, tone: "violet", tip: "Son 24 saatte oynadığı maç sayısı (son 15 maç içinden). Uzun seans: yorgun ya da tilt'te olabilir." };
+  return { text: `24 saatte ${p.played24h}${p.played24hCapped ? "+" : ""} maç`, tone: "gray", tip: "Son 24 saatte oynadığı maç sayısı (son 15 maç içinden). Uzun seans: yorgun ya da tilt'te olabilir." };
 }
 
 export function ago(ms?: number | null): string {

@@ -184,6 +184,16 @@ pub struct Store {
     pub wallet: Option<Wallet>,
 }
 
+/// Bir özelliğin son durumu. `state`: "ok", "warn", "fail" ya da "idle" (henüz denenmedi).
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct HealthEntry {
+    pub id: String,
+    pub label: String,
+    pub state: String,
+    pub detail: String,
+}
+
 #[derive(Serialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Wallet {

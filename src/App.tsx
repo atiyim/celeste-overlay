@@ -11,6 +11,7 @@ import { mockSnapshot } from "./mock";
 import { recordSeen, setLabel, setTag, type Seen } from "./seen";
 import type { Snapshot } from "./types";
 import { PlayerRow } from "./PlayerRow";
+import { smurfShown, smurfSigns } from "./playstyle";
 import { LoadoutPanel } from "./LoadoutPanel";
 import { QuickChat } from "./QuickChat";
 import { Settings } from "./Settings";
@@ -307,7 +308,7 @@ export function App() {
     return {
       tier: avgTier ? assets?.tiers.get(avgTier) : undefined,
       kd: kds.length ? kds.reduce((a, p) => a + (p.kd ?? 0), 0) / kds.length : null,
-      smurfs: list.filter((p) => p.smurf >= 60).length,
+      smurfs: list.filter((p) => smurfShown(smurfSigns(p, theme.th, assets?.tiers.get(p.rank.current)?.name ?? ""))).length,
     };
   };
 
@@ -362,7 +363,7 @@ export function App() {
 
       {!collapsed && (
         view === "settings" ? (
-          <Settings updater={updater} theme={theme} onChange={setTheme} onClose={() => setView("roster")} />
+          <Settings updater={updater} theme={theme} onChange={setTheme} onToast={showToast} onClose={() => setView("roster")} />
         ) : view === "report" ? (
           assets ? <ReportPanel assets={assets} matchId={lastMatch} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "store" ? (
@@ -377,6 +378,7 @@ export function App() {
           <LoadoutPanel
             p={active}
             lobby={snap.players}
+            th={theme.th}
             assets={assets}
             entry={seen[active.puuid]}
             onLabel={(l) => setSeen(setLabel(active.puuid, l))}
@@ -409,8 +411,8 @@ export function App() {
                     {(() => {
                       const t = teamStats(list as typeof allies);
                       return (
-                        <span className="cmp" title="Ortalama rank, son 5 maçın ortalama K/D'si ve olası smurf sayısı">
-                          Ortalama {t.tier?.name ?? "–"} · K/D {t.kd != null ? t.kd.toFixed(2) : "–"} · Olası smurf {t.smurfs}
+                        <span className="cmp" title="Ortalama rank, son 5 maçın ortalama K/D'si ve smurf işareti taşıyan oyuncu sayısı">
+                          Ortalama {t.tier?.name ?? "–"} · K/D {t.kd != null ? t.kd.toFixed(2) : "–"} · Smurf işareti {t.smurfs}
                         </span>
                       );
                     })()}
@@ -423,6 +425,7 @@ export function App() {
                       assets={assets}
                       entry={seen[p.puuid]}
                       cols={theme.cols}
+                      th={theme.th}
                       template={template}
                       onOpen={() => setSelected(p.puuid)}
                       onCopy={copyName}
@@ -442,7 +445,7 @@ export function App() {
           </>
         )
       )}
-      {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} />}
+      {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} />}
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
   );

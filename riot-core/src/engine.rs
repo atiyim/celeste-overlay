@@ -209,6 +209,7 @@ struct State {
     debug_match: Option<String>,
     debug_party: Option<String>,
     debug_pre: Option<String>,
+    health: HashMap<&'static str, (&'static str, String)>,
     session: Option<Session>,
     mmr: HashMap<String, (Instant, Mmr)>,
     history: HashMap<String, (Instant, Vec<(String, String)>)>, // (maç kimliği, kuyruk)
@@ -376,6 +377,8 @@ impl Engine {
                 None => "pregame loadouts yanıtı alınamadı".to_string(),
             };
             write_text("pregame-loadouts-shape.txt", &text);
+            let h = if loadouts.is_some() { ("ok", "Kaplamalar ajan seçiminde alındı".to_string()) } else { ("fail", "Ajan seçiminde kaplama verisi gelmedi".to_string()) };
+            st.health.insert("pregame", h);
         }
         if let Some(l) = loadouts.as_ref() {
             for p in players.iter_mut() {
@@ -597,6 +600,16 @@ impl Engine {
 
     /// Bitmiş bir maçın tam raporu (10 oyuncunun hepsi). Maç kaydı hazır değilse hata döner; arayüz tekrar dener.
     pub async fn match_report(&self, match_id: &str) -> Result<MatchReport, String> {
+        let r = self.match_report_inner(match_id).await;
+        let mut st = self.state.lock().await;
+        match &r {
+            Ok(_) => st.health.insert("report", ("ok", "Maç raporu alındı".to_string())),
+            Err(e) => st.health.insert("report", ("fail", scrub(e))),
+        };
+        r
+    }
+
+    async fn match_report_inner(&self, match_id: &str) -> Result<MatchReport, String> {
         let mut st = self.state.lock().await;
         let s = self.session(&mut st).await.map_err(|e| friendly(&e))?;
         let v = match self.get(&s, &s.pd, &format!("/match-details/v1/matches/{match_id}")).await {
@@ -677,6 +690,16 @@ impl Engine {
 
     /// Oyuncunun Premier takımı (varsa). İsmini gizleyen oyuncular için sorgu YAPILMAZ.
     pub async fn premier(&self, puuid: &str) -> Result<Option<PremierTeam>, String> {
+        let r = self.premier_inner(puuid).await;
+        let mut st = self.state.lock().await;
+        match &r {
+            Ok(_) => st.health.insert("premier", ("ok", "Premier bilgisi alındı".to_string())),
+            Err(e) => st.health.insert("premier", ("fail", scrub(e))),
+        };
+        r
+    }
+
+    async fn premier_inner(&self, puuid: &str) -> Result<Option<PremierTeam>, String> {
         let mut st = self.state.lock().await;
         if st.hidden_now.contains(puuid) {
             return Ok(None);
@@ -736,6 +759,14 @@ impl Engine {
     }
 
     pub async fn store(&self) -> Result<Store, String> {
+        let r = self.store_inner().await;
+        if let Err(e) = &r {
+            self.state.lock().await.health.insert("store", ("fail", scrub(e)));
+        }
+        r
+    }
+
+    async fn store_inner(&self) -> Result<Store, String> {
         let mut st = self.state.lock().await;
         let s = self.session(&mut st).await.map_err(|e| {
             st.session = None;
@@ -766,6 +797,7 @@ impl Engine {
         };
         let mut store = parse_store(&v);
         store.wallet = self.wallet(&s).await;
+        st.health.insert("store", ("ok", format!("{} günlük teklif", store.daily.len())));
         Ok(store)
     }
 
@@ -779,6 +811,26 @@ impl Engine {
 
     /// Hesap özeti: cüzdan, görevler, battle pass ilerlemesi ve sahip olunan öğeler.
     pub async fn account(&self) -> Result<Account, String> {
+        let r = self.account_inner().await;
+        let mut st = self.state.lock().await;
+        match &r {
+            Err(e) => {
+                st.health.insert("account", ("fail", scrub(e)));
+            }
+            Ok(a) => {
+                let (w, c, o) = (a.wallet.is_some(), !a.contracts.is_empty(), !a.owned.skins.is_empty());
+                let missing: Vec<&str> = [(!w, "cüzdan"), (!c, "görevler"), (!o, "envanter")].iter().filter(|x| x.0).map(|x| x.1).collect();
+                if missing.is_empty() {
+                    st.health.insert("account", ("ok", "Cüzdan, görevler ve envanter alındı".to_string()));
+                } else {
+                    st.health.insert("account", ("warn", format!("Alınamayan: {}", missing.join(", "))));
+                }
+            }
+        }
+        r
+    }
+
+    async fn account_inner(&self) -> Result<Account, String> {
         let mut st = self.state.lock().await;
         let s = self.session(&mut st).await.map_err(|e| {
             st.session = None;
@@ -1141,6 +1193,79 @@ fn smurf_score(level: Option<u32>, rank: &Rank) -> u8 {
     score.clamp(0, 100) as u8
 }
 
+/// Kişisel veri sızmasın diye metindeki oyuncu/maç kimliklerini (UUID) `<id>` ile değiştirir.
+fn scrub(s: &str) -> String {
+    let mut out = String::new();
+    let mut run = String::new();
+    let flush = |run: &mut String, out: &mut String| {
+        let hex = run.chars().all(|c| c.is_ascii_hexdigit() || c == '-');
+        let looks_id = (run.len() == 36 && run.matches('-').count() == 4) || (run.len() >= 32 && hex);
+        out.push_str(if looks_id { "<id>" } else { run.as_str() });
+        run.clear();
+    };
+    for c in s.chars() {
+        if c.is_ascii_alphanumeric() || c == '-' {
+            run.push(c);
+        } else {
+            flush(&mut run, &mut out);
+            out.push(c);
+        }
+    }
+    flush(&mut run, &mut out);
+    out
+}
+
+const HEALTH: [(&str, &str); 6] = [
+    ("store", "Mağaza"),
+    ("account", "Hesabım"),
+    ("report", "Maç raporu"),
+    ("party", "Canlı parti"),
+    ("pregame", "Ajan seçiminde kaplamalar"),
+    ("premier", "Premier"),
+];
+
+fn debug_dir() -> std::path::PathBuf {
+    std::env::var_os("LOCALAPPDATA")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir)
+        .join("valorant-overlay-debug")
+}
+
+impl Engine {
+    /// Özelliklerin son durumu; denenmeyenler "idle" görünür.
+    pub async fn health(&self) -> Vec<HealthEntry> {
+        let st = self.state.lock().await;
+        HEALTH
+            .iter()
+            .map(|(id, label)| {
+                let (state, detail) = st.health.get(id).cloned().unwrap_or(("idle", "Henüz denenmedi".to_string()));
+                HealthEntry { id: id.to_string(), label: label.to_string(), state: state.to_string(), detail }
+            })
+            .collect()
+    }
+
+    /// Paylaşılabilir tanı metni: özellik durumları ve yapı dosyaları. İsim, kimlik ve token içermez.
+    pub async fn diagnostics(&self) -> String {
+        let mut out = String::from("Özellik durumu\n");
+        for h in self.health().await {
+            let mark = match h.state.as_str() {
+                "ok" => "OK",
+                "warn" => "KISMEN",
+                "fail" => "HATA",
+                _ => "-",
+            };
+            out.push_str(&format!("  {mark} {}: {}\n", h.label, h.detail));
+        }
+        for f in ["party-check.txt", "pregame-loadouts-shape.txt", "loadouts-shape.txt", "premier-player-shape.txt", "premier-roster-shape.txt"] {
+            if let Ok(t) = std::fs::read_to_string(debug_dir().join(f)) {
+                let t: String = t.chars().take(3000).collect();
+                out.push_str(&format!("\n[{f}]\n{}\n", scrub(&t)));
+            }
+        }
+        out
+    }
+}
+
 /// Maç kaydındaki parti kimliklerinden gerçek parti harfleri (A, B, ...). Solo oyuncuya harf verilmez.
 fn party_letters(players: &[Pd]) -> HashMap<String, String> {
     let mut order: Vec<&str> = Vec::new();
@@ -1230,6 +1355,18 @@ impl Engine {
                 }
             };
             write_text("party-check.txt", &text);
+            let h = match &live {
+                None => ("fail", "Riot Client sohbet listesi alınamadı".to_string()),
+                Some((_, map)) => {
+                    let found = players.iter().filter(|p| map.contains_key(&p.puuid)).count();
+                    if found >= n {
+                        ("ok", format!("{found}/{n} oyuncu için canlı parti verisi"))
+                    } else {
+                        ("warn", format!("{found}/{n} oyuncu için canlı parti verisi"))
+                    }
+                }
+            };
+            st.health.insert("party", h);
         }
 
         // 2) Geçmiş: aynı takımdaki iki oyuncunun son maçlarında ortak parti kimliği
