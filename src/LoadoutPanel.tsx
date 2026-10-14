@@ -17,6 +17,15 @@ const LAYOUT: [string, string][][] = [
   [["Sniper", "Keskin nişancılar"], ["Heavy", "Makineli tüfekler"]],
 ];
 
+/* Silah sırası oyun içi cephanelikle aynıdır (fiyata göre, ucuzdan pahalıya). Listede olmayan silah sona eklenir. */
+const ORDER = [
+  "classic", "shorty", "frenzy", "ghost", "bandit", "sheriff",
+  "stinger", "spectre", "bucky", "judge",
+  "bulldog", "guardian", "warden", "phantom", "vandal",
+  "marshal", "outlaw", "operator", "ares", "odin",
+];
+const rank = (name: string) => { const i = ORDER.indexOf(name.toLowerCase()); return i < 0 ? 99 : i; };
+
 function Tile({ w, p, a }: { w: WeaponInfo; p: Player; a: Assets }) {
   const slot = p.loadout.weapons.find((x) => lookup(x.weaponId) === w.id);
   const skin = resolveSkin(a, w, slot);
@@ -93,7 +102,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
     return () => { live = false; };
   }, [p.puuid, anonymous]);
 
-  const by = (cat: string) => assets.weapons.filter((w) => w.category === cat);
+  const by = (cat: string) => assets.weapons.filter((w) => w.category === cat).sort((a, b) => rank(a.name) - rank(b.name));
   const card = assets.cards.get(lookup(p.cardId));
   const title = assets.titles.get(lookup(p.titleId));
   const cur = assets.tiers.get(p.rank.current);

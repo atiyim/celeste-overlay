@@ -24,6 +24,13 @@ jobs:
         with:
           workspaces: "src-tauri -> target"
       - run: pnpm install --no-frozen-lockfile
+      - name: Release oluştur
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "${{ github.ref_name }}" >/dev/null 2>&1 || \
+          gh release create "${{ github.ref_name }}" --title "Celeste Overlay ${{ github.ref_name }}" --notes "Yenilikler için sürüm notlarına bak."
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
