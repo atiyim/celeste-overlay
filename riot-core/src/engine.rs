@@ -1,0 +1,898 @@
+use crate::model::*;
+use crate::session::{fault, fault_of, friendly, Fault, Session};
+use anyhow::{anyhow, bail, Result};
+use futures::future::join_all;
+use serde_json::Value;
+use std::collections::{HashMap, HashSet};
+use std::time::{Duration, Instant};
+use tokio::sync::Mutex;
+
+// Loadout soket kimlikleri (Riot istemcisinin kullandığı sabitler).
+const SOCKET_SKIN: &str = "bcef87d6-209b-46c6-8b19-fbe40bd95abc";
+const SOCKET_LEVEL: &str = "e7c63390-eda7-46e0-bb7a-a6abdacd2433";
+const SOCKET_CHROMA: &str = "3ad1b2b2-acdb-4524-852f-954a76ddae0a";
+const SOCKET_CHARM: &str = "dd3bf334-87f3-40bd-b043-682a57a8dc3a";
+const SOCKET_CHARM_LEVEL: &str = "77258665-71d1-4623-bc72-44db9bd5b3b3";
+
+const CACHE_TTL: Duration = Duration::from_secs(600);
+
+#[derive(Clone, Default)]
+struct Mmr {
+    current: u32,
+    peak: u32,
+    rr: u32,
+    wins: u32,
+    games: u32,
+    total_wins: u32,
+    total_games: u32,
+}
+
+/// Round kayıtlarından çıkarılan dövüş verisi (tek oyuncu, tek maç).
+#[derive(Default, Clone)]
+struct Combat {
+    hs: u32,
+    body: u32,
+    leg: u32,
+    damage: u32,
+    fk: u32,
+    fd: u32,
+    wkills: HashMap<String, u32>,
+    bought: HashMap<String, u32>,
+}
+
+fn counts(m: &HashMap<String, u32>) -> Vec<WeaponCount> {
+    let mut v: Vec<WeaponCount> = m.iter().map(|(k, c)| WeaponCount { weapon_id: k.clone(), count: *c }).collect();
+    v.sort_by(|a, b| b.count.cmp(&a.count).then(a.weapon_id.cmp(&b.weapon_id)));
+    v.truncate(4);
+    v
+}
+
+fn parse_combat(v: &Value) -> HashMap<String, Combat> {
+    let n = |x: &Value| x.as_u64().unwrap_or(0) as u32;
+    let mut cb: HashMap<String, Combat> = HashMap::new();
+    for r in v["roundResults"].as_array().into_iter().flatten() {
+        let rn = r["roundNum"].as_u64().unwrap_or(0);
+        let mut kills: Vec<&Value> = Vec::new();
+        for ps in r["playerStats"].as_array().into_iter().flatten() {
+            let Some(sub) = ps["subject"].as_str() else { continue };
+            let c = cb.entry(sub.to_string()).or_default();
+            for d in ps["damage"].as_array().into_iter().flatten() {
+                c.hs += n(&d["headshots"]);
+                c.body += n(&d["bodyshots"]);
+                c.leg += n(&d["legshots"]);
+                c.damage += n(&d["damage"]);
+            }
+            // Tabanca round'larında (ilk ve 13.) herkes aynı şeyi alır; alışkanlık sayımına katılmaz.
+            if rn != 0 && rn != 12 {
+                if let Some(w) = ps["economy"]["weapon"].as_str().filter(|w| is_uuid(w)) {
+                    *c.bought.entry(w.to_lowercase()).or_default() += 1;
+                }
+            }
+            kills.extend(ps["kills"].as_array().into_iter().flatten());
+        }
+        if let Some(first) = kills.iter().min_by_key(|k| k["roundTime"].as_u64().unwrap_or(u64::MAX)) {
+            if let Some(a) = first["killer"].as_str() {
+                cb.entry(a.to_string()).or_default().fk += 1;
+            }
+            if let Some(a) = first["victim"].as_str() {
+                cb.entry(a.to_string()).or_default().fd += 1;
+            }
+        }
+        for k in &kills {
+            let fd = &k["finishingDamage"];
+            if fd["damageType"].as_str() == Some("Weapon") {
+                if let (Some(killer), Some(item)) = (k["killer"].as_str(), fd["damageItem"].as_str().filter(|w| is_uuid(w))) {
+                    *cb.entry(killer.to_string()).or_default().wkills.entry(item.to_lowercase()).or_default() += 1;
+                }
+            }
+        }
+    }
+    cb
+}
+
+/// Bir maçtaki tek oyuncunun özeti.
+#[derive(Default, Clone)]
+struct Pd {
+    puuid: String,
+    team: String,
+    agent: String,
+    kills: u32,
+    deaths: u32,
+    assists: u32,
+    score: u32,
+    rounds: u32,
+    combat: Combat,
+}
+
+/// Bir maçın özeti: harita, oyuncular ve takımların galibiyeti.
+#[derive(Default, Clone)]
+struct Detail {
+    map_id: String,
+    started: u64,
+    players: Vec<Pd>,
+    won: HashMap<String, bool>,
+}
+
+impl Detail {
+    fn entry_for(&self, puuid: &str, queue: &str) -> Option<FormEntry> {
+        let p = self.players.iter().find(|p| p.puuid == puuid)?;
+        Some(FormEntry {
+            map_id: self.map_id.clone(),
+            agent_id: p.agent.clone(),
+            queue: queue.to_string(),
+            won: self.won.get(&p.team).copied().unwrap_or(false),
+            kills: p.kills,
+            deaths: p.deaths,
+            assists: p.assists,
+            rounds: p.rounds,
+            headshots: p.combat.hs,
+            bodyshots: p.combat.body,
+            legshots: p.combat.leg,
+            damage: p.combat.damage,
+            first_kills: p.combat.fk,
+            first_deaths: p.combat.fd,
+            weapon_kills: counts(&p.combat.wkills),
+            bought: counts(&p.combat.bought),
+        })
+    }
+}
+
+fn parse_detail(v: &Value) -> Detail {
+    let n = |x: &Value| x.as_u64().unwrap_or(0) as u32;
+    let mut combat = parse_combat(v);
+    Detail {
+        map_id: v["matchInfo"]["mapId"].as_str().unwrap_or("").to_string(),
+        started: v["matchInfo"]["gameStartMillis"].as_u64().unwrap_or(0),
+        players: v["players"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|p| {
+                Some(Pd {
+                    puuid: p["subject"].as_str()?.to_string(),
+                    team: p["teamId"].as_str().unwrap_or("").to_string(),
+                    agent: p["characterId"].as_str().unwrap_or("").to_string(),
+                    kills: n(&p["stats"]["kills"]),
+                    deaths: n(&p["stats"]["deaths"]),
+                    assists: n(&p["stats"]["assists"]),
+                    score: n(&p["stats"]["score"]),
+                    rounds: n(&p["stats"]["roundsPlayed"]),
+                    combat: combat.remove(p["subject"].as_str()?).unwrap_or_default(),
+                })
+            })
+            .collect(),
+        won: v["teams"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|t| Some((t["teamId"].as_str()?.to_string(), t["won"].as_bool().unwrap_or(false))))
+            .collect(),
+    }
+}
+
+// Son maç özeti için sayılan kuyruklar (deathmatch gibi modlar K/D'yi bozar).
+const FORM_QUEUES: [&str; 4] = ["competitive", "unrated", "swiftplay", "premier"];
+const FORM_N: usize = 5;
+const DETAIL_BUDGET: usize = 10; // her turda en fazla bu kadar maç ayrıntısı çekilir
+
+fn form_ids(h: &[(String, String)]) -> Vec<(String, String)> {
+    h.iter().filter(|(_, q)| FORM_QUEUES.contains(&q.as_str())).take(FORM_N).cloned().collect()
+}
+
+fn to_rank(m: &Mmr) -> Rank {
+    Rank {
+        current: m.current,
+        peak: m.peak.max(m.current),
+        rr: m.rr,
+        wins: m.wins,
+        games: m.games,
+        total_wins: m.total_wins,
+        total_games: m.total_games,
+    }
+}
+
+#[derive(Default)]
+struct State {
+    debug_match: Option<String>,
+    session: Option<Session>,
+    mmr: HashMap<String, (Instant, Mmr)>,
+    history: HashMap<String, (Instant, Vec<(String, String)>)>, // (maç kimliği, kuyruk)
+    trend: HashMap<String, (Instant, Vec<i32>)>,
+    details: HashMap<String, Detail>,
+    block_until: Option<Instant>,
+    names: HashMap<String, String>,
+}
+
+pub struct Engine {
+    http: reqwest::Client,
+    state: Mutex<State>,
+}
+
+impl Default for Engine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Engine {
+    pub fn new() -> Self {
+        Self { http: reqwest::Client::new(), state: Mutex::new(State::default()) }
+    }
+
+    /// Arayüzün periyodik olarak çağırdığı tek giriş noktası.
+    pub async fn snapshot(&self) -> Snapshot {
+        let mut st = self.state.lock().await;
+        match self.run(&mut st).await {
+            Ok(s) => s,
+            Err(e) => {
+                st.session = None; // süresi dolmuş token / kapanmış istemci: bir sonraki turda yeniden aç
+                let f = fault_of(&e);
+                Snapshot {
+                    phase: Phase::Offline,
+                    status: Status {
+                        riot_client: f != Fault::NoRiotClient,
+                        // Bu iki durum, Valorant'ın çalıştığı doğrulandıktan sonra ortaya çıkar.
+                        valorant: matches!(f, Fault::Rejected | Fault::Other),
+                        data: false,
+                        fault: Some(f.code().to_string()),
+                        detail: Some(e.to_string()),
+                    },
+                    error: Some(friendly(&e)),
+                    ..Default::default()
+                }
+            }
+        }
+    }
+
+    async fn session(&self, st: &mut State) -> Result<Session> {
+        if st.session.is_none() {
+            st.session = Some(Session::open().await?);
+        }
+        st.session.clone().ok_or_else(|| anyhow!("oturum yok"))
+    }
+
+    async fn run(&self, st: &mut State) -> Result<Snapshot> {
+        let s = self.session(st).await?;
+
+        // Valorant kapalıysa oyun sunucularına hiç sorma; net bir durum döndür.
+        if s.valorant_running().await == Some(false) {
+            return Ok(Snapshot {
+                phase: Phase::Offline,
+                status: Status { riot_client: true, valorant: false, data: false, fault: None, detail: None },
+                ..Default::default()
+            });
+        }
+
+        let core = self.get(&s, &s.glz, &format!("/core-game/v1/players/{}", s.puuid)).await?;
+        if let Some(mid) = core.as_ref().and_then(|v| v["MatchID"].as_str()) {
+            return self.ingame(st, &s, mid).await;
+        }
+        let pre = self.get(&s, &s.glz, &format!("/pregame/v1/players/{}", s.puuid)).await?;
+        if let Some(mid) = pre.as_ref().and_then(|v| v["MatchID"].as_str()) {
+            return self.pregame(st, &s, mid).await;
+        }
+        Ok(Snapshot { phase: Phase::Menu, status: Status::ok(), ..Default::default() })
+    }
+
+    /// 200 → Some, 404 → None (o aşamada değiliz), diğerleri hata (token yenilenir).
+    async fn get(&self, s: &Session, base: &str, path: &str) -> Result<Option<Value>> {
+        let r = self.http.get(format!("{base}{path}")).headers(s.headers()).send().await?;
+        let code = r.status().as_u16();
+        match code {
+            200 => Ok(Some(r.json().await?)),
+            404 => Ok(None),
+            400 | 401 | 403 => Err(fault(Fault::Rejected, format!("HTTP {code} ({path})"))),
+            c => bail!("HTTP {c} ({path})"),
+        }
+    }
+
+    async fn ingame(&self, st: &mut State, s: &Session, mid: &str) -> Result<Snapshot> {
+        let m = self
+            .get(s, &s.glz, &format!("/core-game/v1/matches/{mid}"))
+            .await?
+            .ok_or_else(|| anyhow!("maç bilgisi alınamadı"))?;
+        // Donatı alınamazsa liste yine de görünsün (hata tüm tabloyu düşürmesin).
+        let loadouts = self.get(s, &s.glz, &format!("/core-game/v1/matches/{mid}/loadouts")).await.unwrap_or(None);
+
+        if st.debug_match.as_deref() != Some(mid) {
+            st.debug_match = Some(mid.to_string());
+            match loadouts.as_ref() {
+                Some(l) => {
+                    write_text("loadouts-shape.txt", &shape(l, 7)); // yalnızca yapı, değer yok
+                    if let Some(e) = loadout_entries(l).iter().find(|e| entry_subject(e) == Some(s.puuid.as_str())) {
+                        write_debug("last-loadout.json", e); // yalnızca kendi donatın
+                    }
+                }
+                None => write_text("loadouts-shape.txt", "loadouts yanıtı alınamadı"),
+            }
+        }
+
+        let mut players = Vec::new();
+        let mut season = String::new();
+        for v in m["Players"].as_array().into_iter().flatten() {
+            let mut p = basic_player(v, v["TeamID"].as_str().unwrap_or(""), &s.puuid);
+            if season.is_empty() {
+                season = v["SeasonID"].as_str().unwrap_or("").to_string();
+            }
+            if let Some(l) = loadouts.as_ref() {
+                if let Some(e) = loadout_entries(l).iter().find(|e| entry_subject(e) == Some(p.puuid.as_str())) {
+                    p.loadout = parse_loadout(loadout_node(e));
+                    collect_uuids(e, &mut p.loadout.all_ids);
+                }
+            }
+            players.push(p);
+        }
+        self.enrich(st, s, &mut players, &season).await;
+        Ok(Snapshot {
+            phase: Phase::Ingame,
+            match_id: Some(mid.to_string()),
+            map_id: m["MapID"].as_str().map(String::from),
+            queue_id: m["MatchmakingData"]["QueueID"].as_str().map(String::from),
+            players,
+            status: Status::ok(),
+            error: None,
+        })
+    }
+
+    async fn pregame(&self, st: &mut State, s: &Session, mid: &str) -> Result<Snapshot> {
+        let m = self
+            .get(s, &s.glz, &format!("/pregame/v1/matches/{mid}"))
+            .await?
+            .ok_or_else(|| anyhow!("ajan seçimi bilgisi alınamadı"))?;
+        let team = m["AllyTeam"]["TeamID"].as_str().unwrap_or("").to_string();
+        let mut players: Vec<Player> = m["AllyTeam"]["Players"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|v| basic_player(v, &team, &s.puuid))
+            .collect();
+        self.enrich(st, s, &mut players, "").await;
+        Ok(Snapshot {
+            phase: Phase::Pregame,
+            match_id: Some(mid.to_string()),
+            map_id: m["MapID"].as_str().map(String::from),
+            queue_id: m["QueueID"].as_str().map(String::from),
+            players,
+            status: Status::ok(),
+            error: None,
+        })
+    }
+
+    /// İsim, rank ve parti bilgisini ekler. Hata verirse oyuncu satırı eksik kalır, tablo bozulmaz.
+    async fn enrich(&self, st: &mut State, s: &Session, players: &mut [Player], season: &str) {
+        // İsimler: gizli isimli oyuncular için isim sorgusu YAPILMAZ.
+        let need: Vec<String> = players
+            .iter()
+            .filter(|p| (!p.hidden_name || p.is_self) && !st.names.contains_key(&p.puuid))
+            .map(|p| p.puuid.clone())
+            .collect();
+        if !need.is_empty() {
+            if let Ok(r) = self.http.put(format!("{}/name-service/v2/players", s.pd)).headers(s.headers()).json(&need).send().await {
+                if let Ok(arr) = r.json::<Vec<Value>>().await {
+                    for e in arr {
+                        if let (Some(id), Some(n), Some(t)) = (e["Subject"].as_str(), e["GameName"].as_str(), e["TagLine"].as_str()) {
+                            st.names.insert(id.to_string(), format!("{n}#{t}"));
+                        }
+                    }
+                }
+            }
+        }
+
+        // Rank ve maç geçmişi (önbellekli, paralel).
+        let now = Instant::now();
+        let stale_mmr: Vec<String> = players
+            .iter()
+            .filter(|p| st.mmr.get(&p.puuid).map_or(true, |(t, _)| now.duration_since(*t) > CACHE_TTL))
+            .map(|p| p.puuid.clone())
+            .collect();
+        for (id, m) in join_all(stale_mmr.iter().map(|id| async move { (id.clone(), self.fetch_mmr(s, id, season).await) })).await {
+            if let Some(m) = m {
+                st.mmr.insert(id, (Instant::now(), m));
+            }
+        }
+        let stale_hist: Vec<String> = players
+            .iter()
+            .filter(|p| st.history.get(&p.puuid).map_or(true, |(t, _)| now.duration_since(*t) > CACHE_TTL))
+            .map(|p| p.puuid.clone())
+            .collect();
+        for (id, h) in join_all(stale_hist.iter().map(|id| async move { (id.clone(), self.fetch_history(s, id, 15).await) })).await {
+            if let Some(h) = h {
+                st.history.insert(id, (Instant::now(), h));
+            }
+        }
+
+        // RR eğilimi (son rekabet maçlarının RR değişimi).
+        let stale_trend: Vec<String> = players
+            .iter()
+            .filter(|p| st.trend.get(&p.puuid).map_or(true, |(t, _)| now.duration_since(*t) > CACHE_TTL))
+            .map(|p| p.puuid.clone())
+            .collect();
+        for (id, t) in join_all(stale_trend.iter().map(|id| async move { (id.clone(), self.fetch_trend(s, id).await) })).await {
+            if let Some(t) = t {
+                st.trend.insert(id, (Instant::now(), t));
+            }
+        }
+
+        // Son maç ayrıntıları: her turda sınırlı sayıda çekilir, hız sınırına (429) takılırsak bir süre durulur.
+        if st.details.len() > 600 {
+            st.details.clear();
+        }
+        if st.block_until.map_or(true, |t| Instant::now() >= t) {
+            let mut want: Vec<String> = Vec::new();
+            for p in players.iter() {
+                if let Some((_, h)) = st.history.get(&p.puuid) {
+                    for (id, _) in form_ids(h) {
+                        if !st.details.contains_key(&id) && !want.contains(&id) {
+                            want.push(id);
+                        }
+                    }
+                }
+            }
+            want.truncate(DETAIL_BUDGET);
+            for (id, r) in join_all(want.iter().map(|id| async move { (id.clone(), self.fetch_detail(s, id).await) })).await {
+                match r {
+                    Ok(d) => {
+                        st.details.insert(id, d);
+                    }
+                    Err(e) => {
+                        if e.to_string().contains("429") {
+                            st.block_until = Some(Instant::now() + Duration::from_secs(15));
+                        }
+                    }
+                }
+            }
+        }
+
+        for p in players.iter_mut() {
+            p.name = st.names.get(&p.puuid).cloned();
+            if let Some((_, m)) = st.mmr.get(&p.puuid) {
+                p.rank = to_rank(m);
+            }
+            p.smurf = smurf_score(p.level, &p.rank);
+            p.rr_trend = st.trend.get(&p.puuid).map(|(_, t)| t.clone()).unwrap_or_default();
+            match st.history.get(&p.puuid) {
+                Some((_, h)) => {
+                    for (id, q) in form_ids(h) {
+                        match st.details.get(&id) {
+                            Some(d) => {
+                                if let Some(e) = d.entry_for(&p.puuid, &q) {
+                                    p.form.push(e);
+                                }
+                            }
+                            None => p.form_loading = true,
+                        }
+                    }
+                    let (k, d): (u32, u32) = p.form.iter().fold((0, 0), |a, e| (a.0 + e.kills, a.1 + e.deaths));
+                    p.kd = if p.form.is_empty() { None } else { Some(k as f32 / d.max(1) as f32) };
+                }
+                None => p.form_loading = true,
+            }
+        }
+        assign_parties(players, &st.history);
+    }
+
+    async fn fetch_mmr(&self, s: &Session, puuid: &str, season: &str) -> Option<Mmr> {
+        let v = self.get(s, &s.pd, &format!("/mmr/v1/players/{puuid}")).await.ok()??;
+        let lcu = &v["LatestCompetitiveUpdate"];
+        let cur_season = lcu["SeasonID"].as_str().filter(|x| !x.is_empty()).unwrap_or(season).to_string();
+        let mut out = Mmr {
+            current: lcu["TierAfterUpdate"].as_u64().unwrap_or(0) as u32,
+            rr: lcu["RankedRatingAfterUpdate"].as_u64().unwrap_or(0) as u32,
+            ..Default::default()
+        };
+        if let Some(seasons) = v["QueueSkills"]["competitive"]["SeasonalInfoBySeasonID"].as_object() {
+            for (id, info) in seasons {
+                let wins_peak = info["WinsByTier"]
+                    .as_object()
+                    .map(|m| m.keys().filter_map(|k| k.parse::<u32>().ok()).max().unwrap_or(0))
+                    .unwrap_or(0);
+                let tier = info["CompetitiveTier"].as_u64().unwrap_or(0) as u32;
+                out.peak = out.peak.max(wins_peak).max(tier);
+                let w = info["NumberOfWins"].as_u64().unwrap_or(0) as u32;
+                let g = info["NumberOfGames"].as_u64().unwrap_or(0) as u32;
+                out.total_wins += w;
+                out.total_games += g;
+                if id.as_str() == cur_season {
+                    out.wins = w;
+                    out.games = g;
+                }
+            }
+        }
+        Some(out)
+    }
+
+    async fn fetch_trend(&self, s: &Session, puuid: &str) -> Option<Vec<i32>> {
+        let v = self
+            .get(s, &s.pd, &format!("/mmr/v1/players/{puuid}/competitiveupdates?startIndex=0&endIndex=5&queue=competitive"))
+            .await
+            .ok()??;
+        Some(v["Matches"].as_array()?.iter().filter_map(|m| m["RankedRatingEarned"].as_i64().map(|x| x as i32)).collect())
+    }
+
+    async fn fetch_history(&self, s: &Session, puuid: &str, n: usize) -> Option<Vec<(String, String)>> {
+        let v = self.get(s, &s.pd, &format!("/match-history/v1/history/{puuid}?startIndex=0&endIndex={n}")).await.ok()??;
+        Some(
+            v["History"]
+                .as_array()?
+                .iter()
+                .filter_map(|h| Some((h["MatchID"].as_str()?.to_string(), h["QueueID"].as_str().unwrap_or("").to_lowercase())))
+                .collect(),
+        )
+    }
+
+    async fn fetch_detail(&self, s: &Session, id: &str) -> Result<Detail> {
+        Ok(match self.get(s, &s.pd, &format!("/match-details/v1/matches/{id}")).await? {
+            Some(v) => parse_detail(&v),
+            None => Detail::default(), // maç bulunamadı: tekrar sorma
+        })
+    }
+
+    /// Kendi mağazan ve gece mağazan. Valorant'ın açık olması gerekmez; Riot Client açık ve giriş yapılmış olmalı.
+    pub async fn store(&self) -> Result<Store, String> {
+        let mut st = self.state.lock().await;
+        let s = self.session(&mut st).await.map_err(|e| {
+            st.session = None;
+            friendly(&e)
+        })?;
+        let r = self
+            .http
+            .post(format!("{}/store/v3/storefront/{}", s.pd, s.puuid))
+            .headers(s.headers())
+            .json(&serde_json::json!({}))
+            .send()
+            .await;
+        let v: Value = match r {
+            Ok(r) if r.status().is_success() => r.json().await.map_err(|e| format!("Mağaza yanıtı okunamadı: {e}"))?,
+            Ok(r) => {
+                let c = r.status().as_u16();
+                if matches!(c, 400 | 401 | 403) {
+                    st.session = None;
+                }
+                // Eski uç nokta (fiyatsız) ile bir kez daha dene.
+                match self.get(&s, &s.pd, &format!("/store/v2/storefront/{}", s.puuid)).await {
+                    Ok(Some(v)) => v,
+                    Ok(None) => return Err(format!("Mağaza bilgisi bulunamadı (HTTP {c}).")),
+                    Err(e) => return Err(format!("Mağaza alınamadı (HTTP {c}). {}", friendly(&e))),
+                }
+            }
+            Err(e) => return Err(format!("Mağaza alınamadı: {e}")),
+        };
+        Ok(parse_store(&v))
+    }
+
+    /// Kendi son maçların: harita, ajan, K/D/A, ACS ve (rekabette) RR değişimi.
+    pub async fn my_stats(&self) -> Result<MyStats, String> {
+        let mut st = self.state.lock().await;
+        let s = self.session(&mut st).await.map_err(|e| {
+            st.session = None;
+            friendly(&e)
+        })?;
+        let hist = match self.fetch_history(&s, &s.puuid, 25).await {
+            Some(h) => h,
+            None => self.fetch_history(&s, &s.puuid, 15).await.ok_or_else(|| "Maç geçmişi alınamadı.".to_string())?,
+        };
+        let ids: Vec<(String, String)> =
+            hist.into_iter().filter(|(_, q)| FORM_QUEUES.contains(&q.as_str())).take(20).collect();
+
+        // Eksik maç ayrıntılarını 5'erli gruplarla çek; hız sınırına takılırsak elimizdekiyle devam et.
+        let want: Vec<String> = ids.iter().filter(|(id, _)| !st.details.contains_key(id)).map(|(id, _)| id.clone()).collect();
+        let sr = &s;
+        'outer: for chunk in want.chunks(5) {
+            for (id, r) in join_all(chunk.iter().map(|id| async move { (id.clone(), self.fetch_detail(sr, id).await) })).await {
+                match r {
+                    Ok(d) => {
+                        st.details.insert(id, d);
+                    }
+                    Err(e) => {
+                        if e.to_string().contains("429") {
+                            break 'outer;
+                        }
+                    }
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(250)).await;
+        }
+
+        // Rekabet RR değişimi
+        let mut rr: HashMap<String, (i32, u32)> = HashMap::new();
+        if let Ok(Some(v)) = self
+            .get(&s, &s.pd, &format!("/mmr/v1/players/{}/competitiveupdates?startIndex=0&endIndex=25&queue=competitive", s.puuid))
+            .await
+        {
+            for m in v["Matches"].as_array().into_iter().flatten() {
+                if let Some(id) = m["MatchID"].as_str() {
+                    rr.insert(
+                        id.to_string(),
+                        (m["RankedRatingEarned"].as_i64().unwrap_or(0) as i32, m["TierAfterUpdate"].as_u64().unwrap_or(0) as u32),
+                    );
+                }
+            }
+        }
+
+        let rank = self.fetch_mmr(&s, &s.puuid, "").await.map(|m| to_rank(&m)).unwrap_or_default();
+        let mut matches = Vec::new();
+        for (id, q) in &ids {
+            let Some(d) = st.details.get(id) else { continue };
+            let Some(p) = d.players.iter().find(|p| p.puuid == s.puuid) else { continue };
+            matches.push(MyMatch {
+                match_id: id.clone(),
+                map_id: d.map_id.clone(),
+                agent_id: p.agent.clone(),
+                queue: q.clone(),
+                won: d.won.get(&p.team).copied().unwrap_or(false),
+                kills: p.kills,
+                deaths: p.deaths,
+                assists: p.assists,
+                acs: if p.rounds > 0 { p.score / p.rounds } else { 0 },
+                rr_delta: rr.get(id).map(|x| x.0),
+                tier_after: rr.get(id).map(|x| x.1),
+                started: d.started,
+            });
+        }
+        Ok(MyStats { matches, rank })
+    }
+}
+
+const VP: &str = "85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741";
+
+/// Fiyat haritasından (para birimi → miktar) VP miktarını alır.
+fn vp(cost: &Value) -> Option<u32> {
+    cost[VP]
+        .as_u64()
+        .or_else(|| cost.as_object().and_then(|m| m.values().find_map(|x| x.as_u64())))
+        .map(|x| x as u32)
+}
+
+fn first_item(rewards: &Value) -> Option<String> {
+    rewards.as_array()?.first()?["ItemID"].as_str().map(|x| x.to_lowercase())
+}
+
+/// Mağaza yanıtını (v3, eksikse v2 biçimi) sadeleştirir.
+fn parse_store(v: &Value) -> Store {
+    let layout = &v["SkinsPanelLayout"];
+    let mut daily = Vec::new();
+    if let Some(arr) = layout["SingleItemStoreOffers"].as_array() {
+        for o in arr {
+            if let Some(id) = first_item(&o["Rewards"]).or_else(|| o["OfferID"].as_str().map(|x| x.to_lowercase())) {
+                daily.push(StoreOffer { item_id: id, price: vp(&o["Cost"]), ..Default::default() });
+            }
+        }
+    } else if let Some(arr) = layout["SingleItemOffers"].as_array() {
+        for id in arr.iter().filter_map(|x| x.as_str()) {
+            daily.push(StoreOffer { item_id: id.to_lowercase(), ..Default::default() });
+        }
+    }
+    let bonus = &v["BonusStore"];
+    let mut night = Vec::new();
+    for o in bonus["BonusStoreOffers"].as_array().into_iter().flatten() {
+        let offer = &o["Offer"];
+        if let Some(id) = first_item(&offer["Rewards"]).or_else(|| offer["OfferID"].as_str().map(|x| x.to_lowercase())) {
+            night.push(StoreOffer {
+                item_id: id,
+                price: vp(&offer["Cost"]),
+                discounted: vp(&o["DiscountCosts"]),
+                discount_percent: o["DiscountPercent"].as_u64().map(|x| x as u32),
+            });
+        }
+    }
+    Store {
+        daily,
+        daily_remaining: layout["SingleItemOffersRemainingDurationInSeconds"].as_u64(),
+        night,
+        night_remaining: bonus["BonusStoreRemainingDurationInSeconds"].as_u64(),
+    }
+}
+
+fn basic_player(v: &Value, team: &str, me: &str) -> Player {
+    let id = &v["PlayerIdentity"];
+    let hidden = id["Incognito"].as_bool().unwrap_or(false);
+    let level = if id["HideAccountLevel"].as_bool().unwrap_or(false) {
+        None
+    } else {
+        id["AccountLevel"].as_u64().map(|l| l as u32)
+    };
+    let puuid = v["Subject"].as_str().unwrap_or("").to_string();
+    Player {
+        is_self: puuid == me,
+        puuid,
+        team: team.to_string(),
+        hidden_name: hidden,
+        level,
+        agent_id: v["CharacterID"].as_str().unwrap_or("").to_string(),
+        card_id: id["PlayerCardID"].as_str().map(String::from),
+        title_id: id["PlayerTitleID"].as_str().map(String::from),
+        ..Default::default()
+    }
+}
+
+fn is_uuid(s: &str) -> bool {
+    let b = s.as_bytes();
+    b.len() == 36 && [8, 13, 18, 23].iter().all(|&i| b[i] == b'-')
+}
+
+/// Bir JSON alt ağacındaki tüm UUID metinlerini (küçük harfle, tekrarsız) toplar.
+fn collect_uuids(v: &Value, out: &mut Vec<String>) {
+    match v {
+        Value::String(s) if is_uuid(s) => {
+            let l = s.to_lowercase();
+            if !out.contains(&l) {
+                out.push(l);
+            }
+        }
+        Value::Array(a) => a.iter().for_each(|x| collect_uuids(x, out)),
+        Value::Object(m) => m.values().for_each(|x| collect_uuids(x, out)),
+        _ => {}
+    }
+}
+
+fn loadout_entries(l: &Value) -> Vec<&Value> {
+    l["Loadouts"].as_array().or_else(|| l.as_array()).map(|a| a.iter().collect()).unwrap_or_default()
+}
+fn loadout_node(e: &Value) -> &Value {
+    if e["Loadout"].is_object() { &e["Loadout"] } else { e }
+}
+fn entry_subject(e: &Value) -> Option<&str> {
+    e["Loadout"]["Subject"].as_str().or_else(|| e["Subject"].as_str())
+}
+
+fn weapon_slot(wid: &str, it: &Value) -> WeaponSlot {
+    let sock = |key: &str| it["Sockets"][key]["Item"]["ID"].as_str().map(String::from);
+    let mut items = Vec::new();
+    collect_uuids(it, &mut items);
+    items.retain(|x| x != &wid.to_lowercase());
+    WeaponSlot {
+        weapon_id: wid.to_string(),
+        skin_id: sock(SOCKET_SKIN),
+        level_id: sock(SOCKET_LEVEL),
+        chroma_id: sock(SOCKET_CHROMA),
+        charm_id: sock(SOCKET_CHARM),
+        charm_level_id: sock(SOCKET_CHARM_LEVEL),
+        items,
+    }
+}
+
+fn parse_loadout(l: &Value) -> Loadout {
+    let mut weapons = Vec::new();
+    match &l["Items"] {
+        Value::Object(m) => {
+            for (k, it) in m {
+                weapons.push(weapon_slot(it["ID"].as_str().unwrap_or(k), it));
+            }
+        }
+        Value::Array(a) => {
+            for it in a {
+                if let Some(wid) = it["ID"].as_str() {
+                    weapons.push(weapon_slot(wid, it));
+                }
+            }
+        }
+        _ => {}
+    }
+    let sprays = l["Sprays"]["SpraySelections"]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .map(|s| SpraySlot {
+                    socket_id: s["SocketID"].as_str().unwrap_or("").to_string(),
+                    spray_id: s["SprayID"].as_str().unwrap_or("").to_string(),
+                    level_id: s["LevelID"].as_str().map(String::from),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let (mut spray_ids, mut expression_ids) = (Vec::new(), Vec::new());
+    collect_uuids(&l["Sprays"], &mut spray_ids);
+    collect_uuids(&l["Expressions"], &mut expression_ids);
+    Loadout { weapons, sprays, spray_ids, expression_ids, all_ids: Vec::new() }
+}
+
+/// Yanıtın yapısını (anahtarlar ve tipler, değerler olmadan) kısa bir metne çevirir.
+fn shape(v: &Value, depth: usize) -> String {
+    match v {
+        Value::Object(m) => {
+            if depth == 0 {
+                return "{…}".into();
+            }
+            let mut parts: Vec<String> = m
+                .iter()
+                .take(3)
+                .map(|(k, x)| format!("{}: {}", if is_uuid(k) { "<uuid>" } else { k.as_str() }, shape(x, depth - 1)))
+                .collect();
+            if m.len() > 3 {
+                parts.push(format!("…(+{})", m.len() - 3));
+            }
+            format!("{{{}}}", parts.join(", "))
+        }
+        Value::Array(a) => format!("[{} x {}]", a.len(), a.first().map(|x| shape(x, depth.saturating_sub(1))).unwrap_or_default()),
+        Value::String(s) => if is_uuid(s) { "uuid".into() } else { "str".into() },
+        Value::Number(_) => "num".into(),
+        Value::Bool(_) => "bool".into(),
+        Value::Null => "null".into(),
+    }
+}
+
+/// Sezgisel smurf olasılığı: düşük hesap seviyesi + yüksek rank + yüksek galibiyet oranı.
+/// Kesin bir kanıt değildir; arayüzde "olası" olarak gösterilir.
+fn smurf_score(level: Option<u32>, rank: &Rank) -> u8 {
+    let mut score: i32 = 0;
+    let high_rank = rank.current >= 12; // Altın 1 ve üstü
+    if let Some(l) = level {
+        score += match l {
+            0..=29 => 40,
+            30..=59 => 25,
+            60..=99 => 10,
+            _ => 0,
+        };
+        if high_rank && l < 60 {
+            score += 25;
+        }
+    }
+    if rank.games >= 10 {
+        let wr = rank.wins as f32 / rank.games as f32;
+        if wr > 0.62 {
+            score += 20;
+        }
+    } else if rank.current >= 15 {
+        score += 10;
+    }
+    score.clamp(0, 100) as u8
+}
+
+/// Aynı takımdaki oyuncuların ortak son maçlarına bakarak tahmini parti grupları çıkarır.
+fn assign_parties(players: &mut [Player], history: &HashMap<String, (Instant, Vec<(String, String)>)>) {
+    let n = players.len();
+    let mut parent: Vec<usize> = (0..n).collect();
+    fn find(p: &mut Vec<usize>, x: usize) -> usize {
+        if p[x] != x {
+            let r = find(p, p[x]);
+            p[x] = r;
+        }
+        p[x]
+    }
+    for i in 0..n {
+        for j in (i + 1)..n {
+            if players[i].team != players[j].team {
+                continue;
+            }
+            let (Some((_, a)), Some((_, b))) = (history.get(&players[i].puuid), history.get(&players[j].puuid)) else { continue };
+            let set: HashSet<&String> = a.iter().take(10).map(|(id, _)| id).collect();
+            if b.iter().take(10).filter(|(m, _)| set.contains(m)).count() >= 2 {
+                let (ri, rj) = (find(&mut parent, i), find(&mut parent, j));
+                parent[ri] = rj;
+            }
+        }
+    }
+    let mut groups: HashMap<usize, Vec<usize>> = HashMap::new();
+    for i in 0..n {
+        let r = find(&mut parent, i);
+        groups.entry(r).or_default().push(i);
+    }
+    let mut label = b'A';
+    let mut ordered: Vec<Vec<usize>> = groups.into_values().filter(|g| g.len() > 1).collect();
+    ordered.sort_by_key(|g| g[0]);
+    for g in ordered {
+        for i in g {
+            players[i].party = Some((label as char).to_string());
+        }
+        label += 1;
+    }
+}
+
+/// Kaplama eşleşmesi sorunlarını incelemek için kendi donatının ham halini yazar.
+fn write_text(name: &str, text: &str) {
+    let base = std::env::var_os("LOCALAPPDATA")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir)
+        .join("valorant-overlay-debug");
+    let _ = std::fs::create_dir_all(&base);
+    let _ = std::fs::write(base.join(name), text);
+}
+
+fn write_debug(name: &str, v: &Value) {
+    let base = std::env::var_os("LOCALAPPDATA")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir)
+        .join("valorant-overlay-debug");
+    let _ = std::fs::create_dir_all(&base);
+    let _ = std::fs::write(base.join(name), serde_json::to_string_pretty(v).unwrap_or_default());
+}
