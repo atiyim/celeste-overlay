@@ -10,7 +10,7 @@ export const COLS: ColDef[] = [
   { id: "form", label: "Son 5", px: 104 },
   { id: "skins", label: "Kaplamalar", px: 172 },
   { id: "party", label: "Parti", px: 28 },
-  { id: "badges", label: "Rozetler", px: 112 },
+  { id: "badges", label: "Rozetler", px: 190 },
   { id: "tracker", label: "Tracker düğmesi", px: 56 },
 ];
 

@@ -47,18 +47,18 @@ export function analyze(p: Player): Play | null {
   };
 }
 
-export interface Badge { text: string; tone: "pos" | "neg" | "info"; tip: string }
+export interface Badge { text: string; tone: "pos" | "neg" | "gold" | "orange" | "teal" | "violet"; tip: string }
 
 /* Nişan / oynayış rozeti: ölçülen eşikleri aşan en belirgin özellik. */
 export function styleBadge(play: Play | null): Badge | null {
   if (!play) return null;
   const scope = `son ${play.matches} maç, ${play.rounds} round`;
   if (play.hsPct != null && play.hsPct >= 28)
-    return { text: "Kafa avcısı", tone: "info", tip: `Kafa isabeti %${play.hsPct.toFixed(0)} (${scope}). Eşik: %28 ve üstü.` };
+    return { text: "Kafa avcısı", tone: "gold", tip: `Kafa isabeti %${play.hsPct.toFixed(0)} (${scope}). Eşik: %28 ve üstü.` };
   if (play.adr != null && play.adr >= 165)
-    return { text: "Yüksek hasar", tone: "info", tip: `Round başına ${play.adr.toFixed(0)} hasar (${scope}). Eşik: 165 ve üstü.` };
+    return { text: "Yüksek hasar", tone: "orange", tip: `Round başına ${play.adr.toFixed(0)} hasar (${scope}). Eşik: 165 ve üstü.` };
   if (play.fkRate >= 0.15)
-    return { text: "Öncü", tone: "info", tip: `${play.rounds} round'un ${play.firstKills}'inde ilk kanı aldı (${scope}). Eşik: her 7 round'da 1.` };
+    return { text: "Öncü", tone: "teal", tip: `${play.rounds} round'un ${play.firstKills}'inde ilk kanı aldı (${scope}). Eşik: her 7 round'da 1.` };
   if (play.fdRate >= 0.15)
     return { text: "İlk ölen", tone: "neg", tip: `${play.rounds} round'un ${play.firstDeaths}'inde ilk ölen oldu (${scope}). Eşik: her 7 round'da 1.` };
   if (play.hsPct != null && play.hsPct <= 12)
@@ -86,7 +86,7 @@ export function formBadge(p: Player): Badge | null {
 /* Son 24 saatteki maç sayısı: uzun seansları gösterir. Satırda yalnızca 8 ve üstünde rozet çıkar. */
 export function activityBadge(p: Player): Badge | null {
   if (p.played24h < 8) return null;
-  return { text: `24 saatte ${p.played24h}${p.played24hCapped ? "+" : ""} maç`, tone: "info", tip: "Son 24 saatte oynadığı maç sayısı (son 15 maç içinden). Uzun seans: yorgun ya da tilt'te olabilir." };
+  return { text: `24 saatte ${p.played24h}${p.played24hCapped ? "+" : ""} maç`, tone: "violet", tip: "Son 24 saatte oynadığı maç sayısı (son 15 maç içinden). Uzun seans: yorgun ya da tilt'te olabilir." };
 }
 
 export function ago(ms?: number | null): string {

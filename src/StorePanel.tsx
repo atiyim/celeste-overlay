@@ -49,24 +49,24 @@ export function StorePanel({ assets, onClose }: { assets: Assets; onClose: () =>
       <div className="ph">
         <div>
           <h2 className="t">Mağaza</h2>
-          <p className="m">Yalnızca kendi hesabın. Valorant açık olmasa da Riot Client'ta giriş yapılmış olması yeter.</p>
+          <p className="m">Kendi hesabının mağazası. Valorant kapalıyken de çalışır; Riot Client'ta oturum açık olması yeter.</p>
         </div>
         <span className="zoom">
-          <button type="button" onClick={load} disabled={busy}>{busy ? "Yükleniyor…" : "Yenile"}</button>
+          <button type="button" onClick={load} disabled={busy}>{busy ? "Yükleniyor" : "Yenile"}</button>
           <button type="button" onClick={onClose}>Kapat</button>
         </span>
       </div>
       {err && <p className="empty">{err}</p>}
       {store && (
         <>
-          <h2 className="h">Günlük mağaza {store.dailyRemaining ? <span className="d"> · yenilenmesine {fmtLeft(store.dailyRemaining)}</span> : null}</h2>
+          <h3 className="h2">Günlük mağaza{store.dailyRemaining ? <span className="hv">{fmtLeft(store.dailyRemaining)} sonra yenilenir</span> : null}</h3>
           {store.daily.length ? (
             <div className="offers">{store.daily.map((o) => <Offer key={o.itemId} o={o} a={assets} />)}</div>
-          ) : <p className="d none">Günlük teklif alınamadı.</p>}
-          <h2 className="h">Gece pazarı {store.nightRemaining ? <span className="d"> · bitmesine {fmtLeft(store.nightRemaining)}</span> : null}</h2>
+          ) : <p className="d none">Günlük teklifler alınamadı.</p>}
+          <h3 className="h2">Gece pazarı{store.nightRemaining ? <span className="hv">{fmtLeft(store.nightRemaining)} sonra biter</span> : null}</h3>
           {store.night.length ? (
             <div className="offers">{store.night.map((o) => <Offer key={o.itemId} o={o} a={assets} />)}</div>
-          ) : <p className="d none">Şu an gece pazarı yok.</p>}
+          ) : <p className="d none">Şu anda gece pazarı yok.</p>}
         </>
       )}
     </div>

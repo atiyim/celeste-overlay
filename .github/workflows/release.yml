@@ -32,7 +32,7 @@ jobs:
         with:
           tauriScript: pnpm tauri
           tagName: ${{ github.ref_name }}
-          releaseName: "Valorant Overlay ${{ github.ref_name }}"
+          releaseName: "Celeste Overlay ${{ github.ref_name }}"
           releaseBody: "Yenilikler için sürüm notlarına bak."
           releaseDraft: false
           prerelease: false

@@ -1,4 +1,6 @@
-# Valorant Overlay
+# Celeste Overlay
+
+> **Bu proje Riot Games ile bağlantılı değildir, onlar tarafından onaylanmamış ya da desteklenmemiştir.** VALORANT ve Riot Games, Riot Games, Inc.'in ticari markalarıdır. Uygulama oyunun belleğine dokunmaz, oyuna girdi göndermez; yalnızca açık Riot Client oturumunun yerel API'sini ve senin hesabınla Riot'un veri sunucularını okur. Belgelenmemiş uç noktalar kullandığı için Riot bir gün bunları değiştirebilir ve uygulama bozulabilir. Kullanım senin sorumluluğundadır; yazılım "olduğu gibi" sunulur (bkz. LICENSE).
 
 Tauri 2 + React + TypeScript. Valorant açıkken oyuncuların rank, peak, parti tahmini, smurf olasılığı ve tüm silah/sprey/charm donatısını gösteren yarı saydam overlay.
 
@@ -45,7 +47,7 @@ pnpm dev            # sadece arayüz: tarayıcıda gerçek görsellerle örnek m
 ## Kurulum dosyası (installer) oluşturma
 
 Proje klasöründeki `yukleyici-olustur.bat` dosyasına çift tıkla. Bağımlılıkları kurar, uygulamayı derler ve
-`src-tauri\target\release\bundle\nsis` klasörünü açar. İçindeki `Valorant Overlay_..._x64-setup.exe` dosyası
+`src-tauri\target\release\bundle\nsis` klasörünü açar. İçindeki `Celeste Overlay_..._x64-setup.exe` dosyası
 kurulum dosyasıdır: çift tıklayınca yönetici izni istemeden kurulur, Başlat menüsüne eklenir. Bu dosyayı bir kere
 oluşturduktan sonra uygulamayı çalıştırmak için `pnpm` gerekmez.
 

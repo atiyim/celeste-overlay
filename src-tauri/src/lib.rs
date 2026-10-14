@@ -97,7 +97,7 @@ pub fn run() {
             let quit_item = MenuItem::with_id(app, "quit", "Çıkış", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&toggle_item, &reset_item, &quit_item])?;
             let mut tray = TrayIconBuilder::new()
-                .tooltip("Valorant Overlay (F2: göster/gizle)")
+                .tooltip("Celeste Overlay (F2: göster/gizle)")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {

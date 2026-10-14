@@ -3,6 +3,7 @@ import type { Assets } from "./assets";
 import { lookup, resolveSkin } from "./assets";
 import { TAGS, type Entry } from "./seen";
 import type { ColId } from "./theme";
+import { tierColor } from "./LoadoutPanel";
 import { activityBadge, analyze, formBadge, styleBadge } from "./playstyle";
 import type { Player } from "./types";
 
@@ -38,7 +39,7 @@ export function PlayerRow({ p, index, assets, entry, cols, template, onOpen, onC
   // Önceki karşılaşma: şimdiki maç history'nin sonundadır, bir öncekine bak.
   const prev = entry && entry.history.length >= 2 ? entry.history[entry.history.length - 2] : undefined;
   const prevText = prev
-    ? `Önceki: ${assets.maps.get(lookup(prev.mapId)) ?? "?"} · ${assets.agents.get(lookup(prev.agentId))?.name ?? "?"} (${prev.side === "ally" ? "takım" : "rakip"})`
+    ? `Önceki maç: ${assets.maps.get(lookup(prev.mapId)) ?? "?"}, ${assets.agents.get(lookup(prev.agentId))?.name ?? "?"} (${prev.side === "ally" ? "takım arkadaşı" : "rakip"})`
     : null;
 
   // Tracker bağlantısı: görünen isim ya da (gizli isimlilerde) kullanıcının kendi yazdığı not, "isim#etiket" biçimindeyse.
@@ -49,9 +50,9 @@ export function PlayerRow({ p, index, assets, entry, cols, template, onOpen, onC
       : null;
 
   const sub = [
-    anonymous ? (label ? "İsim gizli · senin notun" : "İsim gizli") : null,
+    anonymous ? (label ? "İsim gizli, kendi notun" : "İsim gizli") : null,
     prevText,
-    p.smurf >= 60 ? `Smurf olası · %${p.smurf}` : null,
+    p.smurf >= 60 ? `Olası smurf %${p.smurf}` : null,
     p.level != null ? `Seviye ${p.level}` : null,
   ].filter(Boolean).join(" · ");
 
@@ -70,7 +71,7 @@ export function PlayerRow({ p, index, assets, entry, cols, template, onOpen, onC
   });
 
   const play = analyze(p);
-  const badges = [styleBadge(play), formBadge(p), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b);
+  const badges = [formBadge(p), styleBadge(play), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 2); // satır sade kalsın: en önemli iki rozet
 
   const stop = (fn: () => void) => (e: MouseEvent) => { e.stopPropagation(); fn(); };
   const key = (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };
@@ -90,14 +91,14 @@ export function PlayerRow({ p, index, assets, entry, cols, template, onOpen, onC
           {cur ? (
             <>
               <img src={cur.icon} alt="" />
-              <span className="n">{cur.name}{p.rank.current > 0 && <small>{p.rank.rr} RR</small>}</span>
+              <span className="n"><span style={{ color: tierColor(cur.color) }}>{cur.name}</span>{p.rank.current > 0 && <small>{p.rank.rr} RR</small>}</span>
             </>
           ) : "Derecesiz"}
         </div>
       )}
-      {cols.peak && <div className="tier d">{peak && r.peak > 0 ? <><img src={peak.icon} alt="" />{peak.name}</> : "–"}</div>}
+      {cols.peak && <div className="tier d">{peak && r.peak > 0 ? <><img src={peak.icon} alt="" /><span style={{ color: tierColor(peak.color) }}>{peak.name}</span></> : "–"}</div>}
       {cols.wr && (
-        <div className="k" title={g > 0 ? `${w} galibiyet / ${g} maç (${scope}, rekabet)` : "Rekabet verisi yok"}>
+        <div className="k" title={g > 0 ? `${w} galibiyet, ${g} maç (${scope}, rekabet)` : "Rekabet verisi yok"}>
           {wr}
           {g > 0 && <small>{g} maç</small>}
         </div>

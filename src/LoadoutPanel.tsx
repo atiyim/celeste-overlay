@@ -8,34 +8,30 @@ import type { Player, PremierTeam } from "./types";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
-const CATS: [string, string][] = [
-  ["Sidearm", "Yan silahlar"], ["SMG", "Hafif makineliler"], ["Shotgun", "Pompalılar"], ["Rifle", "Tüfekler"],
-  ["Sniper", "Keskin nişancılar"], ["Heavy", "Ağır silahlar"], ["Melee", "Yakın dövüş"],
+/* Oyun içi cephanelikle aynı düzen: yan silahlar | SMG + pompalı | tüfek + yakın dövüş | keskin nişancı + makineli. */
+const LAYOUT: [string, string][][] = [
+  [["Sidearm", "Yan silahlar"]],
+  [["SMG", "Hafif makineliler"], ["Shotgun", "Pompalılar"]],
+  [["Rifle", "Tüfekler"], ["Melee", "Yakın dövüş"]],
+  [["Sniper", "Keskin nişancılar"], ["Heavy", "Makineli tüfekler"]],
 ];
-const COLUMNS = [[0, 1], [2, 3], [4, 5, 6]];
 
-function Group({ title, weapons, p, a }: { title: string; weapons: WeaponInfo[]; p: Player; a: Assets }) {
-  if (!weapons.length) return null;
+function Tile({ w, p, a }: { w: WeaponInfo; p: Player; a: Assets }) {
+  const slot = p.loadout.weapons.find((x) => lookup(x.weaponId) === w.id);
+  const skin = resolveSkin(a, w, slot);
+  const charm = charmIcon(a, slot);
   return (
-    <>
-      <h2 className="h">{title}</h2>
-      {weapons.map((w) => {
-        const slot = p.loadout.weapons.find((x) => lookup(x.weaponId) === w.id);
-        const skin = resolveSkin(a, w, slot);
-        const charm = charmIcon(a, slot);
-        return (
-          <div className="w" key={w.id}>
-            <span className="d">{w.name}</span>
-            <span className="skin" title={skin.name}>
-              <img className="gun" src={skin.image} alt="" loading="lazy" />
-              <span className={skin.isDefault ? "d" : ""}>{skin.name}</span>
-              {skin.swatch && <img className="sw" src={skin.swatch} alt={skin.chromaName ?? "Chroma"} title={skin.chromaName} />}
-            </span>
-            <span className="charm">{charm ? <img src={charm.icon} alt={charm.name} title={charm.name} loading="lazy" /> : null}</span>
-          </div>
-        );
-      })}
-    </>
+    <div className={skin.isDefault ? "gt dim" : "gt"} title={`${w.name}: ${skin.name}${skin.chromaName ? ` (${skin.chromaName})` : ""}`}>
+      <img className="gi" src={skin.image} alt="" loading="lazy" />
+      <div className="gx">
+        <span className="gn">{skin.name}</span>
+        <span className="gw">
+          {w.name}
+          {skin.swatch && <img className="sw" src={skin.swatch} alt={skin.chromaName ?? "Renk"} />}
+        </span>
+      </div>
+      {charm && <img className="gc" src={charm.icon} alt={charm.name} title={charm.name} loading="lazy" />}
+    </div>
   );
 }
 
@@ -49,9 +45,27 @@ interface PanelProps {
   onCopy: (n: string | null) => void;
 }
 
-const None = () => <p className="d none">Oyun bu bilgiyi göndermedi</p>;
+const None = ({ text = "Oyun bu bilgiyi göndermedi" }: { text?: string }) => <p className="d none">{text}</p>;
 type Tab = "guns" | "perf" | "profile";
 const TABS: [Tab, string][] = [["guns", "Kaplamalar"], ["perf", "Performans"], ["profile", "Profil"]];
+
+function WeaponTable({ title, list, assets, unit }: { title: string; list: WeaponStat[]; assets: Assets; unit: string }) {
+  const rows = list.map((w) => ({ w, info: assets.weapons.find((x) => x.id === w.id) })).filter((r) => r.info).slice(0, 3);
+  const max = Math.max(1, ...rows.map((r) => r.w.count));
+  return (
+    <div>
+      <h3 className="h2">{title}</h3>
+      {rows.length ? rows.map(({ w, info }) => (
+        <div className="wr" key={w.id}>
+          <img src={info!.icon} alt="" />
+          <span className="wn">{info!.name}</span>
+          <span className="wb"><i style={{ width: `${(100 * w.count) / max}%` }} /></span>
+          <span className="wv">{w.count} {unit}</span>
+        </div>
+      )) : <None text="Veri yok" />}
+    </div>
+  );
+}
 
 export function LoadoutPanel({ p, assets, entry, onLabel, onTag, onClose, onCopy }: PanelProps) {
   const [draft, setDraft] = useState(entry?.label ?? "");
@@ -94,11 +108,8 @@ export function LoadoutPanel({ p, assets, entry, onLabel, onTag, onClose, onCopy
     const k = sameAgent.reduce((a, f) => a + f.kills, 0), d = sameAgent.reduce((a, f) => a + f.deaths, 0);
     return d ? k / d : k;
   })();
-  const wlist = (list: WeaponStat[], unit: string) =>
-    list.slice(0, 3).map((w) => {
-      const info = assets.weapons.find((x) => x.id === w.id);
-      return info ? <span className="wc" key={w.id}><img src={info.icon} alt="" />{info.name} <b>{w.count}</b> {unit}</span> : null;
-    });
+  const kd = (k: number, d: number) => (d ? k / d : k).toFixed(2);
+  const sign = (n: number) => `${n > 0 ? "+" : ""}${n}`;
 
   return (
     <div className="panel" role="dialog" aria-label="Oyuncu ayrıntısı">
@@ -112,13 +123,17 @@ export function LoadoutPanel({ p, assets, entry, onLabel, onTag, onClose, onCopy
             {fb && <span className={`bd ${fb.tone}`} title={fb.tip}>{fb.text}</span>}
           </h2>
           <p className="m">
-            {agent?.name} · {cur?.name ?? "Derecesiz"}{p.rank.current > 0 ? ` (${p.rank.rr} RR)` : ""} · Peak {peak?.name ?? "–"}
-            {p.level != null ? ` · Seviye ${p.level}` : ""}
+            <b className="ag-n">{agent?.name}</b>
+            <span className="sep" />
+            <span style={{ color: cur ? tierColor(cur.color) : undefined }}>{cur?.name ?? "Derecesiz"}{p.rank.current > 0 ? ` · ${p.rank.rr} RR` : ""}</span>
+            <span className="sep" />
+            Peak <span style={{ color: peak ? tierColor(peak.color) : undefined }}>{peak?.name ?? "–"}</span>
+            {p.level != null && <><span className="sep" />Seviye {p.level}</>}
           </p>
         </div>
         <div className="phr">
           {!p.isSelf && (
-            <span className="tagrow" title="Etiketler yalnızca bu bilgisayarda saklanır; isim gizli olsa da sonraki maçta aynı oyuncuda görünür">
+            <span className="tagrow" title="Etiketler yalnızca bu bilgisayarda saklanır. İsim gizli olsa da aynı oyuncuyu sonraki maçta tanır.">
               {TAGS.map((t) => (
                 <button
                   key={t.id}
@@ -144,79 +159,93 @@ export function LoadoutPanel({ p, assets, entry, onLabel, onTag, onClose, onCopy
       </div>
 
       {tab === "guns" && (
-        <div className="cols3">
-          {COLUMNS.map((idx, i) => (
-            <div key={i}>{idx.map((c) => <Group key={CATS[c][0]} title={CATS[c][1]} weapons={by(CATS[c][0])} p={p} a={assets} />)}</div>
+        <div className="gcols fade">
+          {LAYOUT.map((col, i) => (
+            <div className="gcol" key={i}>
+              {col.map(([cat, name]) => (
+                <section key={cat}>
+                  <h3 className="h2">{name}</h3>
+                  {by(cat).map((w) => <Tile key={w.id} w={w} p={p} a={assets} />)}
+                </section>
+              ))}
+            </div>
           ))}
         </div>
       )}
 
       {tab === "perf" && (
-        <div className="perf">
+        <div className="perf fade">
           <div>
-            <h2 className="h" style={{ marginTop: 0 }}>
-              Son {p.form.length || 5} maç{p.kd != null ? ` · K/D ${p.kd.toFixed(2)}` : ""}
-            </h2>
-            {p.form.length === 0 && <p className="d none">{p.formLoading ? "Yükleniyor…" : "Maç verisi yok"}</p>}
-            {p.form.map((f, i) => {
-              const fa = assets.agents.get(lookup(f.agentId));
-              return (
-                <div className="rm" key={i}>
-                  <span className={f.won ? "fc win" : "fc loss"}>{f.won ? "W" : "L"}</span>
-                  <span>{assets.maps.get(lookup(f.mapId)) ?? "?"}</span>
-                  <span className="ra">{fa && <img src={fa.icon} alt="" />}{fa?.name ?? "?"}</span>
-                  <span>{f.kills}/{f.deaths}/{f.assists}</span>
-                  <span className="d">K/D {(f.deaths ? f.kills / f.deaths : f.kills).toFixed(2)}</span>
-                </div>
-              );
-            })}
-            {sameAgent.length > 0 && agent && (
-              <p className="m">{agent.name} ile {sameAgent.length} maç: K/D {sameKd.toFixed(2)}, {sameAgent.filter((f) => f.won).length} galibiyet</p>
+            <h3 className="h2">Son maçlar{p.kd != null && <span className="hv">K/D {p.kd.toFixed(2)}</span>}</h3>
+            {p.form.length === 0 ? <None text={p.formLoading ? "Yükleniyor…" : "Maç verisi yok"} /> : (
+              <div className="tb">
+                <div className="tr hd2"><span /><span>Harita</span><span>Ajan</span><span className="num">K / D / A</span><span className="num">K/D</span></div>
+                {p.form.map((f, i) => {
+                  const fa = assets.agents.get(lookup(f.agentId));
+                  return (
+                    <div className="tr" key={i}>
+                      <span className={f.won ? "fc win" : "fc loss"}>{f.won ? "W" : "L"}</span>
+                      <span>{assets.maps.get(lookup(f.mapId)) ?? "?"}</span>
+                      <span className="ra">{fa && <img src={fa.icon} alt="" />}{fa?.name ?? "?"}</span>
+                      <span className="num">{f.kills} / {f.deaths} / {f.assists}</span>
+                      <span className="num">{kd(f.kills, f.deaths)}</span>
+                    </div>
+                  );
+                })}
+              </div>
             )}
-            <p className="m">
-              <span className="d">Son 24 saatte:</span> <b>{p.played24h}{p.played24hCapped ? "+" : ""} maç</b>
-              {p.lastMatchAt ? <span className="d"> · son maç {ago(p.lastMatchAt)} önce başladı</span> : null}
+            {sameAgent.length > 0 && agent && (
+              <p className="m cap">{agent.name}: {sameAgent.length} maç, K/D {sameKd.toFixed(2)}, {sameAgent.filter((f) => f.won).length} galibiyet</p>
+            )}
+            <h3 className="h2">Son 24 saat</h3>
+            <p className="m cap">
+              <b>{p.played24h}{p.played24hCapped ? "+" : ""} maç</b>
+              {p.lastMatchAt ? <span className="d">, sonuncusu {ago(p.lastMatchAt)} önce başladı</span> : null}
             </p>
           </div>
+
           <div>
             {play ? (
               <>
-                <h2 className="h" style={{ marginTop: 0 }}>Oynayış · {play.matches} maç, {play.rounds} round</h2>
-                <div className="pst">
-                  <div><b>{play.hsPct != null ? `%${play.hsPct.toFixed(0)}` : "–"}</b><small>Kafa</small></div>
-                  <div><b>{play.adr != null ? play.adr.toFixed(0) : "–"}</b><small>ADR</small></div>
-                  <div><b>{play.firstKills}</b><small>İlk kan</small></div>
-                  <div><b>{play.firstDeaths}</b><small>İlk ölüm</small></div>
+                <h3 className="h2">Oynayış<span className="hv">{play.matches} maç, {play.rounds} round</span></h3>
+                <div className="stats">
+                  <div className="gold"><b>{play.hsPct != null ? `%${play.hsPct.toFixed(0)}` : "–"}</b><small>Kafa isabeti</small></div>
+                  <div className="orange"><b>{play.adr != null ? play.adr.toFixed(0) : "–"}</b><small>Round başı hasar</small></div>
+                  <div className="teal"><b>{play.firstKills}</b><small>İlk kan</small></div>
+                  <div className="loss"><b>{play.firstDeaths}</b><small>İlk ölüm</small></div>
                 </div>
-                {play.killWeapons.length > 0 && <p className="m wl"><span className="d">Öldürdüğü silah:</span>{wlist(play.killWeapons, "kill")}</p>}
-                {play.bought.length > 0 && <p className="m wl"><span className="d">Aldığı silah:</span>{wlist(play.bought, "round")}</p>}
+                <div className="wpair">
+                  <WeaponTable title="Öldürdüğü silahlar" list={play.killWeapons} assets={assets} unit="kill" />
+                  <WeaponTable title="Satın aldığı silahlar" list={play.bought} assets={assets} unit="round" />
+                </div>
               </>
-            ) : <p className="d none">Oynayış verisi yok</p>}
+            ) : <None text="Oynayış verisi yok" />}
             {p.rrTrend.length > 0 && (
-              <p className="m wl">
-                <span className="d">Son {p.rrTrend.length} rekabet maçı RR:</span>
-                {p.rrTrend.map((r, i) => <span key={i} className={r >= 0 ? "pos" : "neg"}>{r > 0 ? "+" : ""}{r}</span>)}
-                <span className="d">(toplam {rrSum > 0 ? "+" : ""}{rrSum})</span>
-              </p>
+              <>
+                <h3 className="h2">Rekabet RR<span className="hv">son {p.rrTrend.length} maç, toplam <b className={rrSum >= 0 ? "pos" : "neg"}>{sign(rrSum)}</b></span></h3>
+                <div className="pills">
+                  {p.rrTrend.map((r, i) => <span key={i} className={r >= 0 ? "pill pos" : "pill neg"}>{sign(r)}</span>)}
+                </div>
+              </>
             )}
           </div>
         </div>
       )}
 
       {tab === "profile" && (
-        <div className="prof3">
+        <div className="prof3 fade">
           <div>
-            <h2 className="h" style={{ marginTop: 0 }}>Spreyler</h2>
+            <h3 className="h2">Spreyler</h3>
             {sprays.length ? sprays.map((s) => (
-              <div className="chrow" key={s.name}><img src={s.icon} alt="" loading="lazy" /><span className="full">{s.name}</span></div>
+              <div className="chrow" key={s.name}><img src={s.icon} alt="" loading="lazy" /><span>{s.name}</span></div>
             )) : <None />}
           </div>
           <div>
-            <h2 className="h" style={{ marginTop: 0 }}>Flex</h2>
+            <h3 className="h2">Flex</h3>
             {flex.length ? flex.map((f) => (
-              <div className="chrow" key={f.name}><img src={f.icon} alt="" loading="lazy" /><span className="full">{f.name}</span></div>
+              <div className="chrow" key={f.name}><img src={f.icon} alt="" loading="lazy" /><span>{f.name}</span></div>
             )) : <None />}
-            <h2 className="h">Kart ve ünvan</h2>
+            <h3 className="h2">Kart ve ünvan</h3>
             {card || title ? (
               <div className="card">
                 {card && <img src={card.wide} alt="" loading="lazy" />}
@@ -225,30 +254,30 @@ export function LoadoutPanel({ p, assets, entry, onLabel, onTag, onClose, onCopy
             ) : <None />}
           </div>
           <div>
-            <h2 className="h" style={{ marginTop: 0 }}>Premier</h2>
-            {anonymous ? <p className="d none">İsmi gizli oyuncular için sorgulanmaz</p>
-              : premier === "loading" ? <p className="d none">Yükleniyor…</p>
-              : premier === "error" ? <p className="d none">Premier bilgisi alınamadı</p>
-              : premier === null ? <p className="d none">Premier takımı yok</p>
+            <h3 className="h2">Premier</h3>
+            {anonymous ? <None text="İsmi gizli oyuncular için sorgulanmaz" />
+              : premier === "loading" ? <None text="Yükleniyor…" />
+              : premier === "error" ? <None text="Premier bilgisi alınamadı" />
+              : premier === null ? <None text="Premier takımı yok" />
               : (
                 <>
-                  <p className="m"><b>{premier.name}</b> {premier.tag && <span className="d">#{premier.tag}</span>}</p>
-                  <p className="m wrapnames">
+                  <p className="team"><b>{premier.name}</b>{premier.tag && <span className="tagname">#{premier.tag}</span>}</p>
+                  <div className="members">
                     {premier.members.map((m) => (
-                      <span key={m.puuid} className={m.puuid === p.puuid ? "mem me" : "mem"}>{m.hidden ? "isim gizli" : m.name ?? "…"}</span>
+                      <span key={m.puuid} className={m.puuid === p.puuid ? "mem me" : "mem"}>{m.hidden ? "İsim gizli" : m.name ?? "…"}</span>
                     ))}
-                  </p>
+                  </div>
                 </>
               )}
             {anonymous && (
               <>
-                <h2 className="h">Kendi notun</h2>
+                <h3 className="h2">Kendi notun</h3>
                 <div className="note">
                   <input
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") onLabel(draft); e.stopPropagation(); }}
-                    placeholder="isim#etiket (tracker'dan baktığın)"
+                    placeholder="isim#etiket"
                     aria-label="Oyuncu için kişisel not"
                   />
                   <button className="x" type="button" onClick={() => onLabel(draft)}>Kaydet</button>
@@ -257,12 +286,16 @@ export function LoadoutPanel({ p, assets, entry, onLabel, onTag, onClose, onCopy
             )}
             {entry && entry.history.length >= 2 && (
               <>
-                <h2 className="h">Önceki karşılaşmalar</h2>
-                {entry.history.slice(-4, -1).reverse().map((h, i) => (
-                  <p className="m" key={i}>
-                    {assets.maps.get(lookup(h.mapId)) ?? "?"} · {assets.agents.get(lookup(h.agentId))?.name ?? "?"} ({h.side === "ally" ? "takım" : "rakip"})
-                  </p>
-                ))}
+                <h3 className="h2">Daha önce karşılaştınız</h3>
+                <div className="tb">
+                  {entry.history.slice(-4, -1).reverse().map((h, i) => (
+                    <div className="tr met" key={i}>
+                      <span>{assets.maps.get(lookup(h.mapId)) ?? "?"}</span>
+                      <span>{assets.agents.get(lookup(h.agentId))?.name ?? "?"}</span>
+                      <span className={h.side === "ally" ? "side-ally" : "side-enemy"}>{h.side === "ally" ? "Takım" : "Rakip"}</span>
+                    </div>
+                  ))}
+                </div>
               </>
             )}
           </div>
@@ -271,3 +304,6 @@ export function LoadoutPanel({ p, assets, entry, onLabel, onTag, onClose, onCopy
     </div>
   );
 }
+
+/* Düşük rank renkleri (Demir gibi) siyah zeminde soluk kalır; okunur olsun diye beyaza çekilir. */
+export const tierColor = (c: string) => `color-mix(in srgb, ${c} 62%, #fff)`;

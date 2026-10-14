@@ -287,15 +287,15 @@ export function App() {
 
   const st = snap.status;
   const emptyText = !assets
-    ? assetsFailed ? "Görseller yüklenemedi. İnternet bağlantını kontrol edip tekrar dene." : "Görseller yükleniyor…"
+    ? assetsFailed ? "Görseller yüklenemedi. İnternet bağlantını kontrol edip yeniden dene." : "Görseller yükleniyor…"
     : !inTauri ? "Maç başladığında oyuncular burada görünecek."
     : !st ? "Bağlanılıyor…"
-    : st.fault === "no_riot_client" ? "Riot Client açık değil. Riot Client'ı başlat; sonra Valorant'ı aç."
-    : st.fault === "not_logged_in" ? "Riot Client'ta giriş yapılmamış görünüyor. Giriş yap."
-    : st.fault === "no_region" ? "Bölge bilgisi bulunamadı. Valorant'ı bu bilgisayarda bir kez açmış olman gerekiyor."
-    : st.riotClient && !st.valorant ? "Valorant'ı başlatman gerekiyor, Valorant bekleniyor. (Mağaza ve İstatistik sekmeleri Valorant açık olmadan da çalışır.)"
+    : st.fault === "no_riot_client" ? "Riot Client açık değil. Önce Riot Client'ı, sonra Valorant'ı başlat."
+    : st.fault === "not_logged_in" ? "Riot Client'ta oturum açık değil. Giriş yap."
+    : st.fault === "no_region" ? "Bölge bilgisi bulunamadı. Valorant'ı bu bilgisayarda en az bir kez açmış olmalısın."
+    : st.riotClient && !st.valorant ? "Valorant'ı başlatman gerekiyor, Valorant bekleniyor."
     : snap.error ? snap.error
-    : snap.phase === "menu" ? "Maç bekleniyor. Maç ya da ajan seçimi başlayınca oyuncular burada görünecek."
+    : snap.phase === "menu" ? "Maç bekleniyor. Ajan seçimi başlayınca oyuncular burada görünecek."
     : "Maç başladığında oyuncular burada görünecek.";
 
   // Takım karşılaşması: ortalama rank, ortalama K/D ve olası smurf sayısı.
@@ -316,10 +316,10 @@ export function App() {
     <main className="ov" ref={rootRef} style={{ width }}>
       <header className="hd drag" onMouseDown={startDrag} title="Sürükleyerek taşı">
         <span className="hl">
-          <h1 className="t">{mapName ?? "Valorant Overlay"}</h1>
+          <h1 className="t">{mapName ?? "Celeste Overlay"}</h1>
           {mySide && (
-            <span className={mySide === "Saldıran" ? "side atk" : "side def"} title="Takım rengine göre tahmin; ilk yarı için geçerli">
-              {mySide} · ilk yarı
+            <span className={mySide === "Saldıran" ? "side atk" : "side def"} title="Takım rengine göre belirlenir; yalnızca ilk yarıda doğrudur">
+              {mySide} (ilk yarı)
             </span>
           )}
         </span>
@@ -341,12 +341,12 @@ export function App() {
 
       {updater.state.kind === "available" && !collapsed && (
         <div className="upd" role="status">
-          <span>Yeni sürüm hazır: <b>{updater.state.version}</b></span>
+          <span><i className="pulse" />Yeni sürüm hazır: <b>{updater.state.version}</b></span>
           <button className="trk" type="button" onClick={updater.install}>Güncelle ve yeniden başlat</button>
         </div>
       )}
       {updater.state.kind === "downloading" && !collapsed && (
-        <div className="upd" role="status">İndiriliyor… {updater.state.pct != null ? `%${updater.state.pct}` : ""}</div>
+        <div className="upd" role="status">Güncelleme indiriliyor {updater.state.pct != null ? `%${updater.state.pct}` : "…"}</div>
       )}
 
       {!collapsed && (
@@ -383,6 +383,7 @@ export function App() {
         ) : snap.players.length === 0 || !assets ? (
           <div className="empty">
             <p>{emptyText}</p>
+            {st?.riotClient && !st.valorant && assets && <p className="d">Mağaza ve İstatistik sekmeleri oyun kapalıyken de çalışır.</p>}
             {assetsFailed && !assets && <button className="x" type="button" onClick={retryAssets}>Tekrar dene</button>}
           </div>
         ) : (
@@ -404,8 +405,8 @@ export function App() {
                     {(() => {
                       const t = teamStats(list as typeof allies);
                       return (
-                        <span className="cmp" title="Takımın ortalama rank'ı, ortalama K/D'si (son 5 maç) ve olası smurf sayısı">
-                          Ort. {t.tier?.name ?? "–"} · K/D {t.kd != null ? t.kd.toFixed(2) : "–"} · Smurf {t.smurfs}
+                        <span className="cmp" title="Ortalama rank, son 5 maçın ortalama K/D'si ve olası smurf sayısı">
+                          Ortalama {t.tier?.name ?? "–"} · K/D {t.kd != null ? t.kd.toFixed(2) : "–"} · Olası smurf {t.smurfs}
                         </span>
                       );
                     })()}
@@ -427,7 +428,7 @@ export function App() {
                 </section>
               ) : null,
             )}
-            <p className="mode">İsme tıkla: kullanıcı adını kopyala · Satıra tıkla: tüm donatı · Başlığı sürükle: taşı</p>
+            <p className="mode">İsme tıkla: adı kopyala · Satıra tıkla: ayrıntılar · Başlığı sürükle: taşı</p>
           </>
         )
       )}

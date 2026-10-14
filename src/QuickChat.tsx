@@ -26,14 +26,13 @@ export function QuickChat({ onCopy, onMessage, onClose }: Props) {
 
   useEffect(() => {
     try { localStorage.setItem(STORE, JSON.stringify(rules)); } catch { /* depolama dolu */ }
-    window.dispatchEvent(new Event("chat-rules-changed")); // oyun içi değiştirme kuralları yenilensin
   }, [rules]);
 
   const run = () => {
     const q = typed.trim().toLowerCase();
     if (!q) return;
     const r = rules.find((x) => x.key.toLowerCase() === q);
-    if (r) { onCopy(r.text); setTyped(""); } else onMessage(`"${typed.trim()}" için kısayol yok`);
+    if (r) { onCopy(r.text); setTyped(""); } else onMessage(`"${typed.trim()}" adında kısayol yok`);
   };
   const add = () => {
     const k = nk.trim(), t = nt.trim();
@@ -47,7 +46,7 @@ export function QuickChat({ onCopy, onMessage, onClose }: Props) {
       <div className="ph">
         <div>
           <h2 className="t">Hızlı mesajlar</h2>
-          <p className="m">Kısaltmayı yaz, Enter'a bas: karşılığı panoya kopyalanır. Oyunda sohbeti aç, Ctrl+V ile yapıştır, Enter ile gönder. Oyun içinde kendiliğinden değiştirme için Ayarlar'a bak (deneysel).</p>
+          <p className="m">Kısaltmayı yazıp Enter'a bas; karşılığı panoya kopyalanır. Oyunda sohbeti açıp Ctrl+V ile yapıştır.</p>
         </div>
         <button className="x" type="button" onClick={onClose}>Kapat</button>
       </div>
@@ -58,14 +57,14 @@ export function QuickChat({ onCopy, onMessage, onClose }: Props) {
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") run(); e.stopPropagation(); }}
-          placeholder="Kısaltma yaz (örn. sa) ve Enter"
+          placeholder="Kısaltma (örn. sa)"
           aria-label="Kısaltma"
         />
         <button className="x" type="button" onClick={run}>Kopyala</button>
       </div>
 
       <h2 className="h">Kısayollar</h2>
-      {rules.length === 0 && <p className="d none">Henüz kısayol yok</p>}
+      {rules.length === 0 && <p className="d none">Henüz kısayol yok.</p>}
       {rules.map((r) => (
         <div className="rule" key={r.key}>
           <code>{r.key}</code>

@@ -9,7 +9,7 @@ export function Settings({ updater, theme, onChange, onClose }: Props) {
       <div className="ph">
         <div>
           <h2 className="t">Ayarlar</h2>
-          <p className="m">Ayarlar anında uygulanır ve bu bilgisayarda hatırlanır.</p>
+          <p className="m">Değişiklikler anında uygulanır ve bu bilgisayarda saklanır.</p>
         </div>
         <button className="x" type="button" onClick={onClose}>Kapat</button>
       </div>
@@ -35,7 +35,7 @@ export function Settings({ updater, theme, onChange, onClose }: Props) {
             </label>
           </div>
 
-          <h2 className="h">Arka plan saydamlığı</h2>
+          <h2 className="h">Saydamlık</h2>
           <div className="alpha">
             <input
               type="range"
@@ -50,23 +50,23 @@ export function Settings({ updater, theme, onChange, onClose }: Props) {
           </div>
           <div className="note">
             <button className="x" type="button" onClick={() => onChange({ ...theme, accent: DEFAULT_THEME.accent, alpha: DEFAULT_THEME.alpha })}>
-              Renk ve saydamlığı sıfırla
+              Varsayılana dön
             </button>
           </div>
 
           <h2 className="h">Saldıran / Savunan</h2>
           <label className="chk">
             <input type="checkbox" checked={theme.swapSides} onChange={(e) => onChange({ ...theme, swapSides: e.target.checked })} />
-            <span>Taraf bilgisi oyundakinin tersiyse işaretle</span>
+            <span>Taraf oyundakinin tersi görünüyorsa değiştir</span>
           </label>
-          <p className="m">Taraf, takım rengine göre tahmin edilir ve yalnızca ilk yarı için geçerlidir.</p>
+          <p className="m">Taraf, takım rengine göre belirlenir ve yalnızca ilk yarıda doğrudur.</p>
         </div>
 
         <div>
-          <h2 className="h">Otomatik göster / gizle</h2>
+          <h2 className="h">Otomatik gizleme</h2>
           <label className="chk">
             <input type="checkbox" checked={theme.autoHide} onChange={(e) => onChange({ ...theme, autoHide: e.target.checked })} />
-            <span>Maç başlayınca kendiliğinden gizle</span>
+            <span>Maç başlayınca overlay'i gizle</span>
           </label>
           <label className="chk">
             <span>Gizleme süresi</span>
@@ -79,16 +79,16 @@ export function Settings({ updater, theme, onChange, onClose }: Props) {
               {HIDE_AFTER_OPTIONS.map((s) => <option key={s} value={s}>{s} saniye</option>)}
             </select>
           </label>
-          <p className="m">Ajan seçimi başlayınca overlay görünür olur. F2 ile elle açarsan o maç boyunca açık kalır. F2 ile tepsiye gizlediğinde kendiliğinden geri gelmez.</p>
+          <p className="m">Ajan seçiminde yeniden görünür. F2 ile açarsan o maç boyunca açık kalır; F2 ile gizlersen kendiliğinden dönmez.</p>
 
           <h2 className="h">Güncelleme</h2>
           <p className="m">
-            Sürüm {updater.version || "–"} ·{" "}
-            {updater.state.kind === "checking" ? "denetleniyor…"
-              : updater.state.kind === "none" ? "güncelsin"
-              : updater.state.kind === "available" ? `yeni sürüm var: ${updater.state.version}`
-              : updater.state.kind === "downloading" ? "indiriliyor…"
-              : updater.state.kind === "error" ? "denetlenemedi" : "otomatik denetim açık"}
+            Sürüm {updater.version || "–"}, {" "}
+            {updater.state.kind === "checking" ? "denetleniyor"
+              : updater.state.kind === "none" ? "güncel"
+              : updater.state.kind === "available" ? `${updater.state.version} yayında`
+              : updater.state.kind === "downloading" ? "indiriliyor"
+              : updater.state.kind === "error" ? "denetlenemedi" : "açılışta ve 6 saatte bir denetlenir"}
           </p>
           <p className="m">
             <button className="x" type="button" onClick={updater.check}>Şimdi denetle</button>
@@ -97,7 +97,7 @@ export function Settings({ updater, theme, onChange, onClose }: Props) {
           {updater.state.kind === "error" && <p className="m err">{updater.state.msg}</p>}
 
           <h2 className="h">Sütunlar</h2>
-          <label className="chk"><input type="checkbox" checked disabled /><span>Oyuncu (her zaman açık)</span></label>
+          <label className="chk"><input type="checkbox" checked disabled /><span>Oyuncu (kapatılamaz)</span></label>
           {COLS.map((c) => (
             <label className="chk" key={c.id}>
               <input
@@ -108,7 +108,10 @@ export function Settings({ updater, theme, onChange, onClose }: Props) {
               <span>{c.label}</span>
             </label>
           ))}
-          <p className="m">Sütunları kapattıkça overlay daralır.</p>
+          <p className="m">Kapattığın sütun kadar overlay daralır.</p>
+
+          <h2 className="h">Hakkında</h2>
+          <p className="m">Celeste Overlay, Riot Games ile bağlantılı değildir. Oyuna dokunmaz; yalnızca açık Riot Client oturumunu okur. Etiketler ve notlar yalnızca bu bilgisayarda saklanır.</p>
         </div>
       </div>
     </div>

@@ -59,13 +59,13 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
           </p>
         </div>
         <span className="zoom">
-          <button type="button" onClick={load} disabled={busy}>{busy ? "Yükleniyor…" : "Yenile"}</button>
+          <button type="button" onClick={load} disabled={busy}>{busy ? "Yükleniyor" : "Yenile"}</button>
           <button type="button" onClick={onClose}>Kapat</button>
         </span>
       </div>
       {err && <p className="empty">{err}</p>}
-      {!err && !data && <p className="empty">Maçların okunuyor… (ilk seferde birkaç saniye sürebilir)</p>}
-      {data && !sum && <p className="empty">Henüz sayılabilecek maç bulunamadı.</p>}
+      {!err && !data && <p className="empty">Maçların okunuyor. İlk açılışta birkaç saniye sürebilir.</p>}
+      {data && !sum && <p className="empty">Sayılabilecek maç bulunamadı.</p>}
       {sum && data && (
         <div className="stgrid">
           <div>
@@ -73,24 +73,26 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
               <div><b>%{sum.wr}</b><small>Kazanma · {sum.w}/{sum.n}</small></div>
               <div><b>{sum.kd.toFixed(2)}</b><small>K/D</small></div>
               <div><b>{sum.acs}</b><small>Ort. ACS</small></div>
-              <div><b className={sum.rr >= 0 ? "pos" : "neg"}>{sum.rr > 0 ? "+" : ""}{sum.rr}</b><small>RR (rekabetçi)</small></div>
+              <div><b className={sum.rr >= 0 ? "pos" : "neg"}>{sum.rr > 0 ? "+" : ""}{sum.rr}</b><small>Rekabetçi RR</small></div>
             </div>
-            <h2 className="h">Ajan bazlı</h2>
+            <h3 className="h2" style={{ marginTop: 14 }}>Ajanlar</h3>
+            <div className="ag hd2"><span /><span>Ajan</span><span className="num">Maç</span><span className="num">Galibiyet</span><span className="num">K/D</span></div>
             {sum.agents.map(([id, e]) => {
               const ag = assets.agents.get(id);
               return (
                 <div className="ag" key={id}>
                   {ag && <img src={ag.icon} alt="" />}
                   <span className="an">{ag?.name ?? "?"}</span>
-                  <span className="d">{e.n} maç</span>
-                  <span>%{Math.round((100 * e.w) / e.n)}</span>
-                  <span>K/D {(e.d ? e.k / e.d : e.k).toFixed(2)}</span>
+                  <span className="num d">{e.n}</span>
+                  <span className="num">%{Math.round((100 * e.w) / e.n)}</span>
+                  <span className="num">{(e.d ? e.k / e.d : e.k).toFixed(2)}</span>
                 </div>
               );
             })}
           </div>
           <div>
-            <h2 className="h" style={{ marginTop: 0 }}>Son maçlar</h2>
+            <h3 className="h2">Son maçlar</h3>
+            <div className="mm hd2"><span /><span>Harita</span><span>Ajan</span><span className="num">K / D / A</span><span className="num">ACS</span><span className="num">RR</span><span className="num">Önce</span></div>
             {data.matches.slice(0, 10).map((m) => {
               const ag = assets.agents.get(lookup(m.agentId));
               return (
@@ -98,10 +100,10 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
                   <span className={m.won ? "fc win" : "fc loss"}>{m.won ? "W" : "L"}</span>
                   <span className="mmap">{assets.maps.get(lookup(m.mapId)) ?? "?"}</span>
                   <span className="mag">{ag?.name ?? "?"}</span>
-                  <span>{m.kills}/{m.deaths}/{m.assists}</span>
-                  <span className="d">{m.acs}</span>
-                  <span className={m.rrDelta == null ? "d" : m.rrDelta >= 0 ? "pos" : "neg"}>{m.rrDelta == null ? "–" : `${m.rrDelta > 0 ? "+" : ""}${m.rrDelta}`}</span>
-                  <span className="d">{ago(m.started)}</span>
+                  <span className="num">{m.kills} / {m.deaths} / {m.assists}</span>
+                  <span className="num d">{m.acs}</span>
+                  <span className={m.rrDelta == null ? "num d" : m.rrDelta >= 0 ? "num pos" : "num neg"}>{m.rrDelta == null ? "–" : `${m.rrDelta > 0 ? "+" : ""}${m.rrDelta}`}</span>
+                  <span className="num d">{ago(m.started)}</span>
                 </div>
               );
             })}

@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title Valorant Overlay - Kurulum dosyasi olusturuluyor
+title Celeste Overlay - Kurulum dosyasi olusturuluyor
 cd /d "%~dp0"
 
 echo.
