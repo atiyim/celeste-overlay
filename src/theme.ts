@@ -4,27 +4,25 @@ export interface ColDef { id: ColId; label: string; px: number }
 
 // "Oyuncu" sütunu her zaman açıktır ve kalan genişliği alır.
 export const COLS: ColDef[] = [
-  { id: "rank", label: "Rank", px: 112 },
-  { id: "peak", label: "Peak", px: 124 },
+  { id: "rank", label: "Rank", px: 140 },
+  { id: "peak", label: "Peak", px: 140 },
   { id: "wr", label: "Kazanma", px: 60 },
-  { id: "form", label: "Son 5", px: 104 },
+  { id: "form", label: "Son 5 rekabet", px: 112 },
   { id: "skins", label: "Kaplamalar", px: 172 },
   { id: "party", label: "Parti", px: 28 },
   { id: "badges", label: "Rozetler", px: 190 },
   { id: "tracker", label: "Tracker düğmesi", px: 56 },
 ];
 
-/* Rozet ve smurf eşikleri. Rozetler yalnızca ölçülen değerler bu sınırları aşınca çıkar. */
+/* Rozet eşikleri. Rozetler yalnızca ölçülen değerler bu sınırları aşınca çıkar. */
 export interface Thresholds {
   hs: number;       // "Kafa avcısı": kafa isabeti % (en az)
   adr: number;      // "Yüksek hasar": round başına hasar (en az)
   fk: number;       // "Öncü": round'ların yüzde kaçında ilk kan (en az)
   fd: number;       // "İlk ölen": round'ların yüzde kaçında ilk ölüm (en az)
   lowHs: number;    // "Düşük HS": kafa isabeti % (en çok)
-  smurfLevel: number; // Smurf işareti: bu seviyenin altı + yüksek rank
-  smurfWr: number;  // Smurf işareti: bu kazanma oranının (%) üstü
 }
-export const DEFAULT_TH: Thresholds = { hs: 28, adr: 165, fk: 15, fd: 15, lowHs: 12, smurfLevel: 60, smurfWr: 62 };
+export const DEFAULT_TH: Thresholds = { hs: 28, adr: 165, fk: 15, fd: 15, lowHs: 12 };
 
 export interface Theme {
   accent: string;

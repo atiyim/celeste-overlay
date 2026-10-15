@@ -13,6 +13,7 @@
     "core:window:allow-is-minimized",
     "core:window:allow-unminimize",
     "core:window:allow-show",
+    "core:window:allow-set-content-protected",
     "core:window:allow-available-monitors",
     "core:window:allow-primary-monitor",
     "core:window:allow-cursor-position",

@@ -4,7 +4,7 @@ import { lookup, resolveSkin } from "./assets";
 import { TAGS, type Entry } from "./seen";
 import type { ColId, Thresholds } from "./theme";
 import { tierColor } from "./LoadoutPanel";
-import { activityBadge, analyze, formBadge, smurfBadge, smurfSigns, styleBadge } from "./playstyle";
+import { activityBadge, analyze, formBadge, styleBadge } from "./playstyle";
 import type { Player } from "./types";
 
 interface Props {
@@ -40,8 +40,9 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, onOpen,
   // Önceki karşılaşma: şimdiki maç history'nin sonundadır, bir öncekine bak.
   const prev = entry && entry.history.length >= 2 ? entry.history[entry.history.length - 2] : undefined;
   const prevText = prev
-    ? `Önceki maç: ${assets.maps.get(lookup(prev.mapId)) ?? "?"}, ${assets.agents.get(lookup(prev.agentId))?.name ?? "?"} (${prev.side === "ally" ? "takım arkadaşı" : "rakip"})`
+    ? "Geçen: " + [assets.maps.get(lookup(prev.mapId)), assets.agents.get(lookup(prev.agentId))?.name, prev.side === "ally" ? "takım" : "rakip", !anonymous && prev.name && prev.name !== p.name ? `adı: ${prev.name}` : null].filter(Boolean).join(" · ")
     : null;
+  const times = !p.isSelf && entry && entry.n >= 2 ? entry.n : 0; // bu oyuncuyla kaçıncı karşılaşma
 
   // Tracker bağlantısı: görünen isim ya da (gizli isimlilerde) kullanıcının kendi yazdığı not, "isim#etiket" biçimindeyse.
   const trackerName = anonymous ? (label && label.includes("#") ? label : null) : p.name ?? null;
@@ -71,17 +72,18 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, onOpen,
   });
 
   const play = analyze(p);
-  const badges = [smurfBadge(smurfSigns(p, th, assets.tiers.get(p.rank.current)?.name ?? "")), formBadge(p), styleBadge(play, th), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 2); // satır sade kalsın: en önemli iki rozet
+  const badges = [formBadge(p), styleBadge(play, th), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 2); // satır sade kalsın: en önemli iki rozet
 
   const stop = (fn: () => void) => (e: MouseEvent) => { e.stopPropagation(); fn(); };
   const key = (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };
 
   return (
-    <div className="g r" style={{ gridTemplateColumns: template }} role="button" tabIndex={0} onClick={onOpen} onKeyDown={key}>
+    <div className={times ? "g r again" : "g r"} style={{ gridTemplateColumns: template }} role="button" tabIndex={0} onClick={onOpen} onKeyDown={key}>
       <button className="who" type="button" onClick={stop(() => onCopy(anonymous ? label ?? null : p.name ?? null))} title={sub || "Kullanıcı adını kopyala"}>
         {agent && <img className="agent" src={agent.icon} alt={agent.name} loading="lazy" />}
         <span className="n">
           {name}
+          {times > 0 && <span className="rep" title={`Bu oyuncuyla ${times}. kez aynı maçtasın`}>{times}. kez</span>}
           {tag && <span className="tg" style={{ color: tag.color, borderColor: tag.color }}>{tag.label}</span>}
           {sub && <small>{sub}</small>}
         </span>
@@ -131,6 +133,7 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, onOpen,
                 alt={`${t.weapon.name}: ${t.skin.name}`}
                 title={`${t.weapon.name}: ${t.skin.name}${t.skin.chromaName ? ` (${t.skin.chromaName})` : ""}`}
                 loading="lazy"
+                onError={(e) => { const el = e.currentTarget; if (el.dataset.fb !== "1" && t.weapon.icon) { el.dataset.fb = "1"; el.src = t.weapon.icon; } }}
               />
             ) : <span key={i} className="th" />,
           )}
@@ -141,7 +144,7 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, onOpen,
           {p.party ? (
             <span
               className={p.partySure ? "p" : "p soft"}
-              title={p.partySure ? "Aynı partide (Riot verisi)" : "Son maçlarda sık birlikte girdiler (şu an aynı partide olduklarının kanıtı değil)"}
+              title={p.partySure ? "Aynı partide (Riot verisi)" : "Son rekabet maçlarında sık birlikte girdiler (şu an aynı partide olduklarının kanıtı değil)"}
             >{p.party}</span>
           ) : null}
         </div>

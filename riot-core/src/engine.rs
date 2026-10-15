@@ -183,8 +183,10 @@ fn parse_detail(v: &Value) -> Detail {
     }
 }
 
-// Son maç özeti için sayılan kuyruklar (deathmatch gibi modlar K/D'yi bozar).
-const FORM_QUEUES: [&str; 4] = ["competitive", "unrated", "swiftplay", "premier"];
+// Son maç özeti, HS% ve rozetler yalnızca rekabet maçlarından hesaplanır (diğer modlar karıştırıp yanıltır).
+const FORM_QUEUES: [&str; 1] = ["competitive"];
+// Kendi istatistik sayfan tüm ana modları kapsar.
+const STATS_QUEUES: [&str; 4] = ["competitive", "unrated", "swiftplay", "premier"];
 const FORM_N: usize = 5;
 const DETAIL_BUDGET: usize = 10; // her turda en fazla bu kadar maç ayrıntısı çekilir
 
@@ -437,7 +439,7 @@ impl Engine {
             .filter(|p| st.history.get(&p.puuid).map_or(true, |(t, _)| now.duration_since(*t) > CACHE_TTL))
             .map(|p| p.puuid.clone())
             .collect();
-        for (id, h) in join_all(stale_hist.iter().map(|id| async move { (id.clone(), self.fetch_history(s, id, 15).await) })).await {
+        for (id, h) in join_all(stale_hist.iter().map(|id| async move { (id.clone(), self.fetch_history(s, id, 25).await) })).await {
             if let Some((h, act)) = h {
                 st.history.insert(id.clone(), (Instant::now(), h));
                 st.activity.insert(id, act);
@@ -905,7 +907,7 @@ impl Engine {
             None => self.fetch_history(&s, &s.puuid, 15).await.ok_or_else(|| "Maç geçmişi alınamadı.".to_string())?.0,
         };
         let ids: Vec<(String, String)> =
-            hist.into_iter().filter(|(_, q)| FORM_QUEUES.contains(&q.as_str())).take(20).collect();
+            hist.into_iter().filter(|(_, q)| STATS_QUEUES.contains(&q.as_str())).take(20).collect();
 
         // Eksik maç ayrıntılarını 5'erli gruplarla çek; hız sınırına takılırsak elimizdekiyle devam et.
         let want: Vec<String> = ids.iter().filter(|(id, _)| !st.details.contains_key(id)).map(|(id, _)| id.clone()).collect();

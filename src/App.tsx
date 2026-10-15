@@ -11,9 +11,10 @@ import { mockSnapshot } from "./mock";
 import { recordSeen, setLabel, setTag, type Seen } from "./seen";
 import type { Snapshot } from "./types";
 import { PlayerRow } from "./PlayerRow";
-import { smurfShown, smurfSigns } from "./playstyle";
 import { LoadoutPanel } from "./LoadoutPanel";
 import { QuickChat } from "./QuickChat";
+import { Guide } from "./Guide";
+import { Crosshairs } from "./CrosshairPanel";
 import { Settings } from "./Settings";
 import { StatusBar } from "./StatusBar";
 import { AccountPanel } from "./AccountPanel";
@@ -26,10 +27,10 @@ import { applyTheme, COLS, gridTemplate, loadTheme, overlayWidth } from "./theme
 const inTauri = "__TAURI_INTERNALS__" in window;
 // Pencere genişliği açık sütunlara göre hesaplanır; yükseklik içeriğe göre otomatik ayarlanır.
 const SIDE_QUEUES = ["competitive", "unrated", "swiftplay", "spikerush", "premier"];
-const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
+export const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
 const NAV = [
-  ["roster", "Oyuncular"], ["report", "Son maç"], ["store", "Mağaza"], ["account", "Hesabım"], ["stats", "İstatistik"], ["chat", "Sohbet"], ["settings", "Ayarlar"],
+  ["roster", "Oyuncular"], ["report", "Son maç"], ["store", "Mağaza"], ["account", "Hesabım"], ["stats", "İstatistik"], ["chat", "Sohbet"], ["cross", "Nişangah"], ["settings", "Ayarlar"],
 ] as const;
 type View = (typeof NAV)[number][0];
 
@@ -49,6 +50,9 @@ export function App() {
   const [view, setView] = useState<View>("roster");
   const [theme, setTheme] = useState(loadTheme);
   const [seen, setSeen] = useState<Seen>({});
+  const [guide, setGuide] = useState<boolean>(() => { try { return localStorage.getItem("overlay-guide") !== "1"; } catch { return false; } });
+  const closeGuide = () => { setGuide(false); try { localStorage.setItem("overlay-guide", "1"); } catch { /* depolama kapalı */ } };
+  const [protect, setProtect] = useState<boolean>(() => localStorage.getItem("overlay-protect") === "1");
   const [zoom, setZoom] = useState<number>(() => Number(localStorage.getItem("overlay-zoom")) || 1);
   const [autoHidden, setAutoHidden] = useState(false);
   const [assetsFailed, setAssetsFailed] = useState(false);
@@ -97,7 +101,7 @@ export function App() {
       recordSeen(
         snap.matchId,
         snap.mapId ?? null,
-        snap.players.filter((p) => !p.isSelf).map((p) => ({ puuid: p.puuid, agentId: p.agentId, side: p.team === me ? "ally" : "enemy" })),
+        snap.players.filter((p) => !p.isSelf).map((p) => ({ puuid: p.puuid, agentId: p.agentId, side: p.team === me ? "ally" : "enemy", name: p.hiddenName ? null : p.name })),
       ),
     );
   }, [snap.matchId, snap.phase, snap.players]);
@@ -201,6 +205,12 @@ export function App() {
     if (inTauri) getCurrentWebview().setZoom(zoom).catch(() => undefined);
   }, [zoom]);
 
+  // Kayıtta gizle: pencere ekran kaydı ve yayın yazılımlarında görünmez (Windows'ta çalışır, oyuncunun kendi ekranında görünmeye devam eder).
+  useEffect(() => {
+    try { localStorage.setItem("overlay-protect", protect ? "1" : "0"); } catch { /* depolama kapalı */ }
+    if (inTauri) getCurrentWindow().setContentProtected(protect).catch(() => undefined);
+  }, [protect]);
+
   useEffect(() => { localStorage.setItem("overlay-collapsed", collapsed ? "1" : "0"); if (collapsed) setSelected(null); }, [collapsed]);
 
   // Otomatik gizleme: maç başladıktan N saniye sonra pencere görünmez ve tıklanamaz hâle gelir (odak çalınmaz).
@@ -250,11 +260,11 @@ export function App() {
   });
 
   const showToast = (t: string) => { setToast(t); window.setTimeout(() => setToast(null), 1800); };
-  const copyName = async (name: string | null) => {
+  const copyName = async (name: string | null, label?: string) => {
     if (!name) { showToast("Bu oyuncunun ismi gizli, kopyalanacak bir şey yok"); return; }
     try {
       if (inTauri) await writeText(name); else await navigator.clipboard.writeText(name);
-      showToast(`Kopyalandı: ${name}`);
+      showToast(label ?? `Kopyalandı: ${name}`);
     } catch { showToast("Kopyalanamadı"); }
   };
 
@@ -300,7 +310,7 @@ export function App() {
     : snap.phase === "menu" ? "Maç bekleniyor. Ajan seçimi başlayınca oyuncular burada görünecek."
     : "Maç başladığında oyuncular burada görünecek.";
 
-  // Takım karşılaşması: ortalama rank, ortalama K/D ve olası smurf sayısı.
+  // Takım karşılaşması: ortalama rank, ortalama K/D.
   const teamStats = (list: typeof allies) => {
     const ranked = list.filter((p) => p.rank.current > 0);
     const kds = list.filter((p) => p.kd != null);
@@ -308,7 +318,6 @@ export function App() {
     return {
       tier: avgTier ? assets?.tiers.get(avgTier) : undefined,
       kd: kds.length ? kds.reduce((a, p) => a + (p.kd ?? 0), 0) / kds.length : null,
-      smurfs: list.filter((p) => smurfShown(smurfSigns(p, theme.th, assets?.tiers.get(p.rank.current)?.name ?? ""))).length,
     };
   };
 
@@ -334,6 +343,17 @@ export function App() {
                 <button type="button" onClick={() => stepZoom(1)} aria-label="Büyüt">A+</button>
               </>
             )}
+            {!collapsed && (
+              <button
+                type="button"
+                className={protect ? "on" : ""}
+                aria-pressed={protect}
+                title="Açıkken overlay ekran kaydında ve yayında görünmez; sen oyunda görmeye devam edersin."
+                onClick={() => { setProtect(!protect); showToast(protect ? "Overlay kayıtta görünür" : "Overlay kayıtta gizli"); }}
+              >
+                {protect ? "Kayıtta gizli" : "Kayıtta gizle"}
+              </button>
+            )}
             <button type="button" onClick={() => setCollapsed((c) => !c)} aria-expanded={!collapsed}>
               {collapsed ? "Göster" : "Gizle"}
             </button>
@@ -351,7 +371,7 @@ export function App() {
         <div className="upd" role="status">Güncelleme indiriliyor {updater.state.pct != null ? `%${updater.state.pct}` : "…"}</div>
       )}
 
-      {!collapsed && (
+      {!collapsed && !guide && (
         <nav className="nav" aria-label="Bölümler">
           {NAV.map(([id, label]) => (
             <button key={id} type="button" className={view === id ? "on" : ""} onClick={() => { setSelected(null); setView(id); }}>
@@ -361,9 +381,11 @@ export function App() {
         </nav>
       )}
 
-      {!collapsed && (
+      {!collapsed && guide && <Guide onDone={closeGuide} />}
+
+      {!collapsed && !guide && (
         view === "settings" ? (
-          <Settings updater={updater} theme={theme} onChange={setTheme} onToast={showToast} onClose={() => setView("roster")} />
+          <Settings updater={updater} theme={theme} onChange={setTheme} onGuide={() => { setGuide(true); setView("roster"); }} zoom={zoom} onZoom={setZoom} zooms={ZOOMS} onToast={showToast} onClose={() => setView("roster")} />
         ) : view === "report" ? (
           assets ? <ReportPanel assets={assets} matchId={lastMatch} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "store" ? (
@@ -372,6 +394,8 @@ export function App() {
           assets ? <AccountPanel assets={assets} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "stats" ? (
           assets ? <StatsPanel assets={assets} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
+        ) : view === "cross" ? (
+          <Crosshairs onCopy={copyName} onClose={() => setView("roster")} />
         ) : view === "chat" ? (
           <QuickChat onCopy={copyName} onMessage={showToast} onClose={() => setView("roster")} />
         ) : active && assets ? (
@@ -411,8 +435,8 @@ export function App() {
                     {(() => {
                       const t = teamStats(list as typeof allies);
                       return (
-                        <span className="cmp" title="Ortalama rank, son 5 maçın ortalama K/D'si ve smurf işareti taşıyan oyuncu sayısı">
-                          Ortalama {t.tier?.name ?? "–"} · K/D {t.kd != null ? t.kd.toFixed(2) : "–"} · Smurf işareti {t.smurfs}
+                        <span className="cmp" title="Ortalama rank ve son 5 rekabet maçının ortalama K/D'si">
+                          Ortalama {t.tier?.name ?? "–"} · K/D {t.kd != null ? t.kd.toFixed(2) : "–"}
                         </span>
                       );
                     })()}
@@ -439,7 +463,7 @@ export function App() {
             {snap.players.some((x) => x.party) && (
               <p className="mode legend">
                 <span className="p mini">A</span>Aynı parti
-                {snap.players.some((x) => x.party && !x.partySure) && <><span className="p mini soft">A</span>Son maçlarda sık birlikte</>}
+                {snap.players.some((x) => x.party && !x.partySure) && <><span className="p mini soft">A</span>Son rekabet maçlarında sık birlikte</>}
               </p>
             )}
           </>

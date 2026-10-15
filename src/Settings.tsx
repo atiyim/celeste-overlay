@@ -9,13 +9,11 @@ const TH_FIELDS: { key: keyof Thresholds; label: string; hint: string; unit: str
   { key: "fk", label: "Öncü", hint: "İlk kan, round oranı en az", unit: "%" },
   { key: "fd", label: "İlk ölen", hint: "İlk ölüm, round oranı en az", unit: "%" },
   { key: "lowHs", label: "Düşük HS", hint: "Kafa isabeti en çok", unit: "%" },
-  { key: "smurfLevel", label: "Smurf: seviye", hint: "Bu seviyenin altı + Altın üstü rank", unit: "" },
-  { key: "smurfWr", label: "Smurf: kazanma", hint: "Bu orandan yüksek, en az 10 maç", unit: "%" },
 ];
 
-interface Props { updater: ReturnType<typeof useUpdater>; theme: Theme; onChange: (t: Theme) => void; onToast: (t: string) => void; onClose: () => void }
+interface Props { onGuide: () => void; updater: ReturnType<typeof useUpdater>; zoom: number; onZoom: (z: number) => void; zooms: number[]; theme: Theme; onChange: (t: Theme) => void; onToast: (t: string) => void; onClose: () => void }
 
-export function Settings({ updater, theme, onChange, onToast, onClose }: Props) {
+export function Settings({ onGuide, updater, zoom, onZoom, zooms, theme, onChange, onToast, onClose }: Props) {
   return (
     <div className="panel" role="dialog" aria-label="Ayarlar">
       <div className="ph">
@@ -46,6 +44,16 @@ export function Settings({ updater, theme, onChange, onToast, onClose }: Props) 
               <span>Özel renk</span>
             </label>
           </div>
+
+          <h2 className="h">Yazı boyutu</h2>
+          <div className="zsz" role="group" aria-label="Yazı boyutu">
+            {zooms.map((z) => (
+              <button key={z} type="button" className={z === zoom ? "x on" : "x"} aria-pressed={z === zoom} onClick={() => onZoom(z)}>
+                %{Math.round(z * 100)}
+              </button>
+            ))}
+          </div>
+          <p className="m">Tüm overlay'i büyütür veya küçültür. Üstteki A− A+ ile aynı ayardır.</p>
 
           <h2 className="h">Saydamlık</h2>
           <div className="alpha">
@@ -92,7 +100,7 @@ export function Settings({ updater, theme, onChange, onToast, onClose }: Props) 
             </div>
             <div className="note"><button className="x" type="button" onClick={() => onChange({ ...theme, th: DEFAULT_TH })}>Varsayılana dön</button></div>
           </details>
-          <p className="m">Rozetler, son 5 maçta ölçülen değer bu sınırı aşınca çıkar.</p>
+          <p className="m">Rozetler, son 5 rekabet maçında ölçülen değer bu sınırı aşınca çıkar.</p>
 
         </div>
 
@@ -146,7 +154,7 @@ export function Settings({ updater, theme, onChange, onToast, onClose }: Props) 
 
           <h2 className="h">Hakkında</h2>
           <p className="m">Celeste Overlay, Riot Games ile bağlantılı değildir. Oyuna dokunmaz; yalnızca açık Riot Client oturumunu okur. Etiketler ve notlar yalnızca bu bilgisayarda saklanır.</p>
-          <p className="m"><button className="x" type="button" onClick={() => copyDiagnostics(updater.version, [], onToast)}>Tanı bilgisini kopyala</button></p>
+          <p className="m"><button className="x" type="button" onClick={onGuide}>Rehberi yeniden göster</button> <button className="x" type="button" onClick={() => copyDiagnostics(updater.version, [], onToast)}>Tanı bilgisini kopyala</button></p>
         </div>
       </div>
     </div>

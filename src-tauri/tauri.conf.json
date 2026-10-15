@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Celeste Overlay",
-  "version": "0.4.4",
+  "version": "0.5.0",
   "identifier": "app.valorant.overlay",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -59,7 +59,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZGMjEwNDkzNDRGRjlCNzMKUldSem0vOUVrd1FoL3dUUTNmMjlXTmk3T0N1bGxXa28wMmwwcDB2QVBxenRueG9iUHA2MzFNUnQK",
       "endpoints": [
-        "https://github.com/atiyim/valorant-overlay/releases/latest/download/latest.json"
+        "https://github.com/atiyim/celeste-overlay/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"

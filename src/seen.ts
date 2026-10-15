@@ -1,13 +1,12 @@
 /* Yalnızca bu bilgisayarda tutulan karşılaşma geçmişi ve kişisel notlar.
-   İsim Riot'tan sorgulanmaz: gizli isimli oyuncular için "label" kullanıcının kendi yazdığı nottur. */
+   İsim Riot'tan ayrıca sorgulanmaz; yalnızca lobide zaten görünen isim kaydedilir. Gizli isimli oyuncular için "label" kullanıcının kendi yazdığı nottur. */
 const KEY = "overlay-seen";
 
-export interface Encounter { matchId: string; mapId?: string | null; agentId: string; side: "ally" | "enemy"; at: number }
+export interface Encounter { matchId: string; mapId?: string | null; agentId: string; side: "ally" | "enemy"; at: number; name?: string }
 export const TAGS = [
   { id: "iyi", label: "İyi", color: "#4ade80" },
   { id: "toksik", label: "Toksik", color: "#f87171" },
   { id: "supheli", label: "Şüpheli", color: "#fbbf24" },
-  { id: "smurf", label: "Smurf", color: "#a78bfa" },
 ] as const;
 export type TagId = (typeof TAGS)[number]["id"];
 export interface Entry { n: number; last: string; label?: string; tag?: TagId; history: Encounter[] }
@@ -27,12 +26,12 @@ function save(s: Seen) {
 export function recordSeen(
   matchId: string,
   mapId: string | null,
-  players: { puuid: string; agentId: string; side: "ally" | "enemy" }[],
+  players: { puuid: string; agentId: string; side: "ally" | "enemy"; name?: string | null }[],
 ): Seen {
   const s = load();
   const at = Date.now();
   for (const p of players) {
-    const enc: Encounter = { matchId, mapId, agentId: p.agentId, side: p.side, at };
+    const enc: Encounter = { matchId, mapId, agentId: p.agentId, side: p.side, at, ...(p.name ? { name: p.name } : {}) };
     const e = s[p.puuid];
     if (!e) s[p.puuid] = { n: 1, last: matchId, history: [enc] };
     else if (e.last !== matchId) {

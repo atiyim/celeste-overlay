@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { Assets, WeaponInfo } from "./assets";
 import { charmIcon, lookup, resolveFlex, resolveSkin, resolveSprays } from "./assets";
-import { ago, analyze, formBadge, smurfSigns, styleBadge, type WeaponStat } from "./playstyle";
+import { ago, analyze, formBadge, styleBadge, type WeaponStat } from "./playstyle";
 import { DEFAULT_TH, type Thresholds } from "./theme";
 import { TAGS, type Entry, type TagId } from "./seen";
 import type { Player, PremierTeam } from "./types";
@@ -114,7 +114,6 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
   const play = analyze(p);
   const fb = formBadge(p);
   const sb = styleBadge(play, th);
-  const smurf = smurfSigns(p, th, cur?.name ?? "");
   const rrSum = p.rrTrend.reduce((a, b) => a + b, 0);
   const sameAgent = p.form.filter((f) => lookup(f.agentId) === lookup(p.agentId));
   const sameKd = (() => {
@@ -189,8 +188,8 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
       {tab === "perf" && (
         <div className="perf fade">
           <div>
-            <h3 className="h2">Son maçlar{p.kd != null && <span className="hv">K/D {p.kd.toFixed(2)}</span>}</h3>
-            {p.form.length === 0 ? <None text={p.formLoading ? "Yükleniyor…" : "Maç verisi yok"} /> : (
+            <h3 className="h2">Son rekabet maçları{p.kd != null && <span className="hv">K/D {p.kd.toFixed(2)}</span>}</h3>
+            {p.form.length === 0 ? <None text={p.formLoading ? "Yükleniyor…" : "Rekabet maçı yok"} /> : (
               <div className="tb">
                 <div className="tr hd2"><span /><span>Harita</span><span>Ajan</span><span className="num">K / D / A</span><span className="num">K/D</span></div>
                 {p.form.map((f, i) => {
@@ -252,12 +251,6 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
             {sprays.length ? sprays.map((s) => (
               <div className="chrow" key={s.name}><img src={s.icon} alt="" loading="lazy" /><span>{s.name}</span></div>
             )) : <None />}
-            {smurf.length > 0 && (
-              <>
-                <h3 className="h2">Smurf işaretleri</h3>
-                <ul className="signs">{smurf.map((x) => <li key={x.text}>{x.text}</li>)}</ul>
-              </>
-            )}
           </div>
           <div>
             <h3 className="h2">Flex</h3>
@@ -290,7 +283,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
               )}
             {p.together.length > 0 && (
               <>
-                <h3 className="h2">Son maçlarda birlikte<span className="hv">Aynı partide girilen maç</span></h3>
+                <h3 className="h2">Son rekabet maçlarında birlikte<span className="hv">Aynı partide girilen maç</span></h3>
                 <div className="tb">
                   {p.together.slice(0, 4).map((t) => {
                     const mate = lobby.find((x) => x.puuid === t.puuid);
@@ -323,10 +316,11 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
             )}
             {entry && entry.history.length >= 2 && (
               <>
-                <h3 className="h2">Daha önce karşılaştınız</h3>
+                <h3 className="h2">Daha önce karşılaştınız<span className="hv">{entry.n}. maç</span></h3>
                 <div className="tb">
                   {entry.history.slice(-4, -1).reverse().map((h, i) => (
                     <div className="tr met" key={i}>
+                      <span className="mn">{!anonymous && h.name ? h.name : "–"}</span>
                       <span>{assets.maps.get(lookup(h.mapId)) ?? "?"}</span>
                       <span>{assets.agents.get(lookup(h.agentId))?.name ?? "?"}</span>
                       <span className={h.side === "ally" ? "side-ally" : "side-enemy"}>{h.side === "ally" ? "Takım" : "Rakip"}</span>

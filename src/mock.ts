@@ -8,18 +8,26 @@ export function mockSnapshot(a: Assets): Snapshot {
   const agents = [...a.agents.keys()];
   const sprays = [...a.sprays.keys()];
   const charms = [...a.charms.keys()];
-  const skinIds = [...a.skins.keys()];
-  const chromaIds = [...a.chromas.keys()];
+
+  // Her silah için gerçek, süslü kaplamalar (standart ve seviye/chroma kayıtları dışarıda).
+  const KEYS = ["gaia", "reaver", "oni", "prime", "elderflame", "glitchpop", "champions", "singularity", "araxys", "kuronami", "ruination", "spectrum", "sentinels", "ion", "origin"];
+  const premium = (w: Assets["weapons"][number]): string[] => {
+    const wn = w.name.toLowerCase();
+    const all = [...a.skins.entries()].filter(([id, s]) => a.skinMeta.has(id) && id !== w.defaultSkinId && s.icon && s.name.toLowerCase().includes(wn) && !/standart|standard|random|rastgele/i.test(s.name));
+    const liked = all.filter(([, s]) => KEYS.some((k) => s.name.toLowerCase().includes(k)));
+    return (liked.length >= 3 ? liked : all).map(([id]) => id);
+  };
+  const premiumBy = new Map(a.weapons.map((w) => [w.id, premium(w)] as const));
 
   const names = ["Sen#TR1", "Kuzey#0412", "", "Mavi#TR1", "Deniz#7731", "Atlas#TR1", "nova#4410", "", "Kaan#TR1", "Zeynep#009"];
   const players: Player[] = names.map((n, i) => {
     const weapons: WeaponSlot[] = a.weapons.map((w, j) => {
-      const fancy = (i + j) % 3 !== 0;
-      const chroma = fancy ? pick(chromaIds, i * 31 + j * 7) : undefined;
+      const pool = premiumBy.get(w.id) ?? [];
+      const fancy = pool.length > 0 && (i + j) % 5 !== 0;
       return {
         weaponId: w.id,
-        skinId: fancy ? pick(skinIds, i * 17 + j * 13) : w.defaultSkinId,
-        chromaId: chroma,
+        skinId: fancy ? pick(pool, i * 7 + j * 3) : w.defaultSkinId,
+        chromaId: undefined,
         charmId: (i + j) % 4 === 0 ? pick(charms, i + j) : undefined,
       };
     });

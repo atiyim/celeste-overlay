@@ -146,7 +146,7 @@ export function resolveSkin(a: Assets, w: { id: string; defaultSkinId: string; i
   const isDefault = ids.includes(w.defaultSkinId) || /^(standart|standard)/i.test(skin.name);
   return {
     name: isDefault ? "Standart" : skin.name,
-    image: chroma?.render || skin.icon || w.icon,
+    image: isDefault ? w.icon || skin.icon : chroma?.render || skin.icon || w.icon, // standart kaplamanın kendi görseli çoğu zaman yok; silahın görseli kullanılır
     swatch: chroma && chroma.index > 0 ? chroma.swatch : undefined,
     chromaName: chroma && chroma.index > 0 ? chroma.name : undefined,
     isDefault,

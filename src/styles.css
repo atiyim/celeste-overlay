@@ -194,7 +194,7 @@ button.tg:hover { opacity: 1; }
 .tb { display: flex; flex-direction: column; }
 .tr { display: grid; grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1.1fr) 84px 46px; column-gap: 10px; align-items: center; min-height: 30px; font-size: 12.5px; border-bottom: 1px solid var(--line-soft); }
 .tr.hd2 { min-height: 24px; font-size: 11px; color: var(--fg-3); border-bottom-color: var(--line); }
-.tr.met { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 54px; }
+.tr.met { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) 54px; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .ra { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .ra img { width: 20px; height: 20px; border-radius: 4px; }
@@ -346,3 +346,58 @@ button.tg:hover { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Yazı boyutu seçenekleri, kayıt gizleme ve nişangah listesi */
+.zsz { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.x.on, .zoom button.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.xh { display: grid; grid-template-columns: 110px 1fr auto; gap: 8px; align-items: center; min-height: 34px; font-size: 13px; border-bottom: 1px solid var(--line); }
+.xh code { font-family: "Geist Mono Variable", ui-monospace, monospace; font-size: 11.5px; color: var(--fg-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xh .xn { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xh .xn small { display: block; font-weight: 400; font-size: 11px; color: var(--fg-3); }
+
+/* Tekrar karşılaşılan oyuncu */
+.r.again { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 55%); box-shadow: inset 2px 0 0 var(--accent); }
+.r.again:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 14%, transparent), rgba(255,255,255,.035) 55%); }
+.rep { display: inline-block; margin-left: 8px; padding: 0 7px; font-size: 10.5px; font-weight: 600; line-height: 18px; border-radius: 999px; color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); vertical-align: 1px; }
+.tr.met .mn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; color: var(--fg); }
+
+/* İlk açılış rehberi */
+.guide { gap: 12px; }
+.gbar { height: 2px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.gbar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--violet)); transition: width .45s cubic-bezier(.2,.8,.2,1); }
+.guide .ph { align-items: center; }
+.gstep { animation: gin .35s cubic-bezier(.2,.8,.2,1) both; min-height: 300px; display: flex; flex-direction: column; gap: 10px; }
+.gh { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+.gl { margin: 0 0 4px; font-size: 14px; color: var(--fg-2); max-width: 68ch; }
+.gitems { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.gxi { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--s2); animation: gin .4s cubic-bezier(.2,.8,.2,1) both; }
+.gxs { flex: none; width: 118px; display: flex; align-items: center; justify-content: center; min-height: 28px; }
+.gxt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gxt b { font-size: 13px; font-weight: 500; }
+.gxt small { font-size: 12px; color: var(--fg-3); line-height: 1.4; }
+.gdot { width: 10px; height: 10px; border-radius: 50%; background: var(--fg-3); }
+.gdot.ok, .gdots i.ok { background: #4ade80; box-shadow: 0 0 0 0 rgba(74, 222, 128, .5); animation: gping 2.2s ease-out infinite; }
+.gdots { display: flex; gap: 6px; } .gdots i { width: 8px; height: 8px; border-radius: 50%; }
+.gsoft { font-size: 11px; color: var(--fg-3); text-align: center; }
+.gflow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.gf { display: flex; flex-direction: column; gap: 3px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%); animation: gin .4s cubic-bezier(.2,.8,.2,1) both; }
+.gf b { font-size: 14px; font-weight: 500; } .gf small { font-size: 12px; color: var(--fg-3); }
+.gfn { width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 50%; font-size: 12px; font-weight: 600; color: #000; background: var(--accent); margin-bottom: 4px; }
+.grank { display: flex; flex-direction: column; font-size: 13px; color: var(--teal); line-height: 1.2; } .grank small { font-size: 11px; color: var(--fg-3); }
+.gwl { display: flex; gap: 3px; } .gwl i { all: unset; width: 18px; height: 18px; line-height: 18px; text-align: center; font-size: 10.5px; font-weight: 600; border-radius: 4px; }
+.gwl .w { color: #4ade80; background: rgba(74, 222, 128, .14); } .gwl .l { color: #f87171; background: rgba(248, 113, 113, .14); }
+.gpair { display: flex; gap: 6px; } .gpair .p { font-style: normal; }
+.gk { font-family: "Geist Mono Variable", ui-monospace, monospace; font-size: 12px; padding: 3px 10px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; background: var(--bg); color: var(--fg); }
+.gdrag { padding: 2px 10px; font-weight: 600; border-bottom: 2px solid var(--accent); }
+.gbtns { display: flex; gap: 4px; } .gbtns i { font-style: normal; font-size: 11px; color: var(--fg-2); padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; white-space: nowrap; }
+.gtabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.gtab { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--s2); animation: gin .4s cubic-bezier(.2,.8,.2,1) both; }
+.gtab b { font-size: 13px; font-weight: 500; color: var(--accent); } .gtab small { font-size: 12px; color: var(--fg-3); }
+.gnav { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--line-soft); }
+.gpg { display: flex; gap: 6px; } .gpg i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); transition: background .25s, transform .25s; }
+.gpg i.done { background: color-mix(in srgb, var(--accent) 50%, transparent); } .gpg i.on { background: var(--accent); transform: scale(1.4); }
+.x.go { color: #000; background: var(--accent); border-color: var(--accent); font-weight: 500; padding: 3px 18px; } .x.go:hover { color: #000; filter: brightness(1.12); background: var(--accent); }
+.x:disabled { opacity: .35; cursor: default; pointer-events: none; }
+@keyframes gin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes gping { 0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, .5); } 70%, 100% { box-shadow: 0 0 0 7px rgba(74, 222, 128, 0); } }
+@media (prefers-reduced-motion: reduce) { .gstep, .gxi, .gf, .gtab { animation: none; } .gdot.ok, .gdots i.ok { animation: none; } .gbar i, .gpg i { transition: none; } }
