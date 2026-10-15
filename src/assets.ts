@@ -1,4 +1,5 @@
 import type { Loadout, WeaponSlot } from "./types";
+import { tfetch } from "./net";
 
 const BASE = "https://valorant-api.com/v1";
 const LANG = "language=tr-TR";
@@ -10,18 +11,18 @@ export async function cachedJson<T>(path: string): Promise<T> {
     const cache = await caches.open("valo-assets");
     const hit = await cache.match(url);
     if (hit) return (await hit.json()).data as T;
-    const res = await fetch(url);
+    const res = await tfetch(url);
     if (res.ok) {
       await cache.put(url, res.clone());
       return (await res.json()).data as T;
     }
   } catch { /* önbellek yoksa doğrudan dene */ }
-  return (await (await fetch(url)).json()).data as T;
+  return (await (await tfetch(url)).json()).data as T;
 }
 
 async function invalidateOnNewVersion() {
   try {
-    const res = await fetch(`${BASE}/version`);
+    const res = await tfetch(`${BASE}/version`);
     const v = (await res.json()).data?.version as string | undefined;
     if (v && localStorage.getItem("valo-version") !== v) {
       await caches.delete("valo-assets");

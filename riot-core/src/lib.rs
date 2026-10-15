@@ -2,6 +2,7 @@
 //! Arayüzden bağımsızdır; Tauri tarafı sadece `Engine::snapshot` çağırır.
 mod engine;
 mod model;
+pub mod netlog;
 mod session;
 
 pub use engine::Engine;

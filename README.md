@@ -1,18 +1,19 @@
 # Celeste Overlay
 
-Valorant lobisinde herkesin rankını, son rekabet performansını ve kaplamalarını tek bakışta gösteren, sade ve karanlık temalı bir overlay.
+Valorant lobisinde herkesin rankını, son maçlarını ve kaplamalarını tek bakışta gösteren, sade ve karanlık temalı bir overlay. Giriş yapmaz, oyuna dokunmaz, ne yaptığını canlı gösterir.
 
 ![Celeste Overlay](docs/ekran-1.png)
 
 ## Güvenlik
 
 - **Giriş yok.** Riot hesabına giriş yapmazsın. Uygulama, açık Riot Client oturumunu okur.
-- **Yalnızca okur.** Oyuna tuş göndermez, oyun dosyalarını değiştirmez, hile değildir.
-- **Veriler sende kalır.** Etiketler, notlar ve ayarlar yalnızca bu bilgisayarda saklanır.
-- **Gizli isimler gizli kalır.** İsmini gizleyen oyuncunun adı gösterilmez.
+- **Yalnızca okur.** Oyuna tuş göndermez, oyun belleğine girmez, oyun dosyalarını değiştirmez. Hile değildir.
+- **Veriler sende kalır.** Etiketler, notlar ve ayarlar yalnızca bu bilgisayarda saklanır. Uygulamanın kendi sunucusu yoktur.
+- **Gizli isimler gizli kalır.** İsmini gizleyen oyuncunun adı sorgulanmaz, saklanmaz, gösterilmez.
+- **Kanıtı uygulamanın içinde.** **S.S.S & Panel** sekmesi, uygulamanın attığı her isteği canlı listeler.
 - Kaynak kodu bu depoda açıktır.
 
-Celeste Overlay, Riot Games ile bağlantılı değildir ve Riot Games tarafından onaylanmamıştır.
+Celeste Overlay, Riot Games ile bağlantılı değildir ve Riot Games tarafından onaylanmamıştır. Riot Games, üçüncü taraf uygulamaları onaylamaz ve Vanguard'ın bir uygulamayı şimdi ya da ileride işaretlemeyeceğini garanti etmez ([hizmet şartları](https://www.riotgames.com/tr/terms-of-service-TR)). Bu uygulama için de garanti verilemez; yapılabilecek tek şey ne yaptığını açıkça göstermektir.
 
 ## Kurulum
 
@@ -27,39 +28,100 @@ Celeste Overlay, Riot Games ile bağlantılı değildir ve Riot Games tarafında
 
 İlk kurulumda **"Windows bilgisayarınızı korudu"** uyarısı çıkabilir. Sebep virüs değil, kurulum dosyasının ücretli bir kod imzalama sertifikasıyla imzalanmamış olmasıdır. Windows imzasız ve yeni dosyaların hepsinde bu uyarıyı gösterir.
 
-Kurmak için:
-
 1. Uyarıda **Daha fazla bilgi**'ye tıkla.
 2. **Yine de çalıştır** düğmesine bas.
 
 ![SmartScreen adımları](docs/smartscreen.png)
 
-Uyarı yalnızca ilk kurulumda çıkar. Uygulama içi güncellemelerde çıkmaz.
-
-Kurulum dosyasını kontrol etmek istersen: dosya yalnızca bu deponun [Releases](../../releases) sayfasından indirilmelidir. Başka bir yerden gelen kopyaya güvenme. Kodu kendin derlemek istersen aşağıdaki "Geliştirme" bölümüne bak.
+Uyarı yalnızca ilk kurulumda çıkar. Uygulama içi güncellemelerde çıkmaz. Kurulum dosyasını yalnızca bu deponun [Releases](../../releases) sayfasından indir.
 
 ## Özellikler
 
-| Bölüm | Ne işe yarar |
-|---|---|
-| Oyuncular | Lobi listesi: rank, peak, kazanma oranı, son 5 rekabet maçı, kaplamalar, parti, rozetler |
-| Son maç | Biten maçın raporu |
-| Mağaza | Günlük ve gece mağazası |
-| Hesabım | Bakiye, görevler, battle pass, envanter |
-| İstatistik | Kendi rekabet verilerin |
-| Sohbet | Hızlı mesaj kısayolları |
-| Nişangah | Hazır nişangah kodları |
-| Ayarlar | Renk, yazı boyutu, sütunlar, rozet eşikleri |
+### Oyuncular (lobi)
 
-- **Tekrar karşılaşma:** Daha önce aynı maçta olduğun oyuncular işaretlenir ("3. kez").
-- **Kayıtta gizle:** Overlay ekran kaydında ve yayında görünmez, sen oyunda görmeye devam edersin.
+Ajan seçiminde ve maç sırasında herkes tek tabloda:
+
+- **Rank, peak ve RR.** Güncel rank ile en yüksek rank yan yana.
+- **Kazanma oranı** ve maç sayısı.
+- **Son maçlar.** Son 5 maçın W/L işareti. Rekabet düz, diğer modlar kesikli çerçeveyle görünür. Üstüne gelince mod, harita, ajan ve K/D/A çıkar.
+- **Kaplamalar.** Silah başına kaplama görselleri.
+- **Parti.** Aynı partideki oyuncular aynı harfi alır (A, B…). Kesin bilinmeyenler soluk harfle gösterilir.
+- **Rozetler.** Yalnızca son rekabet maçlarında ölçülen değerlere göre: Kafa avcısı, Yüksek hasar, Öncü, İlk ölen, Düşük HS, Formda, Tilt.
+- **Takım karşılaştırması.** Her takımın ortalama ranki ve K/D'si.
+- **Tekrar karşılaşma.** Daha önce aynı maçta olduğun oyuncular "3. kez" etiketiyle öne çıkar ve geçen sefer takım mı rakip mi olduğu yazılır. İsimleri yalnızca lobide zaten görünüyorsa saklanır.
+- **Oyuncu ayrıntısı.** Satıra tıklayınca: maç geçmişi (mod filtresiyle: rekabet, derecesiz, tam gaz, diğer), oynayış istatistikleri, kullandığı kaplamalar. Oyuncuya etiket ve not eklenebilir.
+- **İsim kopyalama.** İsme tıkla, adı kopyalanır. Tracker düğmesi oyuncuyu tarayıcıda açar.
+
+### Son maç
+
+Biten maçın raporu kendiliğinden açılır: skor, oyuncu tablosu (K/D/A, ACS, kafa isabeti, hasar, ilk kan) ve kimin kimi kaç kez öldürdüğü.
+
+### Mağaza
+
+Günlük ve gece mağazan, kaplama görselleri ve fiyatlarla. Oyun kapalıyken de çalışır, Riot Client açık olması yeterli.
+
+### Hesabım
+
+Bakiye (VP, RP, KC), günlük ve haftalık görevler, battle pass ilerlemesi ve envanter.
+
+### İstatistik
+
+Kendi rekabet verilerin: son maçlar, kazanma oranı, ajan bazında performans, RR değişimi.
+
+### Sohbet
+
+Hızlı mesajlar: sık yazdığın mesajları ekle, listeden birine tıklayınca panoya kopyalanır. Oyunda sohbeti açıp Ctrl+V ile yapıştırırsın. Oyuna tuş göndermez.
+
+### Nişangah
+
+8 hazır nişangah, görselleriyle. Karta tıklayınca kod kopyalanır; oyunda Ayarlar → Nişangah → İçe aktar ile yapıştırırsın.
+
+### S.S.S & Panel
+
+Panelin üst yarısı sık sorulan soruları kısaca cevaplar: neden güvenmeli, ban riski, şifre, oyuna dokunma, hile, gizli isimler, veri, Windows uyarısı. Alt yarısı bunları doğrulayan **canlı kayıttır**:
+
+- Her isteğin saati, ne için atıldığı, durum kodu ve süresi
+- Toplam istek, son dakikadaki istek, okuma / sorgu / **yazma** sayacı. Yazma sayacı Riot'ta bir şey değiştiren istekleri sayar ve sıfır kalmalıdır.
+- Hangi adreslere bağlandığı (Riot sunucuları, bu bilgisayar, valorant-api.com, GitHub). Beklenmeyen bir adres kırmızı görünür.
+- İsmi gizli olduğu için sorgulanmayan oyuncu sayısı
+- Bilgisayarda saklanan veriler ve **Verilerimi sil** düğmesi
+- Akışı tek tuşla kopyalama
+
+Kayıt yalnızca bellekte tutulur. Token, çerez ve istek gövdesi hiç kaydedilmez, oyuncu ve maç kimlikleri maskelenir.
+
+### Tilt koruyucu
+
+Zor bir seansta sakin bir hatırlatma gösterir. Yalnızca kendi rekabet maçlarına bakar; hiçbir şey göndermez.
+
+- Üst üste kayıp (varsayılan 3 maç)
+- Seanstaki RR kaybı (varsayılan −40 RR)
+- Oyun süresi (varsayılan 3 saat)
+
+Seans, aralarında 100 dakikadan uzun ara olmayan maçlardır. Oyuncular sekmesinde "Bu seans · 1G 4M · −52 RR · 2 sa 28 dk" satırı görünür. Eşikler Ayarlar'dan değiştirilir ya da tamamen kapatılır.
+
+### Ayarlar
+
+- Vurgu rengi, saydamlık, yazı boyutu (%80–%150)
+- Hangi sütunların görüneceği, overlay genişliği buna göre ayarlanır
+- Rozet eşikleri
+- Saldıran / savunan yönü
+- Otomatik gizleme: maç başlayınca overlay kendini gizler, ajan seçiminde geri gelir
+- Tilt koruyucu eşikleri
+- Güncelleme denetimi, rehberi yeniden göster, tanı bilgisini kopyala
+
+### Genel
+
 - **F2:** Overlay'i gösterir veya gizler.
+- **Kayıtta gizle:** Overlay ekran kaydında ve yayında görünmez, sen oyunda görmeye devam edersin (Windows).
+- **Fare otomatik:** İmleç overlay'in üstündeyken tıklamalar overlay'e, dışındayken oyuna gider.
+- **Kendiliğinden güncelleme:** Yeni sürüm çıkınca uygulama haber verir, kurulum senin onayınla başlar.
+- Tepsi simgesi: göster/gizle, konumu sıfırla, çıkış.
 
 Rekabet verileri (son 5 maç, kafa isabeti, K/D, rozetler) yalnızca **rekabet** maçlarından hesaplanır.
 
 ## Sorun giderme
 
-Alt köşedeki noktalara tıklayınca neyin çalışmadığını görürsün. Sorun bildirirken Ayarlar → Hakkında → **Tanı bilgisini kopyala** düğmesinin çıktısını ekle. Kişisel kimlikler bu çıktıdan temizlenir.
+Alt köşedeki noktalara tıklayınca neyin çalışmadığını görürsün. Sorun bildirirken Ayarlar → Hakkında → **Tanı bilgisini kopyala** çıktısını ekle. Kişisel kimlikler bu çıktıdan temizlenir. S.S.S & Panel sekmesindeki **Kopyala** düğmesi ağ kaydını da aynı şekilde paylaşılabilir hâle getirir.
 
 ## Geliştirme
 
@@ -70,4 +132,18 @@ npm install
 npm run tauri dev
 ```
 
+Yapı:
+
+| Klasör | İçerik |
+|---|---|
+| `src/` | Arayüz (React + TypeScript) |
+| `riot-core/` | Riot Client ve oyun verisi katmanı (Rust). Tüm istekler `netlog` üzerinden geçer. |
+| `src-tauri/` | Masaüstü kabuğu (Tauri 2): pencere, tepsi, F2, güncelleyici |
+
+Testler: `cd riot-core && cargo test`
+
 Sürüm çıkarmak için `package.json`, `src-tauri/Cargo.toml` ve `src-tauri/tauri.conf.json` içindeki sürüm aynı olmalı, sonra `vX.Y.Z` etiketi gönderilir. GitHub Actions kurulum dosyasını ve `latest.json` güncelleme dosyasını yayınlar.
+
+---
+
+Made by Claude & [bneceleste](https://www.instagram.com/bneceleste)

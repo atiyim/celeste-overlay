@@ -1,6 +1,7 @@
 use anyhow::{anyhow, bail, Result};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
+use crate::netlog;
 use serde::Deserialize;
 use serde_json::Value;
 use std::path::PathBuf;
@@ -150,11 +151,11 @@ impl Session {
             .danger_accept_invalid_certs(true)
             .timeout(Duration::from_secs(5))
             .build()?;
-        let resp = local
-            .get(format!("https://127.0.0.1:{}/entitlements/v1/token", lock.port))
-            .basic_auth("riot", Some(&lock.password))
-            .send()
-            .await
+        let resp = netlog::exec(
+            &local,
+            local.get(format!("https://127.0.0.1:{}/entitlements/v1/token", lock.port)).basic_auth("riot", Some(&lock.password)),
+        )
+        .await
             .map_err(|_| fault(Fault::NoRiotClient, "Riot Client'a bağlanılamadı"))?;
         if !resp.status().is_success() {
             return Err(fault(Fault::NotLoggedIn, format!("Riot Client oturum bilgisi vermedi (HTTP {})", resp.status().as_u16())));
@@ -167,7 +168,8 @@ impl Session {
             Some(v) => v,
             None => {
                 // Günlükte yoksa eski yönteme dön.
-                let ver: Value = reqwest::get("https://valorant-api.com/v1/version").await?.json().await?;
+                let c = reqwest::Client::new();
+                let ver: Value = netlog::exec(&c, c.get("https://valorant-api.com/v1/version")).await?.json().await?;
                 ver["data"]["riotClientVersion"]
                     .as_str()
                     .ok_or_else(|| anyhow!("istemci sürümü alınamadı"))?
@@ -189,13 +191,12 @@ impl Session {
 
     /// Valorant çalışıyor mu? Riot Client'ın yerel API'sine sorulur. Öğrenilemezse None.
     pub async fn valorant_running(&self) -> Option<bool> {
-        let r = self
-            .local
-            .get(format!("https://127.0.0.1:{}/product-session/v1/external-sessions", self.port))
-            .basic_auth("riot", Some(&self.password))
-            .send()
-            .await
-            .ok()?;
+        let r = netlog::exec(
+            &self.local,
+            self.local.get(format!("https://127.0.0.1:{}/product-session/v1/external-sessions", self.port)).basic_auth("riot", Some(&self.password)),
+        )
+        .await
+        .ok()?;
         if !r.status().is_success() {
             return None;
         }
@@ -207,13 +208,12 @@ impl Session {
     /// Riot Client'ın yerel sohbet listesinden oyuncuların parti kimliklerini okur.
     /// Dönüş: (listedeki Valorant kaydı sayısı, oyuncu → partyId). Liste alınamazsa None.
     pub async fn party_ids(&self) -> Option<(usize, std::collections::HashMap<String, String>)> {
-        let r = self
-            .local
-            .get(format!("https://127.0.0.1:{}/chat/v4/presences", self.port))
-            .basic_auth("riot", Some(&self.password))
-            .send()
-            .await
-            .ok()?;
+        let r = netlog::exec(
+            &self.local,
+            self.local.get(format!("https://127.0.0.1:{}/chat/v4/presences", self.port)).basic_auth("riot", Some(&self.password)),
+        )
+        .await
+        .ok()?;
         if !r.status().is_success() {
             return None;
         }

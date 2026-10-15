@@ -9,7 +9,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { loadAssets, lookup, type Assets } from "./assets";
 import { mockSnapshot } from "./mock";
 import { recordSeen, setLabel, setTag, type Seen } from "./seen";
-import type { Snapshot } from "./types";
+import type { MyStats, Snapshot } from "./types";
 import { PlayerRow } from "./PlayerRow";
 import { LoadoutPanel } from "./LoadoutPanel";
 import { QuickChat } from "./QuickChat";
@@ -21,6 +21,8 @@ import { AccountPanel } from "./AccountPanel";
 import { StorePanel } from "./StorePanel";
 import { StatsPanel } from "./StatsPanel";
 import { ReportPanel } from "./ReportPanel";
+import { TrustPanel } from "./TrustPanel";
+import { alertOf, fmtDur, fmtRr, sessionOf, type Session } from "./tilt";
 import { useUpdater } from "./updater";
 import { applyTheme, COLS, gridTemplate, loadTheme, overlayWidth } from "./theme";
 
@@ -30,7 +32,7 @@ const SIDE_QUEUES = ["competitive", "unrated", "swiftplay", "spikerush", "premie
 export const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
 const NAV = [
-  ["roster", "Oyuncular"], ["report", "Son maç"], ["store", "Mağaza"], ["account", "Hesabım"], ["stats", "İstatistik"], ["chat", "Sohbet"], ["cross", "Nişangah"], ["settings", "Ayarlar"],
+  ["roster", "Oyuncular"], ["report", "Son maç"], ["store", "Mağaza"], ["account", "Hesabım"], ["stats", "İstatistik"], ["chat", "Sohbet"], ["cross", "Nişangah"], ["trust", "S.S.S & Panel"], ["settings", "Ayarlar"],
 ] as const;
 type View = (typeof NAV)[number][0];
 
@@ -61,6 +63,11 @@ export function App() {
     try { return localStorage.getItem("overlay-last-match"); } catch { return null; }
   });
   const prevPhase = useRef<string>("offline");
+  const [sess, setSess] = useState<Session | null>(null);
+  const [newest, setNewest] = useState("");
+  const [tiltAck, setTiltAck] = useState<string>(() => { try { return localStorage.getItem("overlay-tilt-ack") ?? ""; } catch { return ""; } });
+  const tiltTimers = useRef<number[]>([]);
+  const tiltInit = useRef(false);
   const rootRef = useRef<HTMLElement>(null);
   const lastSize = useRef("");
   const autoHiddenRef = useRef(false);
@@ -105,6 +112,34 @@ export function App() {
       ),
     );
   }, [snap.matchId, snap.phase, snap.players]);
+
+  // Tilt koruyucu: maç bitince kendi seansını hesaplar. Maç kaydı Riot'ta birkaç saniye geç düşebilir, o yüzden birkaç kez dener.
+  const loadTilt = (expect: string | null, delays: number[]) => {
+    tiltTimers.current.forEach(window.clearTimeout);
+    tiltTimers.current = delays.map((d) => window.setTimeout(async () => {
+      try {
+        const d2 = await invoke<MyStats>("get_my_stats");
+        setSess(sessionOf(d2.matches));
+        setNewest(d2.matches[0]?.matchId ?? "");
+        if (!expect || d2.matches.some((m) => m.matchId === expect)) tiltTimers.current.forEach(window.clearTimeout);
+      } catch { /* sonraki denemede */ }
+    }, d));
+  };
+  useEffect(() => {
+    if (!theme.tilt.on) { tiltTimers.current.forEach(window.clearTimeout); setSess(null); return; }
+    if (!inTauri) {
+      try { if (localStorage.getItem("overlay-demo-tilt") === "1") { setSess({ games: 5, wins: 1, losses: 4, rr: -52, lossStreak: 3, minutes: 148 }); setNewest("demo"); } } catch { /* demo kapalı */ }
+      return;
+    }
+    if (prevPhase.current === "ingame" && snap.phase !== "ingame" && (snap.phase === "menu" || snap.phase === "offline")) {
+      loadTilt(lastMatch, [12000, 40000, 90000]);
+    } else if (snap.phase === "menu" && !tiltInit.current) {
+      tiltInit.current = true;
+      loadTilt(null, [5000]);
+    }
+  }, [snap.phase, theme.tilt.on]); // eslint-disable-line react-hooks/exhaustive-deps
+  const tilt = alertOf(sess, theme.tilt, newest);
+  const ackTilt = () => { if (!tilt) return; setTiltAck(tilt.key); try { localStorage.setItem("overlay-tilt-ack", tilt.key); } catch { /* depolama kapalı */ } };
 
   // Maç bitince (oyundan menüye ya da kapanışa geçince) rapor kendiliğinden açılır.
   useEffect(() => {
@@ -371,16 +406,26 @@ export function App() {
         <div className="upd" role="status">Güncelleme indiriliyor {updater.state.pct != null ? `%${updater.state.pct}` : "…"}</div>
       )}
 
+      {tilt && tilt.key !== tiltAck && !collapsed && (
+        <div className="tilt" role="status">
+          <span>{tilt.text}</span>
+          <button className="x" type="button" onClick={ackTilt}>Tamam</button>
+        </div>
+      )}
+
       {!collapsed && !guide && (
         <nav className="nav" aria-label="Bölümler">
           {NAV.map(([id, label]) => (
-            <button key={id} type="button" className={view === id ? "on" : ""} onClick={() => { setSelected(null); setView(id); }}>
+            <button key={id} type="button" className={`${view === id ? "on" : ""}${id === "trust" ? " spot" : ""}`.trim()} onClick={() => { setSelected(null); setView(id); }}>
               {label}
             </button>
           ))}
         </nav>
       )}
 
+      {!collapsed && !guide && sess && sess.games > 0 && theme.tilt.on && view === "roster" && (
+        <p className="mode sess">Bu seans · {sess.wins}G {sess.losses}M · <span className={sess.rr < 0 ? "neg" : sess.rr > 0 ? "pos" : ""}>{fmtRr(sess.rr)}</span> · {fmtDur(sess.minutes)}</p>
+      )}
       {!collapsed && guide && <Guide onDone={closeGuide} />}
 
       {!collapsed && !guide && (
@@ -396,8 +441,10 @@ export function App() {
           assets ? <StatsPanel assets={assets} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "cross" ? (
           <Crosshairs onCopy={copyName} onClose={() => setView("roster")} />
+        ) : view === "trust" ? (
+          <TrustPanel onToast={showToast} onOpen={openTracker} onClose={() => setView("roster")} />
         ) : view === "chat" ? (
-          <QuickChat onCopy={copyName} onMessage={showToast} onClose={() => setView("roster")} />
+          <QuickChat onCopy={copyName} onClose={() => setView("roster")} />
         ) : active && assets ? (
           <LoadoutPanel
             p={active}
@@ -475,7 +522,7 @@ export function App() {
           </>
         )
       )}
-      {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} />}
+      {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} />}
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
   );

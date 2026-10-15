@@ -2,6 +2,7 @@ import type { useUpdater } from "./updater";
 import { Fragment } from "react";
 import { ACCENTS, COLS, DEFAULT_THEME, DEFAULT_TH, HIDE_AFTER_OPTIONS, type Theme, type Thresholds } from "./theme";
 import { copyDiagnostics } from "./StatusBar";
+import { TILT_HOURS, TILT_LOSSES, TILT_RR, fmtRr } from "./tilt";
 
 const TH_FIELDS: { key: keyof Thresholds; label: string; hint: string; unit: string }[] = [
   { key: "hs", label: "Kafa avcısı", hint: "Kafa isabeti en az", unit: "%" },
@@ -101,6 +102,31 @@ export function Settings({ onGuide, updater, zoom, onZoom, zooms, theme, onChang
             <div className="note"><button className="x" type="button" onClick={() => onChange({ ...theme, th: DEFAULT_TH })}>Varsayılana dön</button></div>
           </details>
           <p className="m">Rozetler, son rekabet maçlarında ölçülen değer bu sınırı aşınca çıkar.</p>
+
+          <h2 className="h">Tilt koruyucu</h2>
+          <label className="chk">
+            <input type="checkbox" checked={theme.tilt.on} onChange={(e) => onChange({ ...theme, tilt: { ...theme.tilt, on: e.target.checked } })} />
+            <span>Zor bir seansta sakin bir hatırlatma göster</span>
+          </label>
+          <label className="chk">
+            <span>Üst üste kayıp</span>
+            <select value={theme.tilt.losses} disabled={!theme.tilt.on} aria-label="Üst üste kayıp sayısı" onChange={(e) => onChange({ ...theme, tilt: { ...theme.tilt, losses: Number(e.target.value) } })}>
+              {TILT_LOSSES.map((n) => <option key={n} value={n}>{n} maç</option>)}
+            </select>
+          </label>
+          <label className="chk">
+            <span>Seanstaki RR kaybı</span>
+            <select value={theme.tilt.rr} disabled={!theme.tilt.on} aria-label="Seanstaki RR kaybı" onChange={(e) => onChange({ ...theme, tilt: { ...theme.tilt, rr: Number(e.target.value) } })}>
+              {TILT_RR.map((n) => <option key={n} value={n}>{fmtRr(n)}</option>)}
+            </select>
+          </label>
+          <label className="chk">
+            <span>Oyun süresi</span>
+            <select value={theme.tilt.hours} disabled={!theme.tilt.on} aria-label="Oyun süresi" onChange={(e) => onChange({ ...theme, tilt: { ...theme.tilt, hours: Number(e.target.value) } })}>
+              {TILT_HOURS.map((n) => <option key={n} value={n}>{n === 0 ? "Hatırlatma yok" : `${n} saat`}</option>)}
+            </select>
+          </label>
+          <p className="m">Yalnızca kendi rekabet maçlarına bakar. Seans, aralarında 100 dakikadan uzun ara olmayan maçlardır.</p>
 
         </div>
 

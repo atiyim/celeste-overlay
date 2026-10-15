@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { Status } from "./types";
 
-interface Props { status?: Status; inApp: boolean; assetsOk: boolean; assetsFailed: boolean; version: string; onToast: (t: string) => void }
+interface Props { status?: Status; inApp: boolean; assetsOk: boolean; assetsFailed: boolean; version: string; onToast: (t: string) => void; onOpen: (url: string) => void }
 interface Health { id: string; label: string; state: "ok" | "warn" | "fail" | "idle"; detail: string }
 type Dot = boolean | null;
 
@@ -21,7 +21,7 @@ export async function copyDiagnostics(version: string, conn: [string, Dot][], on
 }
 
 /* Alt şerit: dört bağlantı noktası. Tıklayınca özelliklerin son durumu ve tanı kopyalama düğmesi açılır. */
-export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onToast }: Props) {
+export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onToast, onOpen }: Props) {
   const [open, setOpen] = useState(false);
   const [health, setHealth] = useState<Health[] | null>(null);
 
@@ -67,6 +67,10 @@ export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onTo
         </div>
       )}
       <div className="sb" aria-label="Bağlantı durumu">
+        <span className="credit">
+          Made by Claude &amp;{" "}
+          <button type="button" className="ig" title="Instagram: @bneceleste" onClick={() => onOpen("https://www.instagram.com/bneceleste")}>bneceleste</button>
+        </span>
         <button type="button" className="sbtn" aria-expanded={open} title="Ayrıntı için tıkla" onClick={toggle}>
           {items.map((i) => (
             <span key={i.label} className="si" title={i.hint}>

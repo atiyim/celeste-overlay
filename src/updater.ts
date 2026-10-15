@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
+import { noteNet } from "./net";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -26,7 +27,9 @@ export function useUpdater() {
     if (!inTauri) return;
     if (!quiet) setState({ kind: "checking" });
     try {
+      const t0 = performance.now();
       const u = await check();
+      noteNet("GET", "https://github.com/releases/latest/download/latest.json", 200, Math.round(performance.now() - t0));
       upd.current = u;
       if (u) setState({ kind: "available", version: u.version, notes: u.body });
       else if (!quiet) setState({ kind: "none" });

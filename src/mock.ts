@@ -57,3 +57,34 @@ export function mockSnapshot(a: Assets): Snapshot {
   });
   return { phase: "ingame", matchId: "mock-match", queueId: "competitive", mapId: [...a.maps.keys()][0], players };
 }
+
+/* Tarayıcıda geliştirirken Şeffaflık paneli için gerçekçi sahte kayıt. */
+const MOCK_REQS: [string, string, string, string, string, "okuma" | "sorgu"][] = [
+  ["GET", "127.0.0.1", "local", "/product-session/v1/external-sessions", "Valorant açık mı?", "okuma"],
+  ["GET", "glz-eu-1.eu.a.pvp.net", "riot", "/core-game/v1/players/3f9a…c2", "Maç var mı?", "okuma"],
+  ["GET", "glz-eu-1.eu.a.pvp.net", "riot", "/core-game/v1/matches/8d41…07", "Maç oyuncuları", "okuma"],
+  ["GET", "glz-eu-1.eu.a.pvp.net", "riot", "/core-game/v1/matches/8d41…07/loadouts", "Oyuncuların kaplamaları", "okuma"],
+  ["PUT", "pd.eu.a.pvp.net", "riot", "/name-service/v2/players", "İsim sorgusu (ismini gizleyenler hariç)", "sorgu"],
+  ["GET", "pd.eu.a.pvp.net", "riot", "/mmr/v1/players/b27c…5e", "Rank bilgisi", "okuma"],
+  ["GET", "pd.eu.a.pvp.net", "riot", "/match-history/v1/history/b27c…5e", "Maç geçmişi", "okuma"],
+  ["GET", "pd.eu.a.pvp.net", "riot", "/match-details/v1/matches/1c9e…a4", "Maç ayrıntısı", "okuma"],
+  ["GET", "127.0.0.1", "local", "/chat/v4/presences", "Parti bilgisi", "okuma"],
+];
+export function mockNet(n: number): import("./net").NetReport {
+  const now = Date.now();
+  const entries = Array.from({ length: 40 }, (_, i) => {
+    const r = MOCK_REQS[(i * 5 + n) % MOCK_REQS.length];
+    return { t: now - i * 1800 - (n % 3) * 300, method: r[0], host: r[1], target: r[2] as "local" | "riot", path: r[3], what: r[4], kind: r[5], status: i === 17 ? 404 : 200, ms: 22 + ((i * 37) % 140) };
+  });
+  return {
+    entries, total: 412 + n * 3, reads: 371 + n * 3, queries: 41, writes: 0, errors: 3, lastMinute: 24,
+    hosts: [
+      { host: "glz-eu-1.eu.a.pvp.net", target: "riot", count: 168 },
+      { host: "pd.eu.a.pvp.net", target: "riot", count: 203 },
+      { host: "127.0.0.1", target: "local", count: 57 },
+      { host: "valorant-api.com", target: "assets", count: 6 },
+      { host: "github.com", target: "github", count: 1 },
+    ],
+    hiddenSkipped: 2, since: now - 3_600_000,
+  };
+}

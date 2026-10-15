@@ -1,3 +1,4 @@
+use riot_core::netlog::{self, NetReport};
 use riot_core::{Account, Engine, HealthEntry, MatchReport, MyStats, PremierTeam, Snapshot, Store};
 use std::sync::Arc;
 use tauri::{
@@ -51,6 +52,17 @@ async fn get_my_stats(state: State<'_, AppState>) -> Result<MyStats, String> {
     state.engine.my_stats().await
 }
 
+#[tauri::command]
+fn get_net_report() -> NetReport {
+    netlog::report()
+}
+
+/// Arayüzün kendi attığı istekleri (sözlük dosyaları, güncelleme denetimi) günlüğe ekler.
+#[tauri::command]
+fn net_note(method: String, url: String, status: u16, ms: u32) {
+    netlog::note(&method, &url, status, ms);
+}
+
 /// Overlay'i öne getirir, odağı alır (oyun fare/klavye girdisini görmez) ve tıklanabilir yapar.
 fn show_interactive(w: &WebviewWindow) {
     let _ = w.unminimize();
@@ -100,7 +112,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState { engine: Arc::new(Engine::new()) })
-        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier])
+        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, get_net_report, net_note])
         .setup(move |app| {
             // F2 başka bir uygulamada kayıtlıysa uygulama yine açılır, tepsi simgesi çalışmaya devam eder.
             if let Err(e) = app.global_shortcut().register(f2) {

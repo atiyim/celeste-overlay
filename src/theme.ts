@@ -1,3 +1,5 @@
+import { DEFAULT_TILT, TILT_HOURS, TILT_LOSSES, TILT_RR, type TiltCfg } from "./tilt";
+
 /* Kullanıcı ayarları (görünüm, taraf bilgisi, otomatik gizleme, sütunlar). Yalnızca bu bilgisayarda saklanır. */
 export type ColId = "rank" | "peak" | "wr" | "form" | "skins" | "party" | "badges" | "tracker";
 export interface ColDef { id: ColId; label: string; px: number }
@@ -32,6 +34,7 @@ export interface Theme {
   hideAfter: number; // maç başladıktan kaç saniye sonra gizlensin
   cols: Record<ColId, boolean>;
   th: Thresholds;
+  tilt: TiltCfg;
 }
 
 const ALL_ON = Object.fromEntries(COLS.map((c) => [c.id, true])) as Record<ColId, boolean>;
@@ -44,6 +47,7 @@ export const DEFAULT_THEME: Theme = {
   hideAfter: 10,
   cols: ALL_ON,
   th: DEFAULT_TH,
+  tilt: DEFAULT_TILT,
 };
 export const ACCENTS = ["#38bdf8", "#a78bfa", "#34d399", "#fbbf24", "#fb7185", "#ededed"];
 export const HIDE_AFTER_OPTIONS = [5, 10, 15, 30];
@@ -67,6 +71,12 @@ export function loadTheme(): Theme {
           return [k, typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : DEFAULT_TH[k]];
         }),
       ) as unknown as Thresholds,
+      tilt: {
+        on: (t.tilt as Partial<TiltCfg> | undefined)?.on !== false,
+        losses: TILT_LOSSES.includes((t.tilt as Partial<TiltCfg> | undefined)?.losses as number) ? (t.tilt as TiltCfg).losses : DEFAULT_TILT.losses,
+        rr: TILT_RR.includes((t.tilt as Partial<TiltCfg> | undefined)?.rr as number) ? (t.tilt as TiltCfg).rr : DEFAULT_TILT.rr,
+        hours: TILT_HOURS.includes((t.tilt as Partial<TiltCfg> | undefined)?.hours as number) ? (t.tilt as TiltCfg).hours : DEFAULT_TILT.hours,
+      },
     };
   } catch { return DEFAULT_THEME; }
 }

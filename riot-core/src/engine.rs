@@ -1,4 +1,5 @@
 use crate::model::*;
+use crate::netlog;
 use crate::session::{fault, fault_of, friendly, Fault, Session};
 use anyhow::{anyhow, bail, Result};
 use futures::future::join_all;
@@ -319,7 +320,7 @@ impl Engine {
 
     /// 200 → Some, 404 → None (o aşamada değiliz), diğerleri hata (token yenilenir).
     async fn get(&self, s: &Session, base: &str, path: &str) -> Result<Option<Value>> {
-        let r = self.http.get(format!("{base}{path}")).headers(s.headers()).send().await?;
+        let r = netlog::exec(&self.http, self.http.get(format!("{base}{path}")).headers(s.headers())).await?;
         let code = r.status().as_u16();
         match code {
             200 => Ok(Some(r.json().await?)),
@@ -426,13 +427,16 @@ impl Engine {
     /// İsim, rank ve parti bilgisini ekler. Hata verirse oyuncu satırı eksik kalır, tablo bozulmaz.
     async fn enrich(&self, st: &mut State, s: &Session, players: &mut [Player], season: &str) {
         // İsimler: gizli isimli oyuncular için isim sorgusu YAPILMAZ.
+        for p in players.iter().filter(|p| p.hidden_name && !p.is_self) {
+            netlog::skipped_hidden(&p.puuid);
+        }
         let need: Vec<String> = players
             .iter()
             .filter(|p| (!p.hidden_name || p.is_self) && !st.names.contains_key(&p.puuid))
             .map(|p| p.puuid.clone())
             .collect();
         if !need.is_empty() {
-            if let Ok(r) = self.http.put(format!("{}/name-service/v2/players", s.pd)).headers(s.headers()).json(&need).send().await {
+            if let Ok(r) = netlog::exec(&self.http, self.http.put(format!("{}/name-service/v2/players", s.pd)).headers(s.headers()).json(&need)).await {
                 if let Ok(arr) = r.json::<Vec<Value>>().await {
                     for e in arr {
                         if let (Some(id), Some(n), Some(t)) = (e["Subject"].as_str(), e["GameName"].as_str(), e["TagLine"].as_str()) {
@@ -612,7 +616,7 @@ impl Engine {
         if need.is_empty() {
             return;
         }
-        if let Ok(r) = self.http.put(format!("{}/name-service/v2/players", s.pd)).headers(s.headers()).json(&need).send().await {
+        if let Ok(r) = netlog::exec(&self.http, self.http.put(format!("{}/name-service/v2/players", s.pd)).headers(s.headers()).json(&need)).await {
             if let Ok(arr) = r.json::<Vec<Value>>().await {
                 for e in arr {
                     if let (Some(id), Some(n), Some(t)) = (e["Subject"].as_str(), e["GameName"].as_str(), e["TagLine"].as_str()) {
@@ -797,13 +801,11 @@ impl Engine {
             st.session = None;
             friendly(&e)
         })?;
-        let r = self
-            .http
-            .post(format!("{}/store/v3/storefront/{}", s.pd, s.puuid))
-            .headers(s.headers())
-            .json(&serde_json::json!({}))
-            .send()
-            .await;
+        let r = netlog::exec(
+            &self.http,
+            self.http.post(format!("{}/store/v3/storefront/{}", s.pd, s.puuid)).headers(s.headers()).json(&serde_json::json!({})),
+        )
+        .await;
         let v: Value = match r {
             Ok(r) if r.status().is_success() => r.json().await.map_err(|e| format!("Mağaza yanıtı okunamadı: {e}"))?,
             Ok(r) => {
