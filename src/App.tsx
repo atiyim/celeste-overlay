@@ -460,6 +460,12 @@ export function App() {
               ) : null,
             )}
             <p className="mode">İsme tıkla: adı kopyala · Satıra tıkla: ayrıntılar · Başlığı sürükle: taşı</p>
+            {snap.players.some((x) => x.form.some((f) => (f.queue ?? "").toLowerCase() !== "competitive")) && (
+              <p className="mode legend">
+                <span className="fc win">W</span>Rekabet
+                <span className="fc win alt">W</span>Diğer mod · üstüne gelince mod, harita ve ajan görünür
+              </p>
+            )}
             {snap.players.some((x) => x.party) && (
               <p className="mode legend">
                 <span className="p mini">A</span>Aynı parti

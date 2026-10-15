@@ -183,15 +183,36 @@ fn parse_detail(v: &Value) -> Detail {
     }
 }
 
-// Son maç özeti, HS% ve rozetler yalnızca rekabet maçlarından hesaplanır (diğer modlar karıştırıp yanıltır).
+// Son maçlar: son 5 rekabet maçı + diğer modlardan son 5 maç. Rozetler, HS% ve K/D yalnızca rekabetten hesaplanır;
+// diğer modlar arayüzde ayrı gösterilir ve filtrelenir.
 const FORM_QUEUES: [&str; 1] = ["competitive"];
 // Kendi istatistik sayfan tüm ana modları kapsar.
 const STATS_QUEUES: [&str; 4] = ["competitive", "unrated", "swiftplay", "premier"];
 const FORM_N: usize = 5;
 const DETAIL_BUDGET: usize = 10; // her turda en fazla bu kadar maç ayrıntısı çekilir
 
+/// Yalnızca rekabet maçları (party eşleşmesi gibi hesaplar bunu kullanır).
 fn form_ids(h: &[(String, String)]) -> Vec<(String, String)> {
     h.iter().filter(|(_, q)| FORM_QUEUES.contains(&q.as_str())).take(FORM_N).cloned().collect()
+}
+
+/// Rekabet + diğer modlar (özel maçlar hariç), yeniden eskiye.
+fn recent_ids(h: &[(String, String)]) -> Vec<(String, String)> {
+    let (mut c, mut o) = (0, 0);
+    h.iter()
+        .filter(|(_, q)| {
+            if FORM_QUEUES.contains(&q.as_str()) {
+                c += 1;
+                c <= FORM_N
+            } else if !q.is_empty() {
+                o += 1;
+                o <= FORM_N
+            } else {
+                false
+            }
+        })
+        .cloned()
+        .collect()
 }
 
 fn to_rank(m: &Mmr) -> Rank {
@@ -466,7 +487,7 @@ impl Engine {
             let mut want: Vec<String> = Vec::new();
             for p in players.iter() {
                 if let Some((_, h)) = st.history.get(&p.puuid) {
-                    for (id, _) in form_ids(h) {
+                    for (id, _) in recent_ids(h) {
                         if !st.details.contains_key(&id) && !want.contains(&id) {
                             want.push(id);
                         }
@@ -502,7 +523,7 @@ impl Engine {
             p.rr_trend = st.trend.get(&p.puuid).map(|(_, t)| t.clone()).unwrap_or_default();
             match st.history.get(&p.puuid) {
                 Some((_, h)) => {
-                    for (id, q) in form_ids(h) {
+                    for (id, q) in recent_ids(h) {
                         match st.details.get(&id) {
                             Some(d) => {
                                 if let Some(e) = d.entry_for(&p.puuid, &q) {
@@ -512,8 +533,10 @@ impl Engine {
                             None => p.form_loading = true,
                         }
                     }
-                    let (k, d): (u32, u32) = p.form.iter().fold((0, 0), |a, e| (a.0 + e.kills, a.1 + e.deaths));
-                    p.kd = if p.form.is_empty() { None } else { Some(k as f32 / d.max(1) as f32) };
+                    // K/D yalnızca rekabet maçlarından.
+                    let comp: Vec<&FormEntry> = p.form.iter().filter(|e| e.queue == "competitive").collect();
+                    let (k, d): (u32, u32) = comp.iter().fold((0, 0), |a, e| (a.0 + e.kills, a.1 + e.deaths));
+                    p.kd = if comp.is_empty() { None } else { Some(k as f32 / d.max(1) as f32) };
                 }
                 None => p.form_loading = true,
             }

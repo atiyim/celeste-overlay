@@ -24,8 +24,22 @@ const merge = (lists: { weaponId: string; count: number }[][]): WeaponStat[] => 
   return [...m.entries()].map(([id, count]) => ({ id, count })).sort((a, b) => b.count - a.count);
 };
 
-export function analyze(p: Player): Play | null {
-  const f = p.form.filter((x) => (x.rounds ?? 0) > 0);
+/* Oyun modları: Riot kuyruk kimliği → ekranda görünen ad ve filtre grubu. */
+export type ModeGroup = "competitive" | "unrated" | "spikerush" | "other";
+export const MODE_NAMES: Record<string, string> = {
+  competitive: "Rekabet", unrated: "Derecesiz", spikerush: "Tam gaz", swiftplay: "Hızlı oyun", premier: "Premier",
+  deathmatch: "Ölüm maçı", hurm: "Takım ölüm maçı", ggteam: "Tırmanış", onefa: "Kopya", snowball: "Kartopu savaşı",
+};
+export const modeName = (q?: string | null) => (q ? MODE_NAMES[q.toLowerCase()] ?? "Diğer mod" : "Diğer mod");
+export const modeGroup = (q?: string | null): ModeGroup => {
+  const k = (q ?? "").toLowerCase();
+  return k === "competitive" ? "competitive" : k === "unrated" ? "unrated" : k === "spikerush" ? "spikerush" : "other";
+};
+export const isComp = (f: { queue?: string | null }) => (f.queue ?? "").toLowerCase() === "competitive";
+
+/* Varsayılan olarak yalnızca rekabet maçları sayılır (rozetler ve satır özeti); profilde mod seçilince o modun maçları verilir. */
+export function analyze(p: Player, forms: Player["form"] = p.form.filter(isComp)): Play | null {
+  const f = forms.filter((x) => (x.rounds ?? 0) > 0);
   if (!f.length) return null;
   const sum = (g: (x: (typeof f)[number]) => number) => f.reduce((a, x) => a + g(x), 0);
   const rounds = sum((x) => x.rounds ?? 0);
@@ -70,7 +84,7 @@ export function styleBadge(play: Play | null, th: Thresholds = DEFAULT_TH): Badg
 /* Form / tilt: art arda sonuçlar ve son rekabet maçlarındaki RR toplamı. */
 export function formBadge(p: Player): Badge | null {
   let win = 0, loss = 0;
-  for (const f of p.form) { if (f.won) { if (loss) break; win++; } else { if (win) break; loss++; } }
+  for (const f of p.form.filter(isComp)) { if (f.won) { if (loss) break; win++; } else { if (win) break; loss++; } }
   const rr = p.rrTrend.length >= 3 ? p.rrTrend.reduce((a, b) => a + b, 0) : null;
   const rrText = rr != null ? `${rr > 0 ? "+" : ""}${rr} RR` : "";
   if (loss >= 3 || (rr != null && rr <= -45)) {

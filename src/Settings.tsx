@@ -100,7 +100,7 @@ export function Settings({ onGuide, updater, zoom, onZoom, zooms, theme, onChang
             </div>
             <div className="note"><button className="x" type="button" onClick={() => onChange({ ...theme, th: DEFAULT_TH })}>Varsayılana dön</button></div>
           </details>
-          <p className="m">Rozetler, son 5 rekabet maçında ölçülen değer bu sınırı aşınca çıkar.</p>
+          <p className="m">Rozetler, son rekabet maçlarında ölçülen değer bu sınırı aşınca çıkar.</p>
 
         </div>
 

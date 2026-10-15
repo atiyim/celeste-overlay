@@ -1,73 +1,67 @@
 # Celeste Overlay
 
-Valorant lobisinde herkesin rankını, son rekabet performansını ve kaplamalarını tek bakışta gösteren, sade ve karanlık temalı bir overlay.
+> **Bu proje Riot Games ile bağlantılı değildir, onlar tarafından onaylanmamış ya da desteklenmemiştir.** VALORANT ve Riot Games, Riot Games, Inc.'in ticari markalarıdır. Uygulama oyunun belleğine dokunmaz, oyuna girdi göndermez; yalnızca açık Riot Client oturumunun yerel API'sini ve senin hesabınla Riot'un veri sunucularını okur. Belgelenmemiş uç noktalar kullandığı için Riot bir gün bunları değiştirebilir ve uygulama bozulabilir. Kullanım senin sorumluluğundadır; yazılım "olduğu gibi" sunulur (bkz. LICENSE).
 
-![Celeste Overlay](docs/ekran-1.png)
+Tauri 2 + React + TypeScript. Valorant açıkken oyuncuların rank, peak, parti tahmini, smurf olasılığı ve tüm silah/sprey/charm donatısını gösteren yarı saydam overlay.
 
-## Güvenlik
+## Kurulum (Windows)
 
-- **Giriş yok.** Riot hesabına giriş yapmazsın. Uygulama, açık Riot Client oturumunu okur.
-- **Yalnızca okur.** Oyuna tuş göndermez, oyun dosyalarını değiştirmez, hile değildir.
-- **Veriler sende kalır.** Etiketler, notlar ve ayarlar yalnızca bu bilgisayarda saklanır.
-- **Gizli isimler gizli kalır.** İsmini gizleyen oyuncunun adı gösterilmez.
-- Kaynak kodu bu depoda açıktır.
-
-Celeste Overlay, Riot Games ile bağlantılı değildir ve Riot Games tarafından onaylanmamıştır.
-
-## Kurulum
-
-1. [Releases](../../releases/latest) sayfasından `…-setup.exe` dosyasını indir.
-2. Dosyayı çalıştır. Windows bir uyarı gösterebilir, aşağıya bak.
-3. Riot Client'ı aç ve giriş yap, sonra Valorant'ı başlat.
-4. Ajan seçimi başlayınca oyuncular overlay'de kendiliğinden listelenir.
-
-İlk açılışta uygulama kısa bir rehber gösterir. Rehberi Ayarlar → Hakkında bölümünden tekrar açabilirsin.
-
-### Windows "SmartScreen" uyarısı
-
-İlk kurulumda **"Windows bilgisayarınızı korudu"** uyarısı çıkabilir. Sebep virüs değil, kurulum dosyasının ücretli bir kod imzalama sertifikasıyla imzalanmamış olmasıdır. Windows imzasız ve yeni dosyaların hepsinde bu uyarıyı gösterir.
-
-Kurmak için:
-
-1. Uyarıda **Daha fazla bilgi**'ye tıkla.
-2. **Yine de çalıştır** düğmesine bas.
-
-![SmartScreen adımları](docs/smartscreen.png)
-
-Uyarı yalnızca ilk kurulumda çıkar. Uygulama içi güncellemelerde çıkmaz.
-
-Kurulum dosyasını kontrol etmek istersen: dosya yalnızca bu deponun [Releases](../../releases) sayfasından indirilmelidir. Başka bir yerden gelen kopyaya güvenme. Kodu kendin derlemek istersen aşağıdaki "Geliştirme" bölümüne bak.
-
-## Özellikler
-
-| Bölüm | Ne işe yarar |
-|---|---|
-| Oyuncular | Lobi listesi: rank, peak, kazanma oranı, son 5 rekabet maçı, kaplamalar, parti, rozetler |
-| Son maç | Biten maçın raporu |
-| Mağaza | Günlük ve gece mağazası |
-| Hesabım | Bakiye, görevler, battle pass, envanter |
-| İstatistik | Kendi rekabet verilerin |
-| Sohbet | Hızlı mesaj kısayolları |
-| Nişangah | Hazır nişangah kodları |
-| Ayarlar | Renk, yazı boyutu, sütunlar, rozet eşikleri |
-
-- **Tekrar karşılaşma:** Daha önce aynı maçta olduğun oyuncular işaretlenir ("3. kez").
-- **Kayıtta gizle:** Overlay ekran kaydında ve yayında görünmez, sen oyunda görmeye devam edersin.
-- **F2:** Overlay'i gösterir veya gizler.
-
-Rekabet verileri (son 5 maç, kafa isabeti, K/D, rozetler) yalnızca **rekabet** maçlarından hesaplanır.
-
-## Sorun giderme
-
-Alt köşedeki noktalara tıklayınca neyin çalışmadığını görürsün. Sorun bildirirken Ayarlar → Hakkında → **Tanı bilgisini kopyala** düğmesinin çıktısını ekle. Kişisel kimlikler bu çıktıdan temizlenir.
-
-## Geliştirme
-
-Gereksinimler: Node.js, Rust, [Tauri 2 ön koşulları](https://tauri.app/start/prerequisites/).
+1. Node.js 20+, pnpm, Rust (rustup) ve Microsoft C++ Build Tools kurulu olmalı. WebView2 Windows 10/11'de hazır gelir.
+2. Proje klasöründe:
 
 ```
-npm install
-npm run tauri dev
+pnpm install
+pnpm tauri dev      # overlay'i geliştirme modunda çalıştırır
+pnpm tauri build    # kurulum dosyasını (NSIS) üretir
+pnpm dev            # sadece arayüz: tarayıcıda gerçek görsellerle örnek maç gösterir
 ```
 
-Sürüm çıkarmak için `package.json`, `src-tauri/Cargo.toml` ve `src-tauri/tauri.conf.json` içindeki sürüm aynı olmalı, sonra `vX.Y.Z` etiketi gönderilir. GitHub Actions kurulum dosyasını ve `latest.json` güncelleme dosyasını yayınlar.
+3. Valorant'ı "Pencereli Tam Ekran" (Windowed Fullscreen) modunda aç. Gerçek tam ekranda overlay görünmez.
+
+## Kullanım
+
+- Kısayol yok. İmleç overlay'in üstündeyken tıklamalar overlay'e gider, dışındayken oyuna geçer.
+- Başlığı tutup sürükleyerek taşı (konum hatırlanır). A−/A+ ile boyutu ayarla.
+- "Gizle" overlay'i başlık çubuğuna küçültür, "Göster" geri açar.
+- **F2**: overlay öne gelir, odağı alır (oyun fare ve klavyeni görmez) ve tıklanabilir olur. F2'ye tekrar basınca tamamen gizlenip sistem tepsisine gider. F2 sistem genelinde çalışır.
+- Sistem tepsisi simgesi: sol tık F2 ile aynı, sağ tık menüsünde "Konumu sıfırla" ve "Çıkış".
+- "Sohbet" düğmesi: kısaltma yaz (örn. sa), Enter'a bas, karşılığı panoya kopyalanır. Oyunda Enter, Ctrl+V, Enter. Oyuna tuş vuruşu gönderilmez.
+- "Tracker" düğmesi oyuncunun tracker.gg profilini tarayıcıda açar.
+- İsme veya ajan ikonuna tıkla: kullanıcı adı kopyalanır. Satıra tıkla: tüm donatı.
+
+## Yapı
+
+- `riot-core/`: Rust çekirdek. lockfile, yerel API, oyun/maç verisi, rank, parti ve smurf hesapları. Arayüzden bağımsız.
+- `src-tauri/`: Tauri kabuğu (şeffaf, üstte, odak çalmayan pencere).
+- `src/`: React arayüzü. `assets.ts` görsel ve isimleri valorant-api.com'dan çeker, önbelleğe alır.
+
+## Bilinmesi gerekenler
+
+- Riot hesabına giriş yok: açık olan Riot Client oturumu kullanılır. Bu API'ler Riot tarafından resmi desteklenmez, yöntem değişirse güncelleme gerekebilir.
+- İsmi gizli oyuncular "Oyuncu N" olarak gösterilir, isimleri sorgulanmaz. Seviyesini gizleyenlerin seviyesi de gösterilmez.
+- Parti bilgisi tahminidir: aynı takımdaki oyuncuların son 10 maçında en az 2 ortak maç varsa aynı harfle işaretlenir.
+- Smurf yüzdesi sezgiseldir (düşük seviye, yüksek rank, yüksek kazanma oranı), kanıt değildir.
+- Kazanma oranı mevcut act'e aittir. K/D için maç detayları gerekir, sonraki adımda eklenecek.
+- Düşman bilgisi yalnızca maç başladıktan sonra gelir; ajan seçiminde sadece kendi takımın gösterilir.
+
+## Kurulum dosyası (installer) oluşturma
+
+Proje klasöründeki `yukleyici-olustur.bat` dosyasına çift tıkla. Bağımlılıkları kurar, uygulamayı derler ve
+`src-tauri\target\release\bundle\nsis` klasörünü açar. İçindeki `Celeste Overlay_..._x64-setup.exe` dosyası
+kurulum dosyasıdır: çift tıklayınca yönetici izni istemeden kurulur, Başlat menüsüne eklenir. Bu dosyayı bir kere
+oluşturduktan sonra uygulamayı çalıştırmak için `pnpm` gerekmez.
+
+
+## Otomatik güncelleme
+
+Uygulama açılışta ve 6 saatte bir GitHub Releases'teki `latest.json` dosyasına bakar. Yeni sürüm varsa üstte
+"Yeni sürüm hazır" şeridi çıkar; "Güncelle ve yeniden başlat"a basınca indirir, kurar, yeniden açar. Maç sırasında
+kendiliğinden kurulmaz. Ayarlar > Güncelleme bölümünden elle de denetlenebilir.
+
+Kurulum (bir kerelik):
+1. `pnpm tauri signer generate -w "$env:USERPROFILE\.tauri\overlay.key"` (parola sorulursa Enter). Çıkan **genel anahtarı** `src-tauri/tauri.conf.json` içindeki `pubkey` alanına yapıştır.
+2. Aynı dosyada `endpoints` içindeki `KULLANICI_ADIN/REPO_ADIN` kısmını kendi (herkese açık) GitHub deposunla değiştir.
+3. GitHub deposu > Settings > Secrets and variables > Actions: `TAURI_SIGNING_PRIVATE_KEY` adıyla `overlay.key` dosyasının **içeriğini** ekle.
+4. Yeni sürüm: `tauri.conf.json`, `package.json` ve `src-tauri/Cargo.toml` içindeki sürüm numarasını artır, commit'le ve `git tag v0.3.0 && git push --tags` yap. GitHub Actions kurulum dosyasını derleyip yayınlar.
+
+`overlay.key` özel anahtardır: kimseyle paylaşma, depoya koyma. Kaybedersen mevcut kurulumlar güncellenemez.

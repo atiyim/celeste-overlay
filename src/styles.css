@@ -401,3 +401,27 @@ button.tg:hover { opacity: 1; }
 @keyframes gin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes gping { 0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, .5); } 70%, 100% { box-shadow: 0 0 0 7px rgba(74, 222, 128, 0); } }
 @media (prefers-reduced-motion: reduce) { .gstep, .gxi, .gf, .gtab { animation: none; } .gdot.ok, .gdots i.ok { animation: none; } .gbar i, .gpg i { transition: none; } }
+
+/* Rekabet dışı modlar: kesik çerçeve */
+.fc.alt { background: transparent; outline: 1px dashed currentColor; outline-offset: -1px; opacity: .85; }
+.mfil { display: flex; gap: 6px; flex-wrap: wrap; margin: 2px 0 8px; }
+.mfil button { all: unset; cursor: pointer; font-size: 12px; color: var(--fg-2); padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; transition: color .15s, border-color .15s, background .15s; }
+.mfil button small { margin-left: 5px; color: var(--fg-3); }
+.mfil button:hover { color: var(--fg); border-color: #3a3a3a; }
+.mfil button.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.mfil button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.tr .mo { color: var(--fg-3); font-size: 11px; }
+.legend .fc { width: 16px; height: 16px; line-height: 16px; margin-right: 6px; } .legend .fc ~ .fc { margin-left: 14px; }
+
+/* Nişangah kütüphanesi: görselli kartlar */
+.xgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 4px; }
+.xc { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 8px; padding: 8px 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--s2); transition: border-color .15s, transform .15s, background .15s; text-align: center; }
+.xc:hover { border-color: color-mix(in srgb, var(--accent) 60%, transparent); transform: translateY(-2px); }
+.xc:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.xc .xp { position: relative; aspect-ratio: 1; border-radius: 7px; overflow: hidden; background: radial-gradient(circle at 30% 25%, #9b9078, #6f664f 70%); display: flex; align-items: center; justify-content: center; }
+.xc .xp img { width: 100%; height: 100%; object-fit: contain; }
+.xc .xp code { position: absolute; inset: 0; display: none; padding: 10px; font-size: 9.5px; line-height: 1.35; color: #fff; word-break: break-all; text-align: left; background: rgba(0,0,0,.55); font-family: "Geist Mono Variable", ui-monospace, monospace; }
+.xc .xp.noimg code { display: block; }
+.xc .xn { font-size: 13px; font-weight: 500; color: var(--fg); }
+.xc .xk { font-size: 11px; color: var(--fg-3); }
+.xc:hover .xk { color: var(--accent); }

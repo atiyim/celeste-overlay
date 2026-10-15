@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { Assets, WeaponInfo } from "./assets";
 import { charmIcon, lookup, resolveFlex, resolveSkin, resolveSprays } from "./assets";
-import { ago, analyze, formBadge, styleBadge, type WeaponStat } from "./playstyle";
+import { ago, analyze, formBadge, isComp, modeGroup, modeName, styleBadge, type ModeGroup, type WeaponStat } from "./playstyle";
 import { DEFAULT_TH, type Thresholds } from "./theme";
 import { TAGS, type Entry, type TagId } from "./seen";
 import type { Player, PremierTeam } from "./types";
@@ -111,11 +111,23 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
   const sprays = resolveSprays(assets, p.loadout);
   const flex = resolveFlex(assets, p.loadout);
 
+  // Maç modu filtresi: varsayılan rekabet (yoksa tümü). Rozetler her zaman rekabet verisinden gelir.
+  const MODES: { id: "all" | ModeGroup; label: string }[] = [
+    { id: "competitive", label: "Rekabet" }, { id: "unrated", label: "Derecesiz" }, { id: "spikerush", label: "Tam gaz" }, { id: "other", label: "Diğer" }, { id: "all", label: "Tümü" },
+  ];
+  const [chosen, setChosen] = useState<"all" | ModeGroup | null>(null);
+  useEffect(() => setChosen(null), [p.puuid]);
+  const countOf = (m: "all" | ModeGroup) => (m === "all" ? p.form.length : p.form.filter((f) => modeGroup(f.queue) === m).length);
+  const mode = chosen ?? (countOf("competitive") > 0 ? "competitive" : "all");
+  const shown = mode === "all" ? p.form : p.form.filter((f) => modeGroup(f.queue) === mode);
+  const modeLabel = MODES.find((m) => m.id === mode)?.label ?? "";
+
   const play = analyze(p);
+  const playShown = analyze(p, shown);
   const fb = formBadge(p);
   const sb = styleBadge(play, th);
   const rrSum = p.rrTrend.reduce((a, b) => a + b, 0);
-  const sameAgent = p.form.filter((f) => lookup(f.agentId) === lookup(p.agentId));
+  const sameAgent = shown.filter((f) => lookup(f.agentId) === lookup(p.agentId));
   const sameKd = (() => {
     const k = sameAgent.reduce((a, f) => a + f.kills, 0), d = sameAgent.reduce((a, f) => a + f.deaths, 0);
     return d ? k / d : k;
@@ -188,16 +200,25 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
       {tab === "perf" && (
         <div className="perf fade">
           <div>
-            <h3 className="h2">Son rekabet maçları{p.kd != null && <span className="hv">K/D {p.kd.toFixed(2)}</span>}</h3>
-            {p.form.length === 0 ? <None text={p.formLoading ? "Yükleniyor…" : "Rekabet maçı yok"} /> : (
+            <h3 className="h2">Son maçlar{p.kd != null && <span className="hv" title="Rekabet maçlarının K/D'si">Rekabet K/D {p.kd.toFixed(2)}</span>}</h3>
+            {p.form.length > 0 && (
+              <div className="mfil" role="group" aria-label="Maç modu">
+                {MODES.filter((m) => m.id === mode || countOf(m.id) > 0).map((m) => (
+                  <button key={m.id} type="button" className={m.id === mode ? "on" : ""} aria-pressed={m.id === mode} onClick={() => setChosen(m.id)}>
+                    {m.label}<small>{countOf(m.id)}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+            {shown.length === 0 ? <None text={p.formLoading ? "Yükleniyor…" : p.form.length ? `${modeLabel} maçı yok` : "Maç verisi yok"} /> : (
               <div className="tb">
                 <div className="tr hd2"><span /><span>Harita</span><span>Ajan</span><span className="num">K / D / A</span><span className="num">K/D</span></div>
-                {p.form.map((f, i) => {
+                {shown.map((f, i) => {
                   const fa = assets.agents.get(lookup(f.agentId));
                   return (
-                    <div className="tr" key={i}>
-                      <span className={f.won ? "fc win" : "fc loss"}>{f.won ? "W" : "L"}</span>
-                      <span>{assets.maps.get(lookup(f.mapId)) ?? "?"}</span>
+                    <div className="tr" key={i} title={modeName(f.queue)}>
+                      <span className={`${f.won ? "fc win" : "fc loss"}${isComp(f) ? "" : " alt"}`}>{f.won ? "W" : "L"}</span>
+                      <span>{assets.maps.get(lookup(f.mapId)) ?? "?"}{mode === "all" && <small className="mo"> · {modeName(f.queue)}</small>}</span>
                       <span className="ra">{fa && <img src={fa.icon} alt="" />}{fa?.name ?? "?"}</span>
                       <span className="num">{f.kills} / {f.deaths} / {f.assists}</span>
                       <span className="num">{kd(f.kills, f.deaths)}</span>
@@ -217,18 +238,18 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
           </div>
 
           <div>
-            {play ? (
+            {playShown ? (
               <>
-                <h3 className="h2">Oynayış<span className="hv">{play.matches} maç, {play.rounds} round</span></h3>
+                <h3 className="h2">Oynayış · {modeLabel}<span className="hv">{playShown.matches} maç, {playShown.rounds} round</span></h3>
                 <div className="stats">
-                  <div className="gold"><b>{play.hsPct != null ? `%${play.hsPct.toFixed(0)}` : "–"}</b><small>Kafa isabeti</small></div>
-                  <div className="orange"><b>{play.adr != null ? play.adr.toFixed(0) : "–"}</b><small>Round başı hasar</small></div>
-                  <div className="teal"><b>{play.firstKills}</b><small>İlk kan</small></div>
-                  <div className="loss"><b>{play.firstDeaths}</b><small>İlk ölüm</small></div>
+                  <div className="gold"><b>{playShown.hsPct != null ? `%${playShown.hsPct.toFixed(0)}` : "–"}</b><small>Kafa isabeti</small></div>
+                  <div className="orange"><b>{playShown.adr != null ? playShown.adr.toFixed(0) : "–"}</b><small>Round başı hasar</small></div>
+                  <div className="teal"><b>{playShown.firstKills}</b><small>İlk kan</small></div>
+                  <div className="loss"><b>{playShown.firstDeaths}</b><small>İlk ölüm</small></div>
                 </div>
                 <div className="wpair">
-                  <WeaponTable title="Öldürdüğü silahlar" list={play.killWeapons} assets={assets} unit="kill" />
-                  <WeaponTable title="Satın aldığı silahlar" list={play.bought} assets={assets} unit="round" />
+                  <WeaponTable title="Öldürdüğü silahlar" list={playShown.killWeapons} assets={assets} unit="kill" />
+                  <WeaponTable title="Satın aldığı silahlar" list={playShown.bought} assets={assets} unit="round" />
                 </div>
               </>
             ) : <None text="Oynayış verisi yok" />}

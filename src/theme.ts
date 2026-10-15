@@ -7,7 +7,7 @@ export const COLS: ColDef[] = [
   { id: "rank", label: "Rank", px: 140 },
   { id: "peak", label: "Peak", px: 140 },
   { id: "wr", label: "Kazanma", px: 60 },
-  { id: "form", label: "Son 5 rekabet", px: 112 },
+  { id: "form", label: "Son maçlar", px: 120 },
   { id: "skins", label: "Kaplamalar", px: 172 },
   { id: "party", label: "Parti", px: 28 },
   { id: "badges", label: "Rozetler", px: 190 },

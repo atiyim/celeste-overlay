@@ -4,7 +4,7 @@ import { lookup, resolveSkin } from "./assets";
 import { TAGS, type Entry } from "./seen";
 import type { ColId, Thresholds } from "./theme";
 import { tierColor } from "./LoadoutPanel";
-import { activityBadge, analyze, formBadge, styleBadge } from "./playstyle";
+import { activityBadge, analyze, formBadge, isComp, modeName, styleBadge } from "./playstyle";
 import type { Player } from "./types";
 
 interface Props {
@@ -110,14 +110,14 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, onOpen,
           {p.form.length > 0 ? (
             <>
               <span className="chips">
-                {p.form.map((f, i) => (
-                  <span key={i} className={f.won ? "fc win" : "fc loss"} title={`${f.won ? "Galibiyet" : "Mağlubiyet"} · ${assets.maps.get(lookup(f.mapId)) ?? "?"} · ${assets.agents.get(lookup(f.agentId))?.name ?? "?"} · ${f.kills}/${f.deaths}/${f.assists}`}>
+                {p.form.slice(0, 5).map((f, i) => (
+                  <span key={i} className={`${f.won ? "fc win" : "fc loss"}${isComp(f) ? "" : " alt"}`} title={`${modeName(f.queue)} · ${f.won ? "Galibiyet" : "Mağlubiyet"} · ${assets.maps.get(lookup(f.mapId)) ?? "?"} · ${assets.agents.get(lookup(f.agentId))?.name ?? "?"} · ${f.kills}/${f.deaths}/${f.assists}`}>
                     {f.won ? "W" : "L"}
                   </span>
                 ))}
                 {p.formLoading && <span className="d">…</span>}
               </span>
-              {p.kd != null && <small>K/D {p.kd.toFixed(2)}</small>}
+              {p.kd != null && <small title="Son rekabet maçlarının K/D'si">K/D {p.kd.toFixed(2)}</small>}
             </>
           ) : p.formLoading ? <span className="d">…</span> : <span className="d">–</span>}
         </div>
