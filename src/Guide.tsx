@@ -27,6 +27,7 @@ const STEPS: { title: string; lead: string; body: ReactNode }[] = [
         { sample: <span className="gdot ok" />, title: "Oyuna dokunmaz", text: "Oyuna tuş göndermez, oyun dosyalarını değiştirmez. Yalnızca okur." },
         { sample: <span className="gdot ok" />, title: "Veriler sende kalır", text: "Etiketler ve notlar yalnızca bu bilgisayarda saklanır." },
         { sample: <span className="gdot ok" />, title: "Gizli isimler gizli kalır", text: "İsmini gizleyen oyuncunun adı gösterilmez." },
+        { sample: <span className="gdot ok" />, title: "Kanıtı içinde", text: "S.S.S & Panel sekmesi uygulamanın attığı her isteği canlı gösterir." },
       ]} />
     ),
   },
@@ -47,6 +48,7 @@ const STEPS: { title: string; lead: string; body: ReactNode }[] = [
         <Items items={[
           { sample: <span className="gdots"><i className="ok" /><i className="ok" /><i className="ok" /></span>, title: "Sağ alttaki noktalar", text: "Bağlantı durumunu gösterir. Birine tıklarsan neyin çalışmadığını görürsün." },
           { sample: <span className="gsoft">Oyun başlayınca görünür</span>, title: "Kaplamalar", text: "Rakip kaplamaları ancak oyun başlayınca Riot tarafından paylaşılır." },
+          { sample: <span className="gsoft">Pencereli Tam Ekran</span>, title: "Overlay görünmüyorsa", text: "Valorant'ta Ayarlar → Video → Ekran Modu'nu Pencereli Tam Ekran yap. Tam ekranda overlay oyunun arkasında kalır." },
         ]} />
       </>
     ),
@@ -73,6 +75,7 @@ const STEPS: { title: string; lead: string; body: ReactNode }[] = [
         { sample: <span className="gdrag">Haven</span>, title: "Taşı", text: "Üstteki başlık şeridinden sürükle." },
         { sample: <span className="gbtns"><i>A−</i><i>A+</i></span>, title: "Yazı boyutu", text: "Küçültür veya büyütür. Ayarlar'da yüzde olarak da seçebilirsin." },
         { sample: <span className="gbtns"><i>Kayıtta gizle</i></span>, title: "Kayıt ve yayın", text: "Açıkken overlay kayıtta görünmez, sen oyunda görmeye devam edersin." },
+        { sample: <span className="gbtns"><i>Bulanıklaştır</i></span>, title: "İsimleri bulanıklaştır", text: "Video çekerken başkalarının kimliğini göstermemek için isimleri bulanık yapar." },
         { sample: <span className="gbtns"><i>Gizle</i></span>, title: "Şeride küçült", text: "Başlık dışında her şeyi kapatır. Maç başlayınca kendiliğinden de gizlenir." },
       ]} />
     ),
@@ -88,9 +91,10 @@ const STEPS: { title: string; lead: string; body: ReactNode }[] = [
           ["Mağaza", "Günlük ve gece mağazası"],
           ["Hesabım", "Bakiye, görevler, envanter"],
           ["İstatistik", "Kendi rekabet verilerin"],
-          ["Sohbet", "Hızlı mesaj kısayolları"],
+          ["Sohbet", "Hızlı mesajlarını kopyala"],
           ["Nişangah", "Hazır nişangah kodları"],
-          ["Ayarlar", "Renk, sütunlar, eşikler"],
+          ["S.S.S & Panel", "Sorular ve canlı ağ kaydı"],
+          ["Ayarlar", "Renk, eşikler, Tilt koruyucu"],
         ].map(([a, b], i) => (
           <div className="gtab" key={a} style={{ animationDelay: `${i * 45}ms` }}><b>{a}</b><small>{b}</small></div>
         ))}

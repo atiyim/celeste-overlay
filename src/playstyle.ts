@@ -89,7 +89,7 @@ export function formBadge(p: Player): Badge | null {
   const rrText = rr != null ? `${rr > 0 ? "+" : ""}${rr} RR` : "";
   if (loss >= 3 || (rr != null && rr <= -45)) {
     const why = [loss >= 3 ? `art arda ${loss} mağlubiyet` : "", rr != null ? `son ${p.rrTrend.length} rekabet maçı ${rrText}` : ""].filter(Boolean).join(" · ");
-    return { text: `Tilt ${rrText || `${loss}L`}`.trim(), tone: "neg", tip: why };
+    return { text: `Düşüşte ${rrText || `${loss}L`}`.trim(), tone: "neg", tip: why };
   }
   if (win >= 3 || (rr != null && rr >= 45)) {
     const why = [win >= 3 ? `art arda ${win} galibiyet` : "", rr != null ? `son ${p.rrTrend.length} rekabet maçı ${rrText}` : ""].filter(Boolean).join(" · ");

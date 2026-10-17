@@ -20,7 +20,8 @@ Celeste Overlay, Riot Games ile bağlantılı değildir ve Riot Games tarafında
 1. [Releases](../../releases/latest) sayfasından `…-setup.exe` dosyasını indir.
 2. Dosyayı çalıştır. Windows bir uyarı gösterebilir, aşağıya bak.
 3. Riot Client'ı aç ve giriş yap, sonra Valorant'ı başlat.
-4. Ajan seçimi başlayınca oyuncular overlay'de kendiliğinden listelenir.
+4. Valorant'ta **Ayarlar → Video → Ekran Modu**'nu **Pencereli Tam Ekran** yap. Tam ekran modunda overlay oyunun arkasında kalır ve görünmez.
+5. Ajan seçimi başlayınca oyuncular overlay'de kendiliğinden listelenir.
 
 İlk açılışta uygulama kısa bir rehber gösterir. Rehberi Ayarlar → Hakkında bölümünden tekrar açabilirsin.
 
@@ -44,9 +45,9 @@ Ajan seçiminde ve maç sırasında herkes tek tabloda:
 - **Rank, peak ve RR.** Güncel rank ile en yüksek rank yan yana.
 - **Kazanma oranı** ve maç sayısı.
 - **Son maçlar.** Son 5 maçın W/L işareti. Rekabet düz, diğer modlar kesikli çerçeveyle görünür. Üstüne gelince mod, harita, ajan ve K/D/A çıkar.
-- **Kaplamalar.** Silah başına kaplama görselleri.
+- **Kaplamalar.** Silah başına kaplama görselleri. Görselin altındaki renkli çizgi kaplamanın nadirliğini gösterir (Select, Deluxe, Premium, Ultra, Exclusive); en nadir üçü ayrıca hafifçe parlar.
 - **Parti.** Aynı partideki oyuncular aynı harfi alır (A, B…). Kesin bilinmeyenler soluk harfle gösterilir.
-- **Rozetler.** Yalnızca son rekabet maçlarında ölçülen değerlere göre: Kafa avcısı, Yüksek hasar, Öncü, İlk ölen, Düşük HS, Formda, Tilt.
+- **Rozetler.** Yalnızca son rekabet maçlarında ölçülen değerlere göre: Kafa avcısı, Yüksek hasar, Öncü, İlk ölen, Düşük HS, Formda, Düşüşte.
 - **Takım karşılaştırması.** Her takımın ortalama ranki ve K/D'si.
 - **Tekrar karşılaşma.** Daha önce aynı maçta olduğun oyuncular "3. kez" etiketiyle öne çıkar ve geçen sefer takım mı rakip mi olduğu yazılır. İsimleri yalnızca lobide zaten görünüyorsa saklanır.
 - **Oyuncu ayrıntısı.** Satıra tıklayınca: maç geçmişi (mod filtresiyle: rekabet, derecesiz, tam gaz, diğer), oynayış istatistikleri, kullandığı kaplamalar. Oyuncuya etiket ve not eklenebilir.
@@ -112,6 +113,7 @@ Seans, aralarında 100 dakikadan uzun ara olmayan maçlardır. Oyuncular sekmesi
 ### Genel
 
 - **F2:** Overlay'i gösterir veya gizler.
+- **Bulanıklaştır:** Oyuncu isimleri bulanık görünür. Video çekerken başkalarının kimliğini göstermemek için. Kopyalama çalışır ama bildirimde isim yazmaz.
 - **Kayıtta gizle:** Overlay ekran kaydında ve yayında görünmez, sen oyunda görmeye devam edersin (Windows).
 - **Fare otomatik:** İmleç overlay'in üstündeyken tıklamalar overlay'e, dışındayken oyuna gider.
 - **Kendiliğinden güncelleme:** Yeni sürüm çıkınca uygulama haber verir, kurulum senin onayınla başlar.
@@ -120,6 +122,8 @@ Seans, aralarında 100 dakikadan uzun ara olmayan maçlardır. Oyuncular sekmesi
 Rekabet verileri (son 5 maç, kafa isabeti, K/D, rozetler) yalnızca **rekabet** maçlarından hesaplanır.
 
 ## Sorun giderme
+
+**Overlay oyunda görünmüyor:** Valorant'ın Ekran Modu Pencereli Tam Ekran olmalı. Tam ekranda overlay oyunun arkasında kalır.
 
 Alt köşedeki noktalara tıklayınca neyin çalışmadığını görürsün. Sorun bildirirken Ayarlar → Hakkında → **Tanı bilgisini kopyala** çıktısını ekle. Kişisel kimlikler bu çıktıdan temizlenir. S.S.S & Panel sekmesindeki **Kopyala** düğmesi ağ kaydını da aynı şekilde paylaşılabilir hâle getirir.
 

@@ -103,7 +103,7 @@ export function ReportPanel({ assets, matchId, onClose }: { assets: Assets; matc
               <div className={p.isSelf ? "rg rr me" : "rg rr"} key={p.puuid}>
                 <div className="who2">
                   {ag && <img className="agent" src={ag.icon} alt={ag.name} />}
-                  <span className="n">{p.name ?? (p.hidden ? "İsim gizli" : "…")}</span>
+                  <span className="n pn">{p.name ?? (p.hidden ? "İsim gizli" : "…")}</span>
                   {p.party && <span className="p mini" title="Maçta aynı partideydi">{p.party}</span>}
                   {a === top && <span className="bd gold mvp">MVP</span>}
                 </div>

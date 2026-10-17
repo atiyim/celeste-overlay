@@ -390,7 +390,7 @@ button.tg:hover { opacity: 1; }
 .gk { font-family: "Geist Mono Variable", ui-monospace, monospace; font-size: 12px; padding: 3px 10px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; background: var(--bg); color: var(--fg); }
 .gdrag { padding: 2px 10px; font-weight: 600; border-bottom: 2px solid var(--accent); }
 .gbtns { display: flex; gap: 4px; } .gbtns i { font-style: normal; font-size: 11px; color: var(--fg-2); padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; white-space: nowrap; }
-.gtabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.gtabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .gtab { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--s2); animation: gin .4s cubic-bezier(.2,.8,.2,1) both; }
 .gtab b { font-size: 13px; font-weight: 500; color: var(--accent); } .gtab small { font-size: 12px; color: var(--fg-3); }
 .gnav { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--line-soft); }
@@ -516,3 +516,12 @@ button.tg:hover { opacity: 1; }
 .ig { all: unset; cursor: pointer; font-weight: 600; background: linear-gradient(90deg, #c4b5fd, #f9a8d4); -webkit-background-clip: text; background-clip: text; color: transparent; border-bottom: 1px solid color-mix(in srgb, #f9a8d4 35%, transparent); transition: border-color .2s, filter .2s; }
 .ig:hover { border-bottom-color: #f9a8d4; filter: brightness(1.15); }
 .ig:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+
+/* ---------- 0.6.1: satır animasyonu, isim bulanıklığı, kaplama nadirliği ---------- */
+.g.r { animation: rowin .5s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 45ms); }
+@keyframes rowin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.ov.blur .pn { filter: blur(6px); user-select: none; transition: filter .2s; }
+.th.tr { border-radius: 3px; box-shadow: inset 0 -2px 0 var(--tc); }
+.th.tr.t3, .th.tr.t4, .th.tr.t5 { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--tc) 55%, transparent)); }
+@media (prefers-reduced-motion: reduce) { .g.r { animation: none; } }
+.gitems > .gxi:last-child:nth-child(odd) { grid-column: 1 / -1; }

@@ -128,7 +128,7 @@ export async function loadAssets(): Promise<Assets> {
 
 /* Bir silah yuvasını görsel + isme çevirir. Yuvadaki tüm kimlikler görsel veritabanında aranır;
    takılı chroma varsa o rengin render'ı döner. */
-export interface ResolvedSkin { name: string; image: string; swatch?: string; chromaName?: string; isDefault: boolean }
+export interface ResolvedSkin { name: string; image: string; swatch?: string; chromaName?: string; isDefault: boolean; tier?: ContentTier }
 
 const slotIds = (slot?: WeaponSlot) =>
   [...(slot?.items ?? []), slot?.chromaId, slot?.skinId, slot?.levelId, slot?.charmId, slot?.charmLevelId]
@@ -145,7 +145,10 @@ export function resolveSkin(a: Assets, w: { id: string; defaultSkinId: string; i
   const skin = (skinId ? a.skins.get(skinId) : undefined) ?? (chromaId ? a.skins.get(chromaId) : undefined);
   if (!skin) return fallback;
   const isDefault = ids.includes(w.defaultSkinId) || /^(standart|standard)/i.test(skin.name);
+  const mainId = ids.map((i) => a.levelToSkin.get(i)).find((x): x is string => !!x);
+  const tier = mainId ? a.contentTiers.get(a.skinMeta.get(mainId)?.tierId ?? "") : undefined;
   return {
+    tier: isDefault ? undefined : tier,
     name: isDefault ? "Standart" : skin.name,
     image: isDefault ? w.icon || skin.icon : chroma?.render || skin.icon || w.icon, // standart kaplamanın kendi görseli çoğu zaman yok; silahın görseli kullanılır
     swatch: chroma && chroma.index > 0 ? chroma.swatch : undefined,

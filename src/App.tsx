@@ -56,6 +56,8 @@ export function App() {
   const closeGuide = () => { setGuide(false); try { localStorage.setItem("overlay-guide", "1"); } catch { /* depolama kapalı */ } };
   const [protect, setProtect] = useState<boolean>(() => localStorage.getItem("overlay-protect") === "1");
   const [zoom, setZoom] = useState<number>(() => Number(localStorage.getItem("overlay-zoom")) || 1);
+  const [blur, setBlur] = useState<boolean>(() => { try { return localStorage.getItem("overlay-blur") === "1"; } catch { return false; } });
+  useEffect(() => { try { localStorage.setItem("overlay-blur", blur ? "1" : "0"); } catch { /* depolama kapalı */ } }, [blur]);
   const [autoHidden, setAutoHidden] = useState(false);
   const [assetsFailed, setAssetsFailed] = useState(false);
   const updater = useUpdater();
@@ -299,7 +301,7 @@ export function App() {
     if (!name) { showToast("Bu oyuncunun ismi gizli, kopyalanacak bir şey yok"); return; }
     try {
       if (inTauri) await writeText(name); else await navigator.clipboard.writeText(name);
-      showToast(label ?? `Kopyalandı: ${name}`);
+      showToast(label ?? (blur ? "Kopyalandı" : `Kopyalandı: ${name}`));
     } catch { showToast("Kopyalanamadı"); }
   };
 
@@ -359,7 +361,7 @@ export function App() {
   if (autoHidden) return null;
 
   return (
-    <main className="ov" ref={rootRef} style={{ width }}>
+    <main className={blur ? "ov blur" : "ov"} ref={rootRef} style={{ width }}>
       <header className="hd drag" onMouseDown={startDrag} title="Sürükleyerek taşı">
         <span className="hl">
           <h1 className="t">{mapName ?? "Celeste Overlay"}</h1>
@@ -387,6 +389,17 @@ export function App() {
                 onClick={() => { setProtect(!protect); showToast(protect ? "Overlay kayıtta görünür" : "Overlay kayıtta gizli"); }}
               >
                 {protect ? "Kayıtta gizli" : "Kayıtta gizle"}
+              </button>
+            )}
+            {!collapsed && (
+              <button
+                type="button"
+                className={blur ? "on" : ""}
+                aria-pressed={blur}
+                title="Açıkken oyuncu isimleri bulanık görünür. Video çekerken başkalarının kimliğini göstermemek için."
+                onClick={() => { setBlur(!blur); showToast(blur ? "İsimler görünür" : "İsimler bulanık"); }}
+              >
+                {blur ? "İsimler bulanık" : "Bulanıklaştır"}
               </button>
             )}
             <button type="button" onClick={() => setCollapsed((c) => !c)} aria-expanded={!collapsed}>
@@ -461,6 +474,7 @@ export function App() {
           <div className="empty">
             <p>{emptyText}</p>
             {st?.riotClient && !st.valorant && assets && <p className="d">Mağaza ve İstatistik sekmeleri oyun kapalıyken de çalışır.</p>}
+            {st?.valorant && <p className="d">Overlay oyunun arkasında kalıyorsa Valorant'ta Ekran Modu'nu Pencereli Tam Ekran yap.</p>}
             {assetsFailed && !assets && <button className="x" type="button" onClick={retryAssets}>Tekrar dene</button>}
           </div>
         ) : (
@@ -498,6 +512,7 @@ export function App() {
                       cols={theme.cols}
                       th={theme.th}
                       template={template}
+                      blur={blur}
                       onOpen={() => setSelected(p.puuid)}
                       onCopy={copyName}
                       onTracker={openTracker}

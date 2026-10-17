@@ -141,7 +141,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
         <div>
           <h2 className="t">
             <button className="namebtn" type="button" title="Kullanıcı adını kopyala" onClick={() => onCopy(anonymous ? entry?.label ?? null : p.name ?? null)}>
-              {anonymous ? entry?.label ?? "Oyuncu (isim gizli)" : p.name}
+              <span className="pn">{anonymous ? entry?.label ?? "Oyuncu (isim gizli)" : p.name}</span>
             </button>
             {sb && <span className={`bd ${sb.tone}`} title={sb.tip}>{sb.text}</span>}
             {fb && <span className={`bd ${fb.tone}`} title={fb.tip}>{fb.text}</span>}
@@ -297,7 +297,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
                   <p className="team"><b>{premier.name}</b>{premier.tag && <span className="tagname">#{premier.tag}</span>}</p>
                   <div className="members">
                     {premier.members.map((m) => (
-                      <span key={m.puuid} className={m.puuid === p.puuid ? "mem me" : "mem"}>{m.hidden ? "İsim gizli" : m.name ?? "…"}</span>
+                      <span key={m.puuid} className={m.puuid === p.puuid ? "mem me" : "mem"}><span className="pn">{m.hidden ? "İsim gizli" : m.name ?? "…"}</span></span>
                     ))}
                   </div>
                 </>
@@ -311,7 +311,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
                     const now = p.partySure && mate?.partySure && mate.party === p.party;
                     return (
                       <div className="tr tog" key={t.puuid}>
-                        <span className="pair"><b>{mate ? (mate.hiddenName && !mate.isSelf ? "İsim gizli" : mate.name ?? "…") : "?"}</b></span>
+                        <span className="pair"><b className="pn">{mate ? (mate.hiddenName && !mate.isSelf ? "İsim gizli" : mate.name ?? "…") : "?"}</b></span>
                         <span className="num">{t.count}/{t.of} maç</span>
                         {now ? <span className="bd win">Şu an aynı parti</span> : <span />}
                       </div>
@@ -341,7 +341,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
                 <div className="tb">
                   {entry.history.slice(-4, -1).reverse().map((h, i) => (
                     <div className="tr met" key={i}>
-                      <span className="mn">{!anonymous && h.name ? h.name : "–"}</span>
+                      <span className="mn pn">{!anonymous && h.name ? h.name : "–"}</span>
                       <span>{assets.maps.get(lookup(h.mapId)) ?? "?"}</span>
                       <span>{assets.agents.get(lookup(h.agentId))?.name ?? "?"}</span>
                       <span className={h.side === "ally" ? "side-ally" : "side-enemy"}>{h.side === "ally" ? "Takım" : "Rakip"}</span>

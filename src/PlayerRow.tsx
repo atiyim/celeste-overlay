@@ -15,6 +15,7 @@ interface Props {
   cols: Record<ColId, boolean>;
   th: Thresholds;
   template: string;
+  blur?: boolean;
   onOpen: () => void;
   onCopy: (name: string | null) => void;
   onTracker: (url: string) => void;
@@ -28,7 +29,7 @@ const THUMBS = [
   { id: "2f59173c-4bed-b6c3-2191-dea9b58be9c7", name: "Melee", category: "Melee" },
 ];
 
-export function PlayerRow({ p, index, assets, entry, cols, th, template, onOpen, onCopy, onTracker }: Props) {
+export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker }: Props) {
   const agent = assets.agents.get(lookup(p.agentId));
   const cur = assets.tiers.get(p.rank.current);
   const peak = assets.tiers.get(p.rank.peak);
@@ -78,14 +79,14 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, onOpen,
   const key = (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };
 
   return (
-    <div className={times ? "g r again" : "g r"} style={{ gridTemplateColumns: template }} role="button" tabIndex={0} onClick={onOpen} onKeyDown={key}>
-      <button className="who" type="button" onClick={stop(() => onCopy(anonymous ? label ?? null : p.name ?? null))} title={sub || "Kullanıcı adını kopyala"}>
+    <div className={times ? "g r again" : "g r"} style={{ gridTemplateColumns: template, "--i": index } as React.CSSProperties} role="button" tabIndex={0} onClick={onOpen} onKeyDown={key}>
+      <button className="who" type="button" onClick={stop(() => onCopy(anonymous ? label ?? null : p.name ?? null))} title={blur ? "Kullanıcı adını kopyala" : sub || "Kullanıcı adını kopyala"}>
         {agent && <img className="agent" src={agent.icon} alt={agent.name} loading="lazy" />}
         <span className="n">
-          {name}
+          <span className="pn">{name}</span>
           {times > 0 && <span className="rep" title={`Bu oyuncuyla ${times}. kez aynı maçtasın`}>{times}. kez</span>}
           {tag && <span className="tg" style={{ color: tag.color, borderColor: tag.color }}>{tag.label}</span>}
-          {sub && <small>{sub}</small>}
+          {sub && <small className="pn">{sub}</small>}
         </span>
       </button>
       {cols.rank && (
@@ -128,10 +129,11 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, onOpen,
             t ? (
               <img
                 key={i}
-                className={t.skin.isDefault ? "th dim" : "th"}
+                className={t.skin.isDefault ? "th dim" : t.skin.tier ? `th tr t${t.skin.tier.rank}` : "th"}
+                style={t.skin.tier && !t.skin.isDefault ? ({ "--tc": t.skin.tier.color } as React.CSSProperties) : undefined}
                 src={t.skin.image}
                 alt={`${t.weapon.name}: ${t.skin.name}`}
-                title={`${t.weapon.name}: ${t.skin.name}${t.skin.chromaName ? ` (${t.skin.chromaName})` : ""}`}
+                title={`${t.weapon.name}: ${t.skin.name}${t.skin.chromaName ? ` (${t.skin.chromaName})` : ""}${t.skin.tier && !t.skin.isDefault ? ` · ${t.skin.tier.name}` : ""}`}
                 loading="lazy"
                 onError={(e) => { const el = e.currentTarget; if (el.dataset.fb !== "1" && t.weapon.icon) { el.dataset.fb = "1"; el.src = t.weapon.icon; } }}
               />
