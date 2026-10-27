@@ -50,12 +50,13 @@ Ajan seçiminde ve maç sırasında herkes tek tabloda:
 - **Rozetler.** Yalnızca son rekabet maçlarında ölçülen değerlere göre: Kafa avcısı, Yüksek hasar, Öncü, İlk ölen, Düşük HS, Formda, Düşüşte.
 - **Takım karşılaştırması.** Her takımın ortalama ranki ve K/D'si.
 - **Tekrar karşılaşma.** Daha önce aynı maçta olduğun oyuncular "3. kez" etiketiyle öne çıkar ve geçen sefer takım mı rakip mi olduğu yazılır. İsimleri yalnızca lobide zaten görünüyorsa saklanır.
-- **Oyuncu ayrıntısı.** Satıra tıklayınca: maç geçmişi (mod filtresiyle: rekabet, derecesiz, tam gaz, diğer), oynayış istatistikleri, kullandığı kaplamalar. Oyuncuya etiket ve not eklenebilir.
+- **Oyuncu ayrıntısı.** Satıra tıklayınca: maç geçmişi (mod filtresiyle: rekabet, derecesiz, tam gaz, diğer; her maçta tarih, saat ve kaç dakika önce oynandığı), oynayış istatistikleri, kullandığı kaplamalar.
+- **Geçmiş sekmesi.** Oyuncunun bu haritadaki ve bu ajandaki rekabet performansı (maç, galibiyet, K/D), en çok oynadığı roller ve ajanlar (son 25 maçın içinden, rekabet maçları), tek ajan oyuncusu etiketi, liderlik tablosu sırası ve açılıp kapanan **Geçmiş actler** listesi (her actte act sonu rank'ı, en yüksek rank, galibiyet). "Kayıtlı ilk rekabet acti" Riot'un kayıtlarındaki en eski rekabet actidir, hesabın açılış tarihi değildir. Riot oyun süresi, toplam saat ya da tracker skoru vermez, bunlar gösterilmez. Oyuncuya etiket ve not eklenebilir.
 - **İsim kopyalama.** İsme tıkla, adı kopyalanır. Tracker düğmesi oyuncuyu tarayıcıda açar.
 
 ### Son maç
 
-Biten maçın raporu kendiliğinden açılır: skor, oyuncu tablosu (K/D/A, ACS, kafa isabeti, hasar, ilk kan) ve kimin kimi kaç kez öldürdüğü.
+Biten maçın raporu kendiliğinden açılır: skor, oyuncu tablosu (K/D/A, ACS, kafa isabeti, hasar, ilk kan) ve kimin kimi kaç kez öldürdüğü. Bir oyuncuya tıklayınca etiket koyabilir (İyi, Toksik, Şüpheli) ve tracker.gg profilini tarayıcıda açabilirsin. İsmi gizli oyuncuya etiket konur ama profil bağlantısı yoktur.
 
 ### Mağaza
 

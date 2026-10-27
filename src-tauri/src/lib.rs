@@ -1,10 +1,12 @@
 use riot_core::netlog::{self, NetReport};
 use riot_core::{Account, Engine, HealthEntry, MatchReport, MyStats, PremierTeam, Snapshot, Store};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Emitter, Manager, PhysicalPosition, State, WebviewWindow,
+    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, State, WebviewWindow,
 };
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Shortcut, ShortcutState};
 
@@ -48,6 +50,12 @@ async fn get_premier(state: State<'_, AppState>, puuid: String) -> Result<Option
 }
 
 #[tauri::command]
+async fn deepen_player(state: State<'_, AppState>, puuid: String) -> Result<(), String> {
+    state.engine.deepen(&puuid).await;
+    Ok(())
+}
+
+#[tauri::command]
 async fn get_my_stats(state: State<'_, AppState>) -> Result<MyStats, String> {
     state.engine.my_stats().await
 }
@@ -65,6 +73,10 @@ fn net_note(method: String, url: String, status: u16, ms: u32) {
 
 /// Overlay'i öne getirir, odağı alır (oyun fare/klavye girdisini görmez) ve tıklanabilir yapar.
 fn show_interactive(w: &WebviewWindow) {
+    // Otomatik gizlemeden kalan minik (2×2) pencereyi, arayüzün olayı gelmese bile geri büyüt.
+    if w.outer_size().map(|s| s.width < 80).unwrap_or(false) {
+        let _ = w.set_size(LogicalSize::new(900.0, 600.0));
+    }
     let _ = w.unminimize();
     let _ = w.show();
     let _ = w.set_always_on_top(true);
@@ -74,7 +86,15 @@ fn show_interactive(w: &WebviewWindow) {
 }
 
 /// F2 ve tepsi simgesi aynı işi yapar: görünürse tamamen gizle (tepsiye), değilse öne al.
+/// Tuşa basılı tutulunca Windows tekrarlayan bildirim yollar; hızlı art arda gelen basışları yok sayar.
+static LAST_TOGGLE: AtomicU64 = AtomicU64::new(0);
+
 fn toggle_overlay(app: &AppHandle) {
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0);
+    let prev = LAST_TOGGLE.swap(now, Ordering::SeqCst);
+    if now.saturating_sub(prev) < 250 {
+        return;
+    }
     let Some(w) = app.get_webview_window("main") else { return };
     // Otomatik gizlemede pencere minik bir noktaya iner: bu durumda F2 "göster" demektir.
     let tiny = w.outer_size().map(|s| s.width < 80).unwrap_or(false);
@@ -112,12 +132,21 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState { engine: Arc::new(Engine::new()) })
-        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, get_net_report, net_note])
+        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note])
         .setup(move |app| {
             // F2 başka bir uygulamada kayıtlıysa uygulama yine açılır, tepsi simgesi çalışmaya devam eder.
             if let Err(e) = app.global_shortcut().register(f2) {
                 eprintln!("F2 kısayolu kaydedilemedi: {e}");
             }
+            // Kayıt başarısız olduysa (başka uygulama tutuyor, açılış zamanlaması) veya sonradan düştüyse sessizce yeniden dener.
+            let handle = app.handle().clone();
+            std::thread::spawn(move || loop {
+                std::thread::sleep(Duration::from_secs(4));
+                let key = Shortcut::new(None, Code::F2);
+                if !handle.global_shortcut().is_registered(key) {
+                    let _ = handle.global_shortcut().register(key);
+                }
+            });
 
             let toggle_item = MenuItem::with_id(app, "toggle", "Göster / Gizle (F2)", true, None::<&str>)?;
             let reset_item = MenuItem::with_id(app, "reset", "Konumu sıfırla", true, None::<&str>)?;

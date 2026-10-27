@@ -37,6 +37,8 @@ struct Mmr {
     games: u32,
     total_wins: u32,
     total_games: u32,
+    leaderboard: Option<u32>,
+    acts: Vec<ActRank>,
 }
 
 /// Round kayıtlarından çıkarılan dövüş verisi (tek oyuncu, tek maç).
@@ -144,6 +146,7 @@ impl Detail {
             damage: p.combat.damage,
             first_kills: p.combat.fk,
             first_deaths: p.combat.fd,
+            started: self.started,
             weapon_kills: counts(&p.combat.wkills),
             bought: counts(&p.combat.bought),
         })
@@ -190,6 +193,8 @@ const FORM_QUEUES: [&str; 1] = ["competitive"];
 // Kendi istatistik sayfan tüm ana modları kapsar.
 const STATS_QUEUES: [&str; 4] = ["competitive", "unrated", "swiftplay", "premier"];
 const FORM_N: usize = 5;
+const DEEP_COMP: usize = 20;
+const DEEP_OTHER: usize = 10;
 const DETAIL_BUDGET: usize = 10; // her turda en fazla bu kadar maç ayrıntısı çekilir
 
 /// Yalnızca rekabet maçları (party eşleşmesi gibi hesaplar bunu kullanır).
@@ -199,21 +204,68 @@ fn form_ids(h: &[(String, String)]) -> Vec<(String, String)> {
 
 /// Rekabet + diğer modlar (özel maçlar hariç), yeniden eskiye.
 fn recent_ids(h: &[(String, String)]) -> Vec<(String, String)> {
+    pick_ids(h, FORM_N, FORM_N)
+}
+
+/// Oyuncu ayrıntısı açıkken: son 25 maç içindeki rekabet maçlarının tamamı (en çok 20) ve diğer modlardan 10.
+fn deep_ids(h: &[(String, String)]) -> Vec<(String, String)> {
+    pick_ids(h, DEEP_COMP, DEEP_OTHER)
+}
+
+fn pick_ids(h: &[(String, String)], comp: usize, other: usize) -> Vec<(String, String)> {
     let (mut c, mut o) = (0, 0);
     h.iter()
         .filter(|(_, q)| {
             if FORM_QUEUES.contains(&q.as_str()) {
                 c += 1;
-                c <= FORM_N
+                c <= comp
             } else if !q.is_empty() {
                 o += 1;
-                o <= FORM_N
+                o <= other
             } else {
                 false
             }
         })
         .cloned()
         .collect()
+}
+
+/// Oyuncunun MMR yanıtından rank, act geçmişi ve liderlik sırasını çıkarır.
+fn parse_mmr(v: &Value, season: &str) -> Mmr {
+    let lcu = &v["LatestCompetitiveUpdate"];
+    let cur_season = lcu["SeasonID"].as_str().filter(|x| !x.is_empty()).unwrap_or(season).to_string();
+    let mut out = Mmr {
+        current: lcu["TierAfterUpdate"].as_u64().unwrap_or(0) as u32,
+        rr: lcu["RankedRatingAfterUpdate"].as_u64().unwrap_or(0) as u32,
+        ..Default::default()
+    };
+    let lb_season = if season.is_empty() { cur_season.clone() } else { season.to_string() };
+    if let Some(seasons) = v["QueueSkills"]["competitive"]["SeasonalInfoBySeasonID"].as_object() {
+        for (id, info) in seasons {
+            let wins_peak = info["WinsByTier"]
+                .as_object()
+                .map(|m| m.keys().filter_map(|k| k.parse::<u32>().ok()).max().unwrap_or(0))
+                .unwrap_or(0);
+            let tier = info["CompetitiveTier"].as_u64().unwrap_or(0) as u32;
+            out.peak = out.peak.max(wins_peak).max(tier);
+            let w = info["NumberOfWins"].as_u64().unwrap_or(0) as u32;
+            let g = info["NumberOfGames"].as_u64().unwrap_or(0) as u32;
+            out.total_wins += w;
+            out.total_games += g;
+            if id.as_str() == cur_season {
+                out.wins = w;
+                out.games = g;
+            }
+            if id.eq_ignore_ascii_case(&lb_season) {
+                out.leaderboard = info["LeaderboardRank"].as_u64().filter(|r| *r > 0).map(|r| r as u32);
+            }
+            if g > 0 {
+                let end = info["Rank"].as_u64().unwrap_or(0).max(tier as u64) as u32;
+                out.acts.push(ActRank { season_id: id.to_lowercase(), tier: end, peak: wins_peak.max(end), wins: w, games: g });
+            }
+        }
+    }
+    out
 }
 
 fn to_rank(m: &Mmr) -> Rank {
@@ -225,6 +277,8 @@ fn to_rank(m: &Mmr) -> Rank {
         games: m.games,
         total_wins: m.total_wins,
         total_games: m.total_games,
+        leaderboard: m.leaderboard,
+        acts: m.acts.clone(),
     }
 }
 
@@ -243,6 +297,8 @@ struct State {
     lobbies: HashMap<String, HashSet<String>>, // maç kimliği -> ismini gizleyenler
     premier: HashMap<String, (Instant, Option<PremierTeam>)>,
     details: HashMap<String, Detail>,
+    /// Ayrıntısı açılan (derin geçmişi istenen) oyuncular.
+    deep: HashSet<String>,
     block_until: Option<Instant>,
     names: HashMap<String, String>,
 }
@@ -261,6 +317,16 @@ impl Default for Engine {
 impl Engine {
     pub fn new() -> Self {
         Self { http: reqwest::Client::new(), state: Mutex::new(State::default()) }
+    }
+
+    /// Oyuncu ayrıntısı açıldı: bu oyuncunun son 25 maçı içindeki rekabet maçlarının ayrıntıları da çekilsin.
+    /// İstekler normal bütçeyle, turlara bölünerek atılır; yeni bir kapı açmaz.
+    pub async fn deepen(&self, puuid: &str) {
+        let mut st = self.state.lock().await;
+        if st.deep.len() >= 20 {
+            st.deep.clear();
+        }
+        st.deep.insert(puuid.to_lowercase());
     }
 
     /// Arayüzün periyodik olarak çağırdığı tek giriş noktası.
@@ -491,7 +557,17 @@ impl Engine {
             let mut want: Vec<String> = Vec::new();
             for p in players.iter() {
                 if let Some((_, h)) = st.history.get(&p.puuid) {
+                    // Önce herkesin son 5+5 maçı; ayrıntısı açılan oyuncunun derin geçmişi bunlardan sonra gelir.
                     for (id, _) in recent_ids(h) {
+                        if !st.details.contains_key(&id) && !want.contains(&id) {
+                            want.push(id);
+                        }
+                    }
+                }
+            }
+            for p in players.iter().filter(|p| st.deep.contains(&p.puuid)) {
+                if let Some((_, h)) = st.history.get(&p.puuid) {
+                    for (id, _) in deep_ids(h) {
                         if !st.details.contains_key(&id) && !want.contains(&id) {
                             want.push(id);
                         }
@@ -541,6 +617,15 @@ impl Engine {
                     let comp: Vec<&FormEntry> = p.form.iter().filter(|e| e.queue == "competitive").collect();
                     let (k, d): (u32, u32) = comp.iter().fold((0, 0), |a, e| (a.0 + e.kills, a.1 + e.deaths));
                     p.kd = if comp.is_empty() { None } else { Some(k as f32 / d.max(1) as f32) };
+                    if st.deep.contains(&p.puuid) {
+                        for (id, q) in deep_ids(h) {
+                            match st.details.get(&id).and_then(|d| d.entry_for(&p.puuid, &q)) {
+                                Some(e) => p.deep.push(e),
+                                None if !st.details.contains_key(&id) => p.deep_loading = true,
+                                None => {}
+                            }
+                        }
+                    }
                 }
                 None => p.form_loading = true,
             }
@@ -551,32 +636,7 @@ impl Engine {
 
     async fn fetch_mmr(&self, s: &Session, puuid: &str, season: &str) -> Option<Mmr> {
         let v = self.get(s, &s.pd, &format!("/mmr/v1/players/{puuid}")).await.ok()??;
-        let lcu = &v["LatestCompetitiveUpdate"];
-        let cur_season = lcu["SeasonID"].as_str().filter(|x| !x.is_empty()).unwrap_or(season).to_string();
-        let mut out = Mmr {
-            current: lcu["TierAfterUpdate"].as_u64().unwrap_or(0) as u32,
-            rr: lcu["RankedRatingAfterUpdate"].as_u64().unwrap_or(0) as u32,
-            ..Default::default()
-        };
-        if let Some(seasons) = v["QueueSkills"]["competitive"]["SeasonalInfoBySeasonID"].as_object() {
-            for (id, info) in seasons {
-                let wins_peak = info["WinsByTier"]
-                    .as_object()
-                    .map(|m| m.keys().filter_map(|k| k.parse::<u32>().ok()).max().unwrap_or(0))
-                    .unwrap_or(0);
-                let tier = info["CompetitiveTier"].as_u64().unwrap_or(0) as u32;
-                out.peak = out.peak.max(wins_peak).max(tier);
-                let w = info["NumberOfWins"].as_u64().unwrap_or(0) as u32;
-                let g = info["NumberOfGames"].as_u64().unwrap_or(0) as u32;
-                out.total_wins += w;
-                out.total_games += g;
-                if id.as_str() == cur_season {
-                    out.wins = w;
-                    out.games = g;
-                }
-            }
-        }
-        Some(out)
+        Some(parse_mmr(&v, season))
     }
 
     async fn fetch_trend(&self, s: &Session, puuid: &str) -> Option<Vec<i32>> {
@@ -1335,7 +1395,7 @@ impl Engine {
 
         // 1) Canlı parti kimliği
         let live = s.party_ids().await;
-        let ids: HashMap<String, String> = live.as_ref().map(|(_, m)| m.clone()).unwrap_or_default();
+        let ids: HashMap<String, String> = live.as_ref().map(|s| s.ids.clone()).unwrap_or_default();
         let mut label = b'A';
         let mut order: Vec<String> = Vec::new();
         for p in players.iter() {
@@ -1356,36 +1416,66 @@ impl Engine {
             }
         }
 
-        // Tanı: bu lobide canlı parti verisi geldi mi? (yalnızca sayılar, kimlik yok)
-        let key = {
+        // Tanı: canlı parti verisi geldi mi? Yalnızca yapı ve sayılar yazılır (isim, kimlik, parti kimliği yok).
+        // Dosya, lobi ya da sayılar değişince güncellenir; böylece liste sonradan dolarsa görünür.
+        let lobby = {
             let mut v: Vec<&str> = players.iter().map(|p| p.puuid.as_str()).collect();
             v.sort();
             v.join(",")
         };
-        if st.debug_party.as_deref() != Some(key.as_str()) {
-            st.debug_party = Some(key);
+        let sig = match &live {
+            None => format!("{lobby}|none"),
+            Some(sc) => {
+                let found = players.iter().filter(|p| ids.contains_key(&p.puuid)).count();
+                let present = players.iter().filter(|p| sc.rows.iter().any(|r| r.puuid == p.puuid)).count();
+                format!("{lobby}|{}|{}|{found}|{present}", sc.all, sc.total)
+            }
+        };
+        if st.debug_party.as_deref() != Some(sig.as_str()) {
+            st.debug_party = Some(sig);
+            let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+            let clock = format!("{:02}:{:02}:{:02} UTC", (secs / 3600) % 24, (secs / 60) % 60, secs % 60);
             let text = match &live {
-                None => "Riot Client sohbet listesi (presences) alınamadı.".to_string(),
-                Some((total, map)) => {
-                    let found = players.iter().filter(|p| map.contains_key(&p.puuid)).count();
+                None => format!("[{clock}] Riot Client sohbet listesi (presences) alınamadı.\n"),
+                Some(sc) => {
+                    let found = players.iter().filter(|p| ids.contains_key(&p.puuid)).count();
                     let mut sizes: HashMap<&String, usize> = HashMap::new();
                     for p in players.iter() {
-                        if let Some(id) = map.get(&p.puuid) {
+                        if let Some(id) = ids.get(&p.puuid) {
                             *sizes.entry(id).or_default() += 1;
                         }
                     }
                     let mut sz: Vec<usize> = sizes.into_values().collect();
                     sz.sort_unstable_by(|a, b| b.cmp(a));
-                    format!(
-                        "Listedeki Valorant kaydı: {total}\nLobideki oyuncu: {n}\nParti kimliği bulunan lobi oyuncusu: {found}\nParti grup boyutları: {sz:?}\n"
-                    )
+                    let mut t = format!(
+                        "[{clock}]\nListedeki toplam kayıt: {}\nListedeki Valorant kaydı: {}\nLobideki oyuncu: {n}\nListede kaydı olan lobi oyuncusu: {}\nParti kimliği bulunan lobi oyuncusu: {found}\nParti grup boyutları (lobide görünen): {sz:?}\n\nOyuncu başına (sıra lobi sırasıdır, isim yok):\n",
+                        sc.all,
+                        sc.total,
+                        players.iter().filter(|p| sc.rows.iter().any(|r| r.puuid == p.puuid)).count(),
+                    );
+                    for (i, p) in players.iter().enumerate() {
+                        let who = format!("#{} [{}]{}", i + 1, p.team, if p.is_self { " (sen)" } else { "" });
+                        match sc.rows.iter().find(|r| r.puuid == p.puuid) {
+                            None => t.push_str(&format!("{who}: listede kaydı YOK\n")),
+                            Some(r) => t.push_str(&format!(
+                                "{who}: kayıt var, private={}, çözüldü={}, partyId={}, partySize={}, durum={}, alanlar={:?}\n",
+                                r.has_private,
+                                r.decoded,
+                                r.party_id,
+                                r.party_size.map(|x| x.to_string()).unwrap_or_else(|| "yok".into()),
+                                if r.state.is_empty() { "yok" } else { r.state.as_str() },
+                                r.keys,
+                            )),
+                        }
+                    }
+                    t
                 }
             };
             write_text("party-check.txt", &text);
             let h = match &live {
                 None => ("fail", "Riot Client sohbet listesi alınamadı".to_string()),
-                Some((_, map)) => {
-                    let found = players.iter().filter(|p| map.contains_key(&p.puuid)).count();
+                Some(_) => {
+                    let found = players.iter().filter(|p| ids.contains_key(&p.puuid)).count();
                     if found >= n {
                         ("ok", format!("{found}/{n} oyuncu için canlı parti verisi"))
                     } else {
@@ -1470,4 +1560,47 @@ fn write_debug(name: &str, v: &Value) {
         .join("valorant-overlay-debug");
     let _ = std::fs::create_dir_all(&base);
     let _ = std::fs::write(base.join(name), serde_json::to_string_pretty(v).unwrap_or_default());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn deep_ids_takes_more_competitive_than_recent_ids() {
+        let mut list = Vec::new();
+        for i in 0..12 {
+            list.push((format!("c{i}"), "competitive".to_string()));
+        }
+        list.push(("custom".to_string(), String::new()));
+        list.push(("u1".to_string(), "unrated".to_string()));
+        assert_eq!(recent_ids(&list).iter().filter(|(_, q)| q == "competitive").count(), 5);
+        let d = deep_ids(&list);
+        assert_eq!(d.iter().filter(|(_, q)| q == "competitive").count(), 12);
+        assert!(d.iter().any(|(id, _)| id == "u1"));
+        assert!(!d.iter().any(|(id, _)| id == "custom")); // özel maç (boş kuyruk) hariç
+    }
+
+    #[test]
+    fn mmr_reads_acts_and_leaderboard() {
+        let v = json!({
+            "LatestCompetitiveUpdate": { "SeasonID": "AAA", "TierAfterUpdate": 24, "RankedRatingAfterUpdate": 357 },
+            "QueueSkills": { "competitive": { "SeasonalInfoBySeasonID": {
+                "AAA": { "NumberOfWins": 10, "NumberOfGames": 18, "Rank": 24, "CompetitiveTier": 24, "LeaderboardRank": 1240, "WinsByTier": { "21": 3, "24": 7 } },
+                "BBB": { "NumberOfWins": 20, "NumberOfGames": 40, "Rank": 21, "WinsByTier": { "18": 5, "23": 2 } },
+                "CCC": { "NumberOfWins": 0, "NumberOfGames": 0, "Rank": 0 }
+            } } }
+        });
+        let m = parse_mmr(&v, "AAA");
+        assert_eq!(m.leaderboard, Some(1240));
+        assert_eq!(m.acts.len(), 2); // maç oynanmayan act yok sayılır
+        let b = m.acts.iter().find(|a| a.season_id == "bbb").unwrap();
+        assert_eq!((b.tier, b.peak, b.wins, b.games), (21, 23, 20, 40));
+        assert_eq!(m.peak, 24);
+        assert_eq!((m.wins, m.games, m.total_games), (10, 18, 58));
+        // Sıralamada değilse (0) liderlik sırası yok.
+        let v2 = json!({ "QueueSkills": { "competitive": { "SeasonalInfoBySeasonID": { "AAA": { "NumberOfGames": 3, "LeaderboardRank": 0 } } } } });
+        assert_eq!(parse_mmr(&v2, "AAA").leaderboard, None);
+    }
 }

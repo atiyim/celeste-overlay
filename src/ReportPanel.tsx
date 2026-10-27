@@ -3,6 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 import type { Assets } from "./assets";
 import { lookup } from "./assets";
 import { tierColor } from "./LoadoutPanel";
+import { trackerUrl } from "./profile";
+import { TAGS, type Seen, type TagId } from "./seen";
 import type { MatchReport, ReportPlayer } from "./types";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
@@ -15,7 +17,17 @@ const QUEUE: Record<string, string> = {
 const acs = (p: ReportPlayer) => (p.rounds ? Math.round(p.score / p.rounds) : 0);
 const clock = (ms: number) => (ms ? new Date(ms).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "");
 
-export function ReportPanel({ assets, matchId, onClose }: { assets: Assets; matchId: string | null; onClose: () => void }) {
+interface ReportProps {
+  assets: Assets;
+  matchId: string | null;
+  seen: Seen;
+  onTag: (puuid: string, tag: TagId | null) => void;
+  onOpen: (url: string) => void;
+  onClose: () => void;
+}
+
+export function ReportPanel({ assets, matchId, seen, onTag, onOpen, onClose }: ReportProps) {
+  const [openId, setOpenId] = useState<string | null>(null);
   const [rep, setRep] = useState<MatchReport | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [tries, setTries] = useState(0);
@@ -27,7 +39,7 @@ export function ReportPanel({ assets, matchId, onClose }: { assets: Assets; matc
     catch (e) { setErr(String(e)); setTries((t) => t + 1); }
   }, [matchId]);
 
-  useEffect(() => { setRep(null); setErr(null); setTries(0); load(); }, [matchId, load]);
+  useEffect(() => { setRep(null); setErr(null); setTries(0); setOpenId(null); load(); }, [matchId, load]);
 
   // Maç kaydı bitişten birkaç saniye sonra hazır olur; hazır olana dek 8 saniyede bir denenir.
   useEffect(() => {
@@ -99,23 +111,51 @@ export function ReportPanel({ assets, matchId, onClose }: { assets: Assets; matc
             const tier = assets.tiers.get(p.tier);
             const shots = p.headshots + p.bodyshots + p.legshots;
             const a = acs(p);
+            const tag = TAGS.find((x) => x.id === seen[p.puuid]?.tag);
+            const url = p.hidden ? null : trackerUrl(p.name);
+            const open = openId === p.puuid;
             return (
-              <div className={p.isSelf ? "rg rr me" : "rg rr"} key={p.puuid}>
-                <div className="who2">
-                  {ag && <img className="agent" src={ag.icon} alt={ag.name} />}
-                  <span className="n pn">{p.name ?? (p.hidden ? "İsim gizli" : "…")}</span>
-                  {p.party && <span className="p mini" title="Maçta aynı partideydi">{p.party}</span>}
-                  {a === top && <span className="bd gold mvp">MVP</span>}
+              <div className="rwrap" key={p.puuid}>
+                <div
+                  className={`${p.isSelf ? "rg rr me" : "rg rr"} click${open ? " open" : ""}`}
+                  role="button" tabIndex={0} aria-expanded={open}
+                  title={p.isSelf ? undefined : "Etiket koymak ve profiline gitmek için tıkla"}
+                  onClick={() => !p.isSelf && setOpenId(open ? null : p.puuid)}
+                  onKeyDown={(e) => { if (!p.isSelf && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setOpenId(open ? null : p.puuid); } }}
+                >
+                  <div className="who2">
+                    {ag && <img className="agent" src={ag.icon} alt={ag.name} />}
+                    <span className="n pn">{p.name ?? (p.hidden ? "İsim gizli" : "…")}</span>
+                    {tag && <span className="tg" style={{ color: tag.color, borderColor: tag.color }}>{tag.label}</span>}
+                    {p.party && <span className="p mini" title="Maçta aynı partideydi">{p.party}</span>}
+                    {a === top && <span className="bd gold mvp">MVP</span>}
+                  </div>
+                  <div className="num">{tier && p.tier > 0 ? <img className="rk" src={tier.icon} alt={tier.name} title={tier.name} style={{ filter: `drop-shadow(0 0 4px ${tierColor(tier.color)}55)` }} /> : <span className="d">–</span>}</div>
+                  <div className="num"><b>{a}</b></div>
+                  <div className="num">{p.kills} / {p.deaths} / {p.assists}</div>
+                  <div className="num">{(p.deaths ? p.kills / p.deaths : p.kills).toFixed(2)}</div>
+                  <div className="num">{shots ? `%${Math.round((100 * p.headshots) / shots)}` : "–"}</div>
+                  <div className="num">{p.rounds ? Math.round(p.damage / p.rounds) : "–"}</div>
+                  <div className="num"><span className="teal">{p.firstKills}</span> / <span className="loss">{p.firstDeaths}</span></div>
+                  <div className="pair">{duel(p.killed)}</div>
+                  <div className="pair">{duel(p.killedBy)}</div>
                 </div>
-                <div className="num">{tier && p.tier > 0 ? <img className="rk" src={tier.icon} alt={tier.name} title={tier.name} style={{ filter: `drop-shadow(0 0 4px ${tierColor(tier.color)}55)` }} /> : <span className="d">–</span>}</div>
-                <div className="num"><b>{a}</b></div>
-                <div className="num">{p.kills} / {p.deaths} / {p.assists}</div>
-                <div className="num">{(p.deaths ? p.kills / p.deaths : p.kills).toFixed(2)}</div>
-                <div className="num">{shots ? `%${Math.round((100 * p.headshots) / shots)}` : "–"}</div>
-                <div className="num">{p.rounds ? Math.round(p.damage / p.rounds) : "–"}</div>
-                <div className="num"><span className="teal">{p.firstKills}</span> / <span className="loss">{p.firstDeaths}</span></div>
-                <div className="pair">{duel(p.killed)}</div>
-                <div className="pair">{duel(p.killedBy)}</div>
+                {open && (
+                  <div className="ract fade">
+                    <span className="tagrow" title="Etiketler yalnızca bu bilgisayarda saklanır. İsim gizli olsa da aynı oyuncuyu sonraki maçta tanır.">
+                      {TAGS.map((x) => (
+                        <button
+                          key={x.id} type="button" className={seen[p.puuid]?.tag === x.id ? "tg on" : "tg"}
+                          style={{ color: x.color, borderColor: x.color }} aria-pressed={seen[p.puuid]?.tag === x.id}
+                          onClick={() => onTag(p.puuid, seen[p.puuid]?.tag === x.id ? null : x.id)}
+                        >{x.label}</button>
+                      ))}
+                    </span>
+                    {url
+                      ? <button type="button" className="trk" title="Tracker.gg'de aç" onClick={() => onOpen(url)}>Tracker'da aç</button>
+                      : <span className="d">{p.hidden ? "İsmi gizli, profil bağlantısı yok" : "Profil bağlantısı için isim gerekli"}</span>}
+                  </div>
+                )}
               </div>
             );
           })}

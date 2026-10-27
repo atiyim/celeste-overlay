@@ -32,15 +32,22 @@ async function invalidateOnNewVersion() {
 }
 
 export interface Img { name: string; icon: string }
+export interface AgentInfo extends Img { role?: string; roleIcon?: string }
+/* Rekabet act'i: "V25 · ACT 2" gibi ad (varsa) ve başlangıç/bitiş zamanı (ms). */
+export interface SeasonInfo { name: string; start: number; end: number }
 export interface Tier { name: string; icon: string; color: string }
 export interface WeaponInfo { id: string; name: string; category: string; icon: string; defaultSkinId: string }
 export interface SkinInfo { name: string; icon: string }
 export interface SkinMeta { id: string; name: string; icon: string; weapon: string; tierId: string; levels: string[] }
 export interface ContentTier { name: string; color: string; rank: number }
+export interface Callout { name: string; x: number; y: number }
+/* Minimap + bölge adları. Bölge koordinatı oyun birimidir; minimap oranına çevrilmiş halde tutulur. */
+export interface MapInfo { key: string; name: string; icon: string; callouts: Callout[] }
 export interface ChromaInfo { name: string; render: string; swatch: string; index: number }
 
 export interface Assets {
-  agents: Map<string, Img>;
+  agents: Map<string, AgentInfo>;
+  seasons: Map<string, SeasonInfo>;
   weapons: WeaponInfo[];
   skins: Map<string, SkinInfo>; // skin, seviye ve chroma kimliklerinin hepsi buradan çözülür
   chromas: Map<string, ChromaInfo>;
@@ -51,6 +58,7 @@ export interface Assets {
   titles: Map<string, string>;
   tiers: Map<number, Tier>;
   maps: Map<string, string>;
+  mapList: MapInfo[]; // yalnızca rekabet haritaları (minimap'i olanlar)
   skinMeta: Map<string, SkinMeta>; // yalnızca ana kaplama kimliği
   levelToSkin: Map<string, string>; // seviye ve chroma kimliği → ana kaplama kimliği
   contentTiers: Map<string, ContentTier>;
@@ -61,7 +69,7 @@ const k = (s?: string | null) => (s ?? "").toLowerCase();
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function loadAssets(): Promise<Assets> {
   await invalidateOnNewVersion();
-  const [agents, weapons, buddies, sprays, cards, titles, tiers, maps, flex, ctiers] = await Promise.all([
+  const [agents, weapons, buddies, sprays, cards, titles, tiers, maps, flex, ctiers, seasons] = await Promise.all([
     cachedJson<any[]>("/agents?isPlayableCharacter=true"),
     cachedJson<any[]>("/weapons"),
     cachedJson<any[]>("/buddies"),
@@ -72,17 +80,27 @@ export async function loadAssets(): Promise<Assets> {
     cachedJson<any[]>("/maps"),
     cachedJson<any[]>("/flex").catch(() => [] as any[]),
     cachedJson<any[]>("/contenttiers").catch(() => [] as any[]),
+    cachedJson<any[]>("/seasons").catch(() => [] as any[]),
   ]);
 
   const a: Assets = {
-    agents: new Map(), weapons: [], skins: new Map(), chromas: new Map(), charms: new Map(),
-    sprays: new Map(), flex: new Map(), cards: new Map(), titles: new Map(), tiers: new Map(), maps: new Map(),
+    agents: new Map(), seasons: new Map(), weapons: [], skins: new Map(), chromas: new Map(), charms: new Map(),
+    sprays: new Map(), flex: new Map(), cards: new Map(), titles: new Map(), tiers: new Map(), maps: new Map(), mapList: [],
     skinMeta: new Map(), levelToSkin: new Map(), contentTiers: new Map(),
   };
   const TIER_RANK: Record<string, number> = { Select: 1, Deluxe: 2, Premium: 3, Ultra: 4, Exclusive: 5 };
   for (const t of ctiers ?? []) a.contentTiers.set(k(t.uuid), { name: t.displayName, color: `#${String(t.highlightColor ?? "888888").slice(0, 6)}`, rank: TIER_RANK[t.devName] ?? 0 });
 
-  for (const x of agents) a.agents.set(k(x.uuid), { name: x.displayName, icon: x.displayIcon });
+  for (const x of agents) a.agents.set(k(x.uuid), { name: x.displayName, icon: x.displayIcon, role: x.role?.displayName, roleIcon: x.role?.displayIcon });
+
+  /* Act adı: bağlı olduğu bölümle birlikte ("EPISODE 9 · ACT 2"). Ad gelmezse arayüz tarihe döner. */
+  const seasonById = new Map<string, any>((seasons ?? []).map((s: any) => [k(s.uuid), s]));
+  for (const s of seasons ?? []) {
+    const parent = s.parentUuid ? seasonById.get(k(s.parentUuid)) : undefined;
+    const own = String(s.displayName ?? "").trim();
+    const up = String(parent?.displayName ?? "").trim();
+    a.seasons.set(k(s.uuid), { name: [up, own].filter(Boolean).join(" · "), start: Date.parse(s.startTime) || 0, end: Date.parse(s.endTime) || 0 });
+  }
 
   for (const w of weapons) {
     a.weapons.push({
@@ -122,7 +140,19 @@ export async function loadAssets(): Promise<Assets> {
   for (const t of latest?.tiers ?? []) {
     a.tiers.set(t.tier, { name: t.tierName, icon: t.smallIcon, color: `#${String(t.color ?? "888888").slice(0, 6)}` });
   }
-  for (const m of maps) a.maps.set(k(m.mapUrl), m.displayName);
+  for (const m of maps) {
+    a.maps.set(k(m.mapUrl), m.displayName);
+    if (!m.displayIcon || !m.tacticalDescription) continue; // ölüm maçı, eğitim vb. hariç
+    const callouts: Callout[] = [];
+    for (const c of m.callouts ?? []) {
+      const gx = Number(c.location?.x), gy = Number(c.location?.y);
+      if (!Number.isFinite(gx) || !Number.isFinite(gy) || (Math.abs(gx) < 200 && Math.abs(gy) < 200)) continue; // "Saldıran Taraf" gibi sahte konumlar
+      const x = gy * m.xMultiplier + m.xScalarToAdd, y = gx * m.yMultiplier + m.yScalarToAdd;
+      if (x < 0 || x > 1 || y < 0 || y > 1) continue;
+      callouts.push({ name: c.superRegionName && c.superRegionName !== c.regionName ? `${c.superRegionName} ${c.regionName}` : String(c.regionName ?? ""), x, y });
+    }
+    a.mapList.push({ key: String(m.mapUrl).split("/").filter(Boolean).pop()!.toLowerCase(), name: m.displayName, icon: m.displayIcon, callouts });
+  }
   return a;
 }
 

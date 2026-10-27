@@ -67,6 +67,10 @@ pub struct Player {
     /// Son 5 maç (en yeni başta). Maç ayrıntıları yüklenirken `form_loading` true olur.
     pub form: Vec<FormEntry>,
     pub form_loading: bool,
+    /// Oyuncu ayrıntısı açıldığında istenen derin geçmiş: son 25 maç içindeki rekabet maçları ve diğer modlar.
+    /// Yalnızca ayrıntısı açılan oyuncu için dolar; rozetler ve satır bilgisi `form`'dan gelmeye devam eder.
+    pub deep: Vec<FormEntry>,
+    pub deep_loading: bool,
     /// Son rekabet maçlarındaki RR değişimi (en yeni başta).
     pub rr_trend: Vec<i32>,
     /// Son 24 saatte oynadığı maç sayısı (son 15 maç içinde; hepsi 24 saat içindeyse `played_24h_capped`).
@@ -106,6 +110,8 @@ pub struct FormEntry {
     /// Round'un ilk öldürmesini yaptığı / ilk ölen taraf olduğu round sayısı.
     pub first_kills: u32,
     pub first_deaths: u32,
+    /// Maçın başlangıç zamanı (ms, Unix).
+    pub started: u64,
     /// Bu maçta silah başına öldürme sayısı ve (tabanca round'ları hariç) satın aldığı silahlar.
     pub weapon_kills: Vec<WeaponCount>,
     pub bought: Vec<WeaponCount>,
@@ -130,6 +136,21 @@ pub struct Rank {
     /// Tüm act'lerdeki toplam rekabet galibiyet/maç sayısı.
     pub total_wins: u32,
     pub total_games: u32,
+    /// Güncel act'teki liderlik tablosu sırası (yalnızca sıralamada yer alan oyuncular için).
+    pub leaderboard: Option<u32>,
+    /// Maç oynanan her rekabet act'i (act adı ve tarihi arayüzde valorant-api'den çözülür).
+    pub acts: Vec<ActRank>,
+}
+
+/// Bir rekabet act'indeki sonuç: act sonu rank'ı, o act'teki en yüksek rank, galibiyet ve maç sayısı.
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ActRank {
+    pub season_id: String,
+    pub tier: u32,
+    pub peak: u32,
+    pub wins: u32,
+    pub games: u32,
 }
 
 #[derive(Serialize, Clone, Debug, Default)]

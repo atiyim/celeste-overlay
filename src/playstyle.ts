@@ -104,6 +104,18 @@ export function activityBadge(p: Player): Badge | null {
   return { text: `24 saatte ${p.played24h}${p.played24hCapped ? "+" : ""} maç`, tone: "gray", tip: "Son 24 saatte oynadığı maç sayısı (son 25 maç içinden, tüm modlar). Uzun seans: yorgun ya da tilt'te olabilir." };
 }
 
+/** Maçın başladığı an: "Bugün 22:15", "Dün 22:15", "17 Eki 22:15". */
+export function stamp(ms?: number | null): string {
+  if (!ms) return "–";
+  const d = new Date(ms), now = new Date();
+  const day = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(now) - day(d)) / 86_400_000);
+  const hm = d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+  if (diff === 0) return `Bugün ${hm}`;
+  if (diff === 1) return `Dün ${hm}`;
+  return `${d.toLocaleDateString("tr-TR", { day: "numeric", month: "short" })} ${hm}`;
+}
+
 export function ago(ms?: number | null): string {
   if (!ms) return "–";
   const m = Math.max(0, Math.floor((Date.now() - ms) / 60000));

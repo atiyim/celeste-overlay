@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { Assets, WeaponInfo } from "./assets";
 import { charmIcon, lookup, resolveFlex, resolveSkin, resolveSprays } from "./assets";
-import { ago, analyze, formBadge, isComp, modeGroup, modeName, styleBadge, type ModeGroup, type WeaponStat } from "./playstyle";
+import { ago, stamp, analyze, formBadge, isComp, modeGroup, modeName, styleBadge, type ModeGroup, type WeaponStat } from "./playstyle";
 import { DEFAULT_TH, type Thresholds } from "./theme";
 import { TAGS, type Entry, type TagId } from "./seen";
+import { actRows, agentBuckets, compOnly, firstAct, kdOf, oneTrick, pool, roleBuckets, tally, winPct, type Bucket, type Tally } from "./profile";
 import type { Player, PremierTeam } from "./types";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
@@ -50,6 +51,7 @@ interface PanelProps {
   lobby: Player[];
   th?: Thresholds;
   assets: Assets;
+  mapId?: string | null;
   entry?: Entry;
   onLabel: (label: string) => void;
   onTag: (tag: TagId | null) => void;
@@ -58,8 +60,8 @@ interface PanelProps {
 }
 
 const None = ({ text = "Oyun bu bilgiyi göndermedi" }: { text?: string }) => <p className="d none">{text}</p>;
-type Tab = "guns" | "perf" | "profile";
-const TABS: [Tab, string][] = [["guns", "Kaplamalar"], ["perf", "Performans"], ["profile", "Profil"]];
+type Tab = "guns" | "perf" | "history" | "profile";
+const TABS: [Tab, string][] = [["guns", "Kaplamalar"], ["perf", "Performans"], ["history", "Geçmiş"], ["profile", "Profil"]];
 
 function WeaponTable({ title, list, assets, unit }: { title: string; list: WeaponStat[]; assets: Assets; unit: string }) {
   const rows = list.map((w) => ({ w, info: assets.weapons.find((x) => x.id === w.id) })).filter((r) => r.info).slice(0, 3);
@@ -79,7 +81,36 @@ function WeaponTable({ title, list, assets, unit }: { title: string; list: Weapo
   );
 }
 
-export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel, onTag, onClose, onCopy }: PanelProps) {
+/* Harita ya da ajan için üç sayı: maç, galibiyet oranı, K/D. */
+function Trio({ t, empty }: { t: Tally; empty: string }) {
+  if (!t.matches) return <None text={empty} />;
+  const w = winPct(t);
+  return (
+    <div className="stats s3">
+      <div className="gold"><b>{t.matches}</b><small>Maç</small></div>
+      <div className="teal"><b>{w != null ? `%${w}` : "–"}</b><small>Galibiyet</small></div>
+      <div className="orange"><b>{kdOf(t).toFixed(2)}</b><small>K/D</small></div>
+    </div>
+  );
+}
+
+/* Satır: ikon, ad, pay çubuğu ve "7 maç · %57 · 1,24". */
+function BucketRows({ list, total, limit }: { list: Bucket[]; total: number; limit: number }) {
+  return (
+    <>
+      {list.slice(0, limit).map((b) => (
+        <div className="br" key={b.id} title={`${b.name}: ${b.t.matches} maç, ${b.t.wins} galibiyet`}>
+          {b.icon ? <img src={b.icon} alt="" loading="lazy" /> : <span />}
+          <span className="wn">{b.name}</span>
+          <span className="wb"><i style={{ width: `${(100 * b.t.matches) / Math.max(1, total)}%` }} /></span>
+          <span className="wv">{b.t.matches} maç · %{winPct(b.t)} · {kdOf(b.t).toFixed(2)}</span>
+        </div>
+      ))}
+    </>
+  );
+}
+
+export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, onLabel, onTag, onClose, onCopy }: PanelProps) {
   const [draft, setDraft] = useState(entry?.label ?? "");
   const [tab, setTab] = useState<Tab>("guns");
   const [premier, setPremier] = useState<PremierTeam | null | "loading" | "error">("loading");
@@ -101,6 +132,14 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
       .catch(() => live && setPremier("error"));
     return () => { live = false; };
   }, [p.puuid, anonymous]);
+
+  // "Geçmiş" sekmesi açılınca oyuncunun son 25 maçı içindeki rekabet maçları da istenir (bir kez, oyuncu başına).
+  const deepened = useRef(new Set<string>());
+  useEffect(() => {
+    if (tab !== "history" || !inTauri || deepened.current.has(p.puuid)) return;
+    deepened.current.add(p.puuid);
+    invoke("deepen_player", { puuid: p.puuid }).catch(() => deepened.current.delete(p.puuid));
+  }, [tab, p.puuid]);
 
   const by = (cat: string) => assets.weapons.filter((w) => w.category === cat).sort((a, b) => rank(a.name) - rank(b.name));
   const card = assets.cards.get(lookup(p.cardId));
@@ -133,6 +172,19 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
     return d ? k / d : k;
   })();
   const kd = (k: number, d: number) => (d ? k / d : k).toFixed(2);
+
+  // Geçmiş sekmesi: yalnızca rekabet maçları. Derin geçmiş geldiyse hepsi, gelmediyse satırdaki son maçlar.
+  const hist = compOnly(pool(p));
+  const onMap = hist.filter((f) => lookup(f.mapId) === lookup(mapId));
+  const onAgent = hist.filter((f) => lookup(f.agentId) === lookup(p.agentId));
+  const agents = agentBuckets(hist, assets);
+  const roles = roleBuckets(hist, assets);
+  const trick = oneTrick(agents);
+  const acts = actRows(p, assets);
+  const first = firstAct(acts);
+  const [actsOpen, setActsOpen] = useState(false);
+  useEffect(() => setActsOpen(false), [p.puuid]);
+  const mapName = assets.maps.get(lookup(mapId));
   const sign = (n: number) => `${n > 0 ? "+" : ""}${n}`;
 
   return (
@@ -150,6 +202,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
             <b className="ag-n">{agent?.name}</b>
             <span className="sep" />
             <span style={{ color: cur ? tierColor(cur.color) : undefined }}>{cur?.name ?? "Derecesiz"}{p.rank.current > 0 ? ` · ${p.rank.rr} RR` : ""}</span>
+            {p.rank.leaderboard ? <span className="lbr" title="Güncel act liderlik tablosundaki sırası">#{p.rank.leaderboard.toLocaleString("tr-TR")}</span> : null}
             <span className="sep" />
             Peak <span style={{ color: peak ? tierColor(peak.color) : undefined }}>{peak?.name ?? "–"}</span>
             {p.level != null && <><span className="sep" />Seviye {p.level}</>}
@@ -212,16 +265,17 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
             )}
             {shown.length === 0 ? <None text={p.formLoading ? "Yükleniyor…" : p.form.length ? `${modeLabel} maçı yok` : "Maç verisi yok"} /> : (
               <div className="tb">
-                <div className="tr hd2"><span /><span>Harita</span><span>Ajan</span><span className="num">K / D / A</span><span className="num">K/D</span></div>
+                <div className="tr tmx hd2"><span /><span>Harita</span><span>Ajan</span><span className="num">K / D / A</span><span className="num">K/D</span><span className="num">Zaman</span></div>
                 {shown.map((f, i) => {
                   const fa = assets.agents.get(lookup(f.agentId));
                   return (
-                    <div className="tr" key={i} title={modeName(f.queue)}>
+                    <div className="tr tmx" key={i} title={modeName(f.queue)}>
                       <span className={`${f.won ? "fc win" : "fc loss"}${isComp(f) ? "" : " alt"}`}>{f.won ? "W" : "L"}</span>
                       <span>{assets.maps.get(lookup(f.mapId)) ?? "?"}{mode === "all" && <small className="mo"> · {modeName(f.queue)}</small>}</span>
                       <span className="ra">{fa && <img src={fa.icon} alt="" />}{fa?.name ?? "?"}</span>
                       <span className="num">{f.kills} / {f.deaths} / {f.assists}</span>
                       <span className="num">{kd(f.kills, f.deaths)}</span>
+                      <span className="num tt">{f.started ? <><b>{stamp(f.started)}</b><small>{ago(f.started)} önce</small></> : "–"}</span>
                     </div>
                   );
                 })}
@@ -261,6 +315,50 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, entry, onLabel
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {tab === "history" && (
+        <div className="perf fade">
+          <div>
+            <h3 className="h2">Bu haritada{mapName ? ` · ${mapName}` : ""}<span className="hv">rekabet</span></h3>
+            <Trio t={tally(onMap)} empty={mapName ? "Bu haritada rekabet maçı yok" : "Harita bilinmiyor"} />
+            <h3 className="h2">Bu ajanda{agent ? ` · ${agent.name}` : ""}<span className="hv">rekabet</span></h3>
+            <Trio t={tally(onAgent)} empty="Bu ajanla rekabet maçı yok" />
+            <h3 className="h2">Roller<span className="hv">son {hist.length} rekabet maçı{p.deepLoading ? " · yükleniyor…" : ""}</span></h3>
+            {roles.length ? <BucketRows list={roles} total={hist.length} limit={4} /> : <None text={p.formLoading || p.deepLoading ? "Yükleniyor…" : "Rekabet maçı yok"} />}
+          </div>
+          <div>
+            <h3 className="h2">Ajanlar{trick && <span className="bd gold" title="Son rekabet maçlarının %70'inden fazlasını aynı ajanla oynadı">{trick.name} oyuncusu</span>}</h3>
+            {agents.length ? <BucketRows list={agents} total={hist.length} limit={5} /> : <None text={p.formLoading || p.deepLoading ? "Yükleniyor…" : "Rekabet maçı yok"} />}
+            <h3 className="h2">Rekabet geçmişi</h3>
+            {acts.length ? (
+              <>
+                <p className="m cap0">
+                  {first ? <>Kayıtlı ilk rekabet acti <b>{first.label}</b> · </> : null}{acts.length} act oynadı
+                </p>
+                <button type="button" className={actsOpen ? "fold on" : "fold"} aria-expanded={actsOpen} onClick={() => setActsOpen(!actsOpen)}>
+                  <span className="chev" aria-hidden="true" />Geçmiş actler<small>{acts.length}</small>
+                </button>
+                {actsOpen && (
+                  <div className="tb acts fade">
+                    <div className="tr hd2 actr"><span>Act</span><span>Act sonu</span><span>En yüksek</span><span className="num">Galibiyet</span></div>
+                    {acts.map((r) => {
+                      const end = assets.tiers.get(r.tier), top = assets.tiers.get(r.peak);
+                      return (
+                        <div className="tr actr" key={r.seasonId}>
+                          <span className="actn"><b>{r.label}</b>{r.when && <small>{r.when}</small>}</span>
+                          <span className="ra">{end && r.tier > 0 ? <><img src={end.icon} alt="" /><span style={{ color: tierColor(end.color) }}>{end.name}</span></> : <span className="d">–</span>}</span>
+                          <span className="ra">{top && r.peak > 0 ? <><img src={top.icon} alt="" /><span style={{ color: tierColor(top.color) }}>{top.name}</span></> : <span className="d">–</span>}</span>
+                          <span className="num">{r.wins}/{r.games}<small className="d"> %{Math.round((100 * r.wins) / Math.max(1, r.games))}</small></span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            ) : <None text="Rekabet geçmişi yok" />}
           </div>
         </div>
       )}

@@ -1,6 +1,10 @@
 export type Phase = "offline" | "menu" | "pregame" | "ingame";
 
-export interface Rank { current: number; peak: number; rr: number; wins: number; games: number; totalWins: number; totalGames: number }
+export interface ActRank { seasonId: string; tier: number; peak: number; wins: number; games: number }
+export interface Rank {
+  current: number; peak: number; rr: number; wins: number; games: number; totalWins: number; totalGames: number;
+  leaderboard?: number | null; acts?: ActRank[];
+}
 export interface WeaponSlot {
   weaponId: string;
   skinId?: string | null;
@@ -15,7 +19,7 @@ export interface Loadout { weapons: WeaponSlot[]; sprays: SpraySlot[]; sprayIds?
 
 export interface FormEntry { mapId?: string | null; agentId?: string | null; queue?: string | null; won: boolean; kills: number; deaths: number; assists: number;
   rounds?: number; headshots?: number; bodyshots?: number; legshots?: number; damage?: number;
-  firstKills?: number; firstDeaths?: number;
+  firstKills?: number; firstDeaths?: number; started?: number;
   weaponKills?: WeaponCount[]; bought?: WeaponCount[] }
 export interface WeaponCount { weaponId: string; count: number }
 
@@ -37,6 +41,8 @@ export interface Player {
   isSelf: boolean;
   form: FormEntry[];
   formLoading: boolean;
+  deep?: FormEntry[];
+  deepLoading?: boolean;
   rrTrend: number[];
   played24h: number;
   played24hCapped: boolean;

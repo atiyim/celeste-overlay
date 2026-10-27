@@ -151,7 +151,7 @@ export function Settings({ onGuide, updater, zoom, onZoom, zooms, theme, onChang
 
           <h2 className="h">Güncelleme</h2>
           <p className="m">
-            Sürüm {updater.version || "–"}, {" "}
+            <span>Sürüm {updater.version || "–"}</span>, {" "}
             {updater.state.kind === "checking" ? "denetleniyor"
               : updater.state.kind === "none" ? "güncel"
               : updater.state.kind === "available" ? `${updater.state.version} yayında`

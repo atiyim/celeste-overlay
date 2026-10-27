@@ -129,6 +129,28 @@ struct Entitlements {
     subject: String,
 }
 
+/// Sohbet listesindeki bir Valorant kaydının yalnızca yapısı (isim ve kimlik içermez); tanı içindir.
+#[derive(Default, Clone)]
+pub struct PresenceRow {
+    pub puuid: String,
+    pub has_private: bool,
+    pub decoded: bool,
+    pub keys: Vec<String>,
+    pub party_id: bool,
+    pub party_size: Option<u64>,
+    pub state: String,
+}
+
+#[derive(Default)]
+pub struct PartyScan {
+    /// Listedeki tüm kayıt (her ürün).
+    pub all: usize,
+    /// Valorant kaydı sayısı.
+    pub total: usize,
+    pub ids: std::collections::HashMap<String, String>,
+    pub rows: Vec<PresenceRow>,
+}
+
 #[derive(Clone)]
 pub struct Session {
     pub puuid: String,
@@ -207,7 +229,7 @@ impl Session {
 
     /// Riot Client'ın yerel sohbet listesinden oyuncuların parti kimliklerini okur.
     /// Dönüş: (listedeki Valorant kaydı sayısı, oyuncu → partyId). Liste alınamazsa None.
-    pub async fn party_ids(&self) -> Option<(usize, std::collections::HashMap<String, String>)> {
+    pub async fn party_ids(&self) -> Option<PartyScan> {
         let r = netlog::exec(
             &self.local,
             self.local.get(format!("https://127.0.0.1:{}/chat/v4/presences", self.port)).basic_auth("riot", Some(&self.password)),
@@ -218,22 +240,33 @@ impl Session {
             return None;
         }
         let v: Value = r.json().await.ok()?;
-        let mut total = 0;
-        let mut map = std::collections::HashMap::new();
-        for e in v["presences"].as_array()? {
+        let list = v["presences"].as_array()?;
+        let mut scan = PartyScan { all: list.len(), ..Default::default() };
+        for e in list {
             if e["product"].as_str() != Some("valorant") {
                 continue;
             }
-            total += 1;
-            let (Some(puuid), Some(raw)) = (e["puuid"].as_str(), e["private"].as_str()) else { continue };
-            let Ok(bytes) = STANDARD.decode(raw) else { continue };
-            let Ok(p) = serde_json::from_slice::<Value>(&bytes) else { continue };
-            let id = p["partyId"].as_str().or_else(|| p["partyPresenceData"]["partyId"].as_str()).filter(|x| !x.is_empty());
-            if let Some(id) = id {
-                map.insert(puuid.to_lowercase(), id.to_lowercase());
+            scan.total += 1;
+            let Some(puuid) = e["puuid"].as_str() else { continue };
+            let mut row = PresenceRow { puuid: puuid.to_lowercase(), ..Default::default() };
+            if let Some(raw) = e["private"].as_str().filter(|x| !x.is_empty()) {
+                row.has_private = true;
+                if let Some(p) = STANDARD.decode(raw).ok().and_then(|b| serde_json::from_slice::<Value>(&b).ok()) {
+                    row.decoded = true;
+                    row.keys = p.as_object().map(|o| o.keys().cloned().collect()).unwrap_or_default();
+                    row.keys.sort();
+                    row.state = p["sessionLoopState"].as_str().unwrap_or("").to_string();
+                    row.party_size = p["partySize"].as_u64().or_else(|| p["partyPresenceData"]["partySize"].as_u64());
+                    let id = p["partyId"].as_str().or_else(|| p["partyPresenceData"]["partyId"].as_str()).filter(|x| !x.is_empty());
+                    if let Some(id) = id {
+                        row.party_id = true;
+                        scan.ids.insert(row.puuid.clone(), id.to_lowercase());
+                    }
+                }
             }
+            scan.rows.push(row);
         }
-        Some((total, map))
+        Some(scan)
     }
 
     pub fn headers(&self) -> HeaderMap {

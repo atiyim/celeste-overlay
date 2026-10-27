@@ -253,7 +253,7 @@ export function App() {
   // Otomatik gizleme: maç başladıktan N saniye sonra pencere görünmez ve tıklanamaz hâle gelir (odak çalınmaz).
   // Ajan seçimi (pregame) ve menüde otomatik olarak geri görünür.
   useEffect(() => {
-    if (!theme.autoHide) { setAutoHidden(false); return; }
+    if (!theme.autoHide || !inTauri) { setAutoHidden(false); return; } // tarayıcıda (geliştirme) hiç gizlenmez
     if (snap.phase !== "ingame") {
       ingameSince.current = null;
       manualKeep.current = false;
@@ -318,7 +318,6 @@ export function App() {
     setZoom(ZOOMS[Math.min(ZOOMS.length - 1, Math.max(0, (i < 0 ? 2 : i) + d))]);
   };
   const noDrag = (e: React.MouseEvent) => e.stopPropagation();
-
   const myTeam = snap.players.find((p) => p.isSelf)?.team ?? snap.players[0]?.team;
   const allies = snap.players.filter((p) => p.team === myTeam);
   const enemies = snap.players.filter((p) => p.team !== myTeam);
@@ -445,7 +444,7 @@ export function App() {
         view === "settings" ? (
           <Settings updater={updater} theme={theme} onChange={setTheme} onGuide={() => { setGuide(true); setView("roster"); }} zoom={zoom} onZoom={setZoom} zooms={ZOOMS} onToast={showToast} onClose={() => setView("roster")} />
         ) : view === "report" ? (
-          assets ? <ReportPanel assets={assets} matchId={lastMatch} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
+          assets ? <ReportPanel assets={assets} matchId={lastMatch} seen={seen} onTag={(id, t) => setSeen(setTag(id, t))} onOpen={openTracker} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "store" ? (
           assets ? <StorePanel assets={assets} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "account" ? (
@@ -464,6 +463,7 @@ export function App() {
             lobby={snap.players}
             th={theme.th}
             assets={assets}
+            mapId={snap.mapId}
             entry={seen[active.puuid]}
             onLabel={(l) => setSeen(setLabel(active.puuid, l))}
             onTag={(t) => setSeen(setTag(active.puuid, t))}
