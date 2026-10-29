@@ -194,13 +194,6 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
             <button className="x" type="button" onClick={() => onOpen(DISCORD_URL)}>Discord'a katıl</button>
           </p>
 
-          <h2 className="h">Kullanım sayımı</h2>
-          <label className="chk">
-            <input type="checkbox" checked={theme.count} onChange={(e) => onChange({ ...theme, count: e.target.checked })} />
-            <span>Anonim kullanım sayımına katıl</span>
-          </label>
-          <p className="m">Uygulama açıkken 10 dakikada bir rastgele bir kimlik ve sürüm numarası gönderir; böylece kaç kişinin kullandığı görülür. Riot hesabın, oyuncu adları ve maç bilgisi gönderilmez. Kapatınca kimlik de silinir.</p>
-
           <h2 className="h">Hakkında</h2>
           <p className="m">Celeste Overlay, Riot Games ile bağlantılı değildir. Oyuna dokunmaz; yalnızca açık Riot Client oturumunu okur. Etiketler ve notlar yalnızca bu bilgisayarda saklanır.</p>
           <p className="m"><button className="x" type="button" onClick={onGuide}>Rehberi yeniden göster</button> <button className="x" type="button" onClick={() => copyDiagnostics(updater.version, [], onToast)}>Tanı bilgisini kopyala</button></p>

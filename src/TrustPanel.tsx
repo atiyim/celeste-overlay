@@ -14,7 +14,7 @@ const FAQ: { q: string; a: string; tos?: boolean }[] = [
   { q: "Oyuna dokunuyor mu?", a: "Hayır. Yalnızca okur: oyun belleğine girmez, tuş ya da tıklama göndermez, dosyaları değiştirmez." },
   { q: "Hile sayılır mı?", a: "Rakibin konumu ya da görüşü gibi anlık oyun bilgisi göstermez; yalnızca rank, maç geçmişi ve kaplama gibi sonradan da öğrenilebilen bilgiler." },
   { q: "Gizli isimleri açar mı?", a: "Hayır. İsmini gizleyen oyuncunun adı sorgulanmaz, saklanmaz, gösterilmez." },
-  { q: "Verilerim nereye gidiyor?", a: "Etiketler, notlar ve ayarlar bu bilgisayarda kalır. Uygulama yalnızca kaç kişinin kullandığını saymak için rastgele bir kimlik ve sürüm numarası gönderir; Riot hesabın, oyuncu adları ve maç bilgisi gönderilmez. Ayarlar'dan kapatabilirsin." },
+  { q: "Verilerim nereye gidiyor?", a: "Etiketler, notlar ve ayarlar bu bilgisayarda kalır. Uygulama yalnızca kaç kişinin kullandığını saymak için rastgele bir kimlik ve sürüm numarası gönderir; Riot hesabın, oyuncu adları ve maç bilgisi gönderilmez. İstek aşağıdaki canlı kayıtta görünür." },
   { q: "Windows neden uyarı veriyor?", a: "Kurulum dosyası ücretli bir kod imzasıyla imzalanmadı. Windows yeni ve imzasız her dosyada uyarır; virüs anlamına gelmez." },
 ];
 

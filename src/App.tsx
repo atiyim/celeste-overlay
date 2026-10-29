@@ -62,7 +62,7 @@ export function App() {
   const [autoHidden, setAutoHidden] = useState(false);
   const [assetsFailed, setAssetsFailed] = useState(false);
   const updater = useUpdater();
-  useUsagePing(theme.count, updater.version);
+  useUsagePing(updater.version);
   const [lastMatch, setLastMatch] = useState<string | null>(() => {
     try { return localStorage.getItem("overlay-last-match"); } catch { return null; }
   });

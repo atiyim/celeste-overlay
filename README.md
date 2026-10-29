@@ -8,7 +8,7 @@ Valorant lobisinde herkesin rankını, son maçlarını ve kaplamalarını tek b
 
 - **Giriş yok.** Riot hesabına giriş yapmazsın. Uygulama, açık Riot Client oturumunu okur.
 - **Yalnızca okur.** Oyuna tuş göndermez, oyun belleğine girmez, oyun dosyalarını değiştirmez. Hile değildir.
-- **Veriler sende kalır.** Etiketler, notlar ve ayarlar yalnızca bu bilgisayarda saklanır. Uygulama yalnızca kaç kişinin kullandığını saymak için rastgele bir kimlik ve sürüm numarası gönderir (Riot hesabı, oyuncu adları ve maç bilgisi gönderilmez); Ayarlar'dan kapatılabilir.
+- **Veriler sende kalır.** Etiketler, notlar ve ayarlar yalnızca bu bilgisayarda saklanır. Uygulama yalnızca kaç kişinin kullandığını saymak için rastgele bir kimlik ve sürüm numarası gönderir (Riot hesabı, oyuncu adları ve maç bilgisi gönderilmez). Bu istek de S.S.S & Panel'deki canlı kayıtta görünür.
 - **Gizli isimler gizli kalır.** İsmini gizleyen oyuncunun adı sorgulanmaz, saklanmaz, gösterilmez.
 - **Kanıtı uygulamanın içinde.** **S.S.S & Panel** sekmesi, uygulamanın attığı her isteği canlı listeler.
 - Kaynak kodu bu depoda açıktır.

@@ -4,8 +4,7 @@ import { tfetch } from "./net";
 /* Celeste topluluğu: Discord bağlantısı ve anonim kullanım sayımı.
 
    Sayım yalnızca şunu gönderir: bu kurulum için ilk açılışta üretilen rastgele bir kimlik ve uygulamanın sürümü.
-   Riot hesabı, oyuncu adları, maç bilgisi, etiketler ve notlar gönderilmez. İstek Şeffaflık günlüğünde görünür;
-   Ayarlar'dan kapatılabilir. Kapatınca kimlik de silinir (yeniden açılırsa yeni bir kimlik üretilir). */
+   Riot hesabı, oyuncu adları, maç bilgisi, etiketler ve notlar gönderilmez. İstek S.S.S & Panel'deki canlı kayıtta görünür. */
 
 export const SITE = "https://celeste-feed.celestimbenim.workers.dev";
 /** Uygulamadaki Discord düğmesi: site, Celeste'nin oluşturduğu kalıcı davete yönlendirir. */
@@ -30,14 +29,9 @@ function installId(): string {
   }
 }
 
-function forgetId() {
-  try { localStorage.removeItem(ID_KEY); } catch { /* depolama kapalı */ }
-}
-
-/** Uygulama açıkken 10 dakikada bir "buradayım" der (kapalıysa hiçbir şey göndermez). */
-export function useUsagePing(enabled: boolean, version: string) {
+/** Uygulama açıkken 10 dakikada bir "buradayım" der. */
+export function useUsagePing(version: string) {
   useEffect(() => {
-    if (!enabled) { forgetId(); return; }
     if (!inTauri || !/^\d+\.\d+\.\d+$/.test(version)) return;
     const ping = () => {
       const id = installId();
@@ -46,5 +40,5 @@ export function useUsagePing(enabled: boolean, version: string) {
     ping();
     const t = window.setInterval(ping, EVERY);
     return () => window.clearInterval(t);
-  }, [enabled, version]);
+  }, [version]);
 }
