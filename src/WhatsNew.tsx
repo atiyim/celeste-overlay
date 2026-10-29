@@ -8,6 +8,8 @@ const NOTES: Record<string, string[]> = {
     "Lobi özeti: rakipte kaç Operator'cu, kaç kişilik parti ve haritada usta olan var, tek satırda.",
     "Yeni rozetler: Haritada usta / zayıf ve Operator'cu / Sheriff'çi.",
     "Uzun isimlerde Riot etiketi ve kendi etiketlerin artık hep görünüyor.",
+    "Öneri / Hata formu uygulamanın içinde; ekip ele alınca burada haber verilir.",
+    "FPS modu: oyunda kasma yaşıyorsan Ayarlar › Overlay'den aç.",
   ],
 };
 
