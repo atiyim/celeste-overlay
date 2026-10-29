@@ -23,6 +23,7 @@ import { StatsPanel } from "./StatsPanel";
 import { ReportPanel } from "./ReportPanel";
 import { TrustPanel } from "./TrustPanel";
 import { teamSummary } from "./insights";
+import { FeedbackPanel } from "./FeedbackPanel";
 import { alertOf, fmtDur, fmtRr, sessionOf, type Session } from "./tilt";
 import { useUpdater } from "./updater";
 import { Empty } from "./ui";
@@ -38,7 +39,7 @@ export const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 const NAV = [
   ["roster", "Oyuncular"], ["report", "Son maç"], ["store", "Mağaza"], ["account", "Hesabım"], ["stats", "İstatistik"], ["chat", "Sohbet"], ["cross", "Nişangah"], ["trust", "S.S.S & Panel"], ["settings", "Ayarlar"],
 ] as const;
-type View = (typeof NAV)[number][0];
+type View = (typeof NAV)[number][0] | "feedback";
 
 const PHASE_TEXT: Record<string, string> = {
   offline: "Valorant bekleniyor",
@@ -464,7 +465,9 @@ export function App() {
 
       {!collapsed && !guide && (
         view === "settings" ? (
-          <Settings updater={updater} onOpen={openTracker} theme={theme} onChange={setTheme} onGuide={() => { setGuide(true); setView("roster"); }} zoom={zoom} onZoom={setZoom} zooms={ZOOMS} onToast={showToast} onClose={() => setView("roster")} />
+          <Settings updater={updater} onOpen={openTracker} onFeedback={() => setView("feedback")} theme={theme} onChange={setTheme} onGuide={() => { setGuide(true); setView("roster"); }} zoom={zoom} onZoom={setZoom} zooms={ZOOMS} onToast={showToast} onClose={() => setView("roster")} />
+        ) : view === "feedback" ? (
+          <FeedbackPanel version={updater.version} onOpen={openTracker} onClose={() => setView("roster")} />
         ) : view === "report" ? (
           assets ? <ReportPanel assets={assets} matchId={lastMatch} seen={seen} onTag={(id, t) => setSeen(setTag(id, t))} onOpen={openTracker} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "store" ? (
@@ -573,7 +576,7 @@ export function App() {
           </>
         )
       )}
-      {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} />}
+      {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} onFeedback={() => { setSelected(null); setGuide(false); setCollapsed(false); setView("feedback"); }} />}
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
   );

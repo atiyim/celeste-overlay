@@ -7,16 +7,16 @@ import { tfetch } from "./net";
    Riot hesabı, oyuncu adları, maç bilgisi, etiketler ve notlar gönderilmez. İstek S.S.S & Panel'deki canlı kayıtta görünür. */
 
 export const SITE = "https://celeste-feed.celestimbenim.workers.dev";
-/** Uygulamadaki Discord düğmesi: site, Celeste'nin oluşturduğu kalıcı davete yönlendirir. */
-export const DISCORD_URL = `${SITE}/discord`;
-/** "Öneri / Hata" düğmesi: Discord'daki celeste-overlay forumuna açılır (forum yoksa sunucuya). */
-export const FEEDBACK_URL = `${SITE}/discord/oneri`;
+/** Uygulamadaki Discord düğmeleri: sunucunun kalıcı daveti (tarayıcı Discord uygulamasını açar). */
+export const DISCORD_URL = "https://discord.gg/celestevlr";
+/** Öneri / Hata formunun gönderildiği adres; Celeste buradan alıp yetkililerin kanalına koyar. */
+export const FEEDBACK_API = `${SITE}/api/overlay/feedback`;
 
 const ID_KEY = "overlay-install-id";
 const EVERY = 10 * 60_000;
 const inTauri = "__TAURI_INTERNALS__" in window;
 
-function installId(): string {
+export function installId(): string {
   try {
     const known = localStorage.getItem(ID_KEY);
     if (known && /^[0-9a-f]{32}$/.test(known)) return known;

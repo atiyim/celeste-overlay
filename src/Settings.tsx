@@ -4,7 +4,7 @@ import type { useUpdater } from "./updater";
 import { ACCENTS, COLS, DEFAULT_THEME, DEFAULT_TH, FPS_HIDE_AFTER, HIDE_AFTER_OPTIONS, hideOf, type Theme, type Thresholds } from "./theme";
 import { copyDiagnostics } from "./StatusBar";
 import { TILT_HOURS, TILT_LOSSES, TILT_RR, fmtRr } from "./tilt";
-import { DISCORD_URL, FEEDBACK_URL } from "./community";
+import { DISCORD_URL } from "./community";
 import { PanelHead, Row, Toggle } from "./ui";
 
 const TH_FIELDS: { key: keyof Thresholds; label: string; hint: string; unit: string }[] = [
@@ -27,9 +27,9 @@ const SECS: { id: Sec; label: string; icon: ReactNode }[] = [
 const SEC_KEY = "overlay-settings-sec";
 const inTauri = "__TAURI_INTERNALS__" in window;
 
-interface Props { onGuide: () => void; onOpen: (url: string) => void; updater: ReturnType<typeof useUpdater>; zoom: number; onZoom: (z: number) => void; zooms: number[]; theme: Theme; onChange: (t: Theme) => void; onToast: (t: string) => void; onClose: () => void }
+interface Props { onGuide: () => void; onOpen: (url: string) => void; updater: ReturnType<typeof useUpdater>; zoom: number; onZoom: (z: number) => void; zooms: number[]; theme: Theme; onChange: (t: Theme) => void; onToast: (t: string) => void; onClose: () => void; onFeedback: () => void }
 
-export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme, onChange, onToast, onClose }: Props) {
+export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme, onChange, onToast, onClose, onFeedback }: Props) {
   const [sec, setSecState] = useState<Sec>(() => {
     try { const v = localStorage.getItem(SEC_KEY) as Sec | null; return v && SECS.some((s) => s.id === v) ? v : "look"; } catch { return "look"; }
   });
@@ -272,7 +272,7 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
                 <div className="box">
                   <Row title="Discord" desc="Soru, hata bildirimi, öneri ve yeni sürümler orada. Beta sürümleri önce orada denenir.">
                     <span className="btns">
-                      <button className="x" type="button" onClick={() => onOpen(FEEDBACK_URL)}>Öneri / Hata bildir</button>
+                      <button className="x" type="button" onClick={onFeedback}>Öneri / Hata bildir</button>
                       <button className="x go" type="button" onClick={() => onOpen(DISCORD_URL)}>Discord'a katıl</button>
                     </span>
                   </Row>

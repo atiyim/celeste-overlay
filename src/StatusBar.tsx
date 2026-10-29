@@ -1,11 +1,11 @@
 import { useCallback, useState } from "react";
-import { DISCORD_URL, FEEDBACK_URL } from "./community";
+import { DISCORD_URL } from "./community";
 import { invoke } from "@tauri-apps/api/core";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { Status } from "./types";
 import { Socials } from "./Socials";
 
-interface Props { status?: Status; inApp: boolean; assetsOk: boolean; assetsFailed: boolean; version: string; onToast: (t: string) => void; onOpen: (url: string) => void }
+interface Props { status?: Status; inApp: boolean; assetsOk: boolean; assetsFailed: boolean; version: string; onToast: (t: string) => void; onOpen: (url: string) => void; onFeedback: () => void }
 interface Health { id: string; label: string; state: "ok" | "warn" | "fail" | "idle"; detail: string }
 type Dot = boolean | null;
 
@@ -23,7 +23,7 @@ export async function copyDiagnostics(version: string, conn: [string, Dot][], on
 }
 
 /* Alt şerit: dört bağlantı noktası. Tıklayınca özelliklerin son durumu ve tanı kopyalama düğmesi açılır. */
-export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onToast, onOpen }: Props) {
+export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onToast, onOpen, onFeedback }: Props) {
   const [open, setOpen] = useState(false);
   const [health, setHealth] = useState<Health[] | null>(null);
 
@@ -73,7 +73,7 @@ export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onTo
           <Socials onOpen={onOpen} />
           <span className="made">Made by Claude &amp; <button type="button" className="ig" title="Instagram: @bneceleste" onClick={() => onOpen("https://www.instagram.com/bneceleste")}>bneceleste</button></span>
           <button type="button" className="ig" title="Topluluk: soru, hata bildirimi, öneri ve yeni sürümler" onClick={() => onOpen(DISCORD_URL)}>Discord</button>
-          <button type="button" className="fbk" title="Discord'daki celeste-overlay forumunu açar: bir fikrini yaz ya da çalışmayan bir şeyi bildir" onClick={() => onOpen(FEEDBACK_URL)}>
+          <button type="button" className="fbk" title="Bir fikrini yaz ya da çalışmayan bir şeyi bildir; doğrudan yetkililere ulaşır" onClick={onFeedback}>
             <i />Öneri / Hata bildir
           </button>
         </span>

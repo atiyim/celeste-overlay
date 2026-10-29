@@ -18,14 +18,15 @@ export function noteNet(method: string, url: string, status: number, ms: number)
 }
 
 /** fetch ile aynı, ama isteği günlüğe de yazar. */
-export async function tfetch(url: string): Promise<Response> {
+export async function tfetch(url: string, init?: RequestInit): Promise<Response> {
   const t0 = performance.now();
+  const method = init?.method ?? "GET";
   try {
-    const r = await fetch(url);
-    noteNet("GET", url, r.status, Math.round(performance.now() - t0));
+    const r = await fetch(url, init);
+    noteNet(method, url, r.status, Math.round(performance.now() - t0));
     return r;
   } catch (e) {
-    noteNet("GET", url, 0, Math.round(performance.now() - t0));
+    noteNet(method, url, 0, Math.round(performance.now() - t0));
     throw e;
   }
 }

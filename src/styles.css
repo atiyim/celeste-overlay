@@ -820,3 +820,27 @@ html:has(body.web) { overflow-y: auto; }
 .sb { flex-wrap: wrap; row-gap: 8px; }
 .si { white-space: nowrap; }
 @media (max-width: 780px) { .socp { display: none; } .credit { gap: 10px; } }
+
+/* Öneri / Hata formu */
+.fb .fbactions { margin-top: 2px; }
+.fbkinds { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fbkind { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--s1); transition: border-color .15s, background .15s; }
+.fbkind b { font-size: 14px; color: var(--fg); }
+.fbkind small { font-size: 12px; color: var(--fg-3); }
+.fbkind:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.fbkind.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--s1)); box-shadow: inset 3px 0 0 var(--accent); }
+.fbkind.hata.on { border-color: var(--loss); background: color-mix(in srgb, var(--loss) 10%, var(--s1)); box-shadow: inset 3px 0 0 var(--loss); }
+.fbfield { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.fbfield > span { display: flex; justify-content: space-between; font-size: 12px; color: var(--fg-2); }
+.fbfield em { font-style: normal; color: var(--fg-3); }
+.fbfield em.warn { color: var(--gold); }
+.fbfield textarea, .fbfield input { font: inherit; font-size: 13px; color: var(--fg); background: var(--s1); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; resize: vertical; outline: none; }
+.fbfield textarea:focus, .fbfield input:focus { border-color: var(--accent); }
+.fbrow { display: flex; gap: 16px; align-items: flex-end; }
+.fbdiag { flex: 1; align-items: flex-start; }
+.fbdiag small { display: block; font-size: 11.5px; color: var(--fg-3); }
+.fbnote { margin: 2px 0 0; padding: 9px 11px; font-size: 12px; line-height: 1.5; color: var(--fg-2); border: 1px dashed var(--line); border-radius: 8px; }
+.fbactions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fbactions .x.go:disabled { opacity: .45; cursor: default; filter: none; }
+.fbdone { display: flex; flex-direction: column; gap: 6px; padding: 16px; border: 1px solid color-mix(in srgb, var(--win) 45%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--win) 8%, var(--s1)); }
+.fbdone b { font-size: 15px; color: var(--fg); }

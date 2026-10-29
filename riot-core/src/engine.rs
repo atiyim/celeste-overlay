@@ -901,6 +901,18 @@ impl Engine {
     }
 
     /// Hesap özeti: cüzdan, görevler, battle pass ilerlemesi ve sahip olunan öğeler.
+    /// Kendi Riot ID'n (Ad#Etiket). Yalnızca "Öneri / Hata" formu gönderilirken, formda açıkça yazdığı şekilde eklenir.
+    pub async fn my_riot_id(&self) -> Result<String, String> {
+        let mut st = self.state.lock().await;
+        let s = self.session(&mut st).await.map_err(|e| {
+            st.session = None;
+            friendly(&e)
+        })?;
+        let me = s.puuid.clone();
+        self.load_names(&mut st, &s, std::slice::from_ref(&me)).await;
+        st.names.get(&me).cloned().ok_or_else(|| "Riot ID alınamadı".to_string())
+    }
+
     pub async fn account(&self) -> Result<Account, String> {
         let r = self.account_inner().await;
         let mut st = self.state.lock().await;

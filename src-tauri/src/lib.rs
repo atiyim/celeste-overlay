@@ -56,6 +56,11 @@ async fn deepen_player(state: State<'_, AppState>, puuid: String) -> Result<(), 
 }
 
 #[tauri::command]
+async fn get_riot_id(state: State<'_, AppState>) -> Result<String, String> {
+    state.engine.my_riot_id().await
+}
+
+#[tauri::command]
 async fn get_my_stats(state: State<'_, AppState>) -> Result<MyStats, String> {
     state.engine.my_stats().await
 }
@@ -138,7 +143,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState { engine: Arc::new(Engine::new()) })
-        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note, hotkey_ok])
+        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note, hotkey_ok, get_riot_id])
         .setup(move |app| {
             // F2 başka bir uygulamada kayıtlıysa uygulama yine açılır, tepsi simgesi çalışmaya devam eder.
             if let Err(e) = app.global_shortcut().register(f2) {

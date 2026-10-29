@@ -8,7 +8,7 @@ Valorant lobisinde herkesin rankını, son maçlarını ve kaplamalarını tek b
 
 - **Giriş yok.** Riot hesabına giriş yapmazsın. Uygulama, açık Riot Client oturumunu okur.
 - **Yalnızca okur.** Oyuna tuş göndermez, oyun belleğine girmez, oyun dosyalarını değiştirmez. Hile değildir.
-- **Veriler sende kalır.** Etiketler, notlar ve ayarlar yalnızca bu bilgisayarda saklanır. Uygulama yalnızca kaç kişinin kullandığını saymak için rastgele bir kimlik ve sürüm numarası gönderir (Riot hesabı, oyuncu adları ve maç bilgisi gönderilmez). Bu istek de S.S.S & Panel'deki canlı kayıtta görünür.
+- **Veriler sende kalır.** Etiketler, notlar ve ayarlar yalnızca bu bilgisayarda saklanır. Uygulama yalnızca kaç kişinin kullandığını saymak için rastgele bir kimlik ve sürüm numarası gönderir (oyuncu adları ve maç bilgisi gönderilmez). **Öneri / Hata bildir** formunu gönderirsen yazdığın metin, Riot ID'n, yazdıysan Discord adın ve istersen tanı bilgisi Celeste yetkililerine gider. Bu istekler de S.S.S & Panel'deki canlı kayıtta görünür.
 - **Gizli isimler gizli kalır.** İsmini gizleyen oyuncunun adı sorgulanmaz, saklanmaz, gösterilmez.
 - **Kanıtı uygulamanın içinde.** **S.S.S & Panel** sekmesi, uygulamanın attığı her isteği canlı listeler.
 - Kaynak kodu bu depoda açıktır.
@@ -120,7 +120,7 @@ Seans, aralarında 100 dakikadan uzun ara olmayan maçlardır. Oyuncular sekmesi
 - **Fare otomatik:** İmleç overlay'in üstündeyken tıklamalar overlay'e, dışındayken oyuna gider.
 - **Kendiliğinden güncelleme:** Yeni sürüm çıkınca uygulama haber verir, kurulum senin onayınla başlar.
 - Tepsi simgesi: göster/gizle, konumu sıfırla, çıkış.
-- **Öneri / Hata bildir:** Alt şeritteki düğme Discord'daki `celeste-overlay` forumunu açar. Hata bildirirken **Tanı bilgisini kopyala** ile kopyaladığını gönderiye yapıştır.
+- **Öneri / Hata bildir:** Alt şeritteki düğme uygulamanın içinde bir form açar: türü seç (öneri ya da hata), yaz ve gönder. Doğrudan Celeste yetkililerinin kanalına düşer; Riot ID'n de eklenir, form bunu gönderirken açıkça söyler. Hata bildiriminde tanı bilgisi isteğe bağlı eklenir.
 
 Rekabet verileri (son 5 maç, kafa isabeti, K/D, rozetler) yalnızca **rekabet** maçlarından hesaplanır.
 

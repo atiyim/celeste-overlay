@@ -109,8 +109,9 @@ fn mask_path(path: &str) -> String {
 
 /// Bu istek ne için? Sıra önemli: özel olan önce.
 fn describe(path: &str) -> &'static str {
-    let rules: [(&str, &str); 23] = [
+    let rules: [(&str, &str); 24] = [
         ("/api/overlay/ping", "Anonim kullanım sayımı (rastgele kimlik ve sürüm)"),
+        ("/api/overlay/feedback", "Öneri / Hata formu (yalnızca Gönder'e basınca)"),
         ("/entitlements/v1/token", "Oturum bilgisi (açık Riot Client'tan, giriş yapılmaz)"),
         ("external-sessions", "Valorant açık mı?"),
         ("/chat/v4/presences", "Parti bilgisi"),
@@ -153,6 +154,9 @@ fn record(method: &str, url: &reqwest::Url, status: u16, ms: u32) {
     let path = url.path();
     let kind = if method == "GET" || method == "HEAD" {
         "okuma"
+    } else if target == "celeste" && path == "/api/overlay/feedback" {
+        // Riot'ta bir şey değiştirmez: kullanıcının kendi yazdığı formu Celeste'ye gönderir.
+        "gönderim"
     } else if is_query(method, path) {
         "sorgu"
     } else {
@@ -174,6 +178,7 @@ fn record(method: &str, url: &reqwest::Url, status: u16, ms: u32) {
     match kind {
         "okuma" => l.reads += 1,
         "sorgu" => l.queries += 1,
+        "gönderim" => {}
         _ => l.writes += 1,
     }
     if status == 0 || status >= 400 {
@@ -239,6 +244,9 @@ pub fn report() -> NetReport {
 mod tests {
     use super::*;
 
+    /// Günlük ortak olduğu için sayaçlara bakan testler sırayla çalışır.
+    static SERIAL: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
     #[test]
     fn masks_long_ids() {
         let p = mask_path("/mmr/v1/players/0d2e5b3a-1111-2222-3333-444455556666/competitiveupdates");
@@ -272,6 +280,19 @@ mod tests {
         assert_eq!(describe("/api/overlay/ping"), "Anonim kullanım sayımı (rastgele kimlik ve sürüm)");
     }
 
+    #[test]
+    fn feedback_form_is_not_a_riot_write() {
+        let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        let before = report();
+        note("POST", "https://celeste-feed.celestimbenim.workers.dev/api/overlay/feedback", 201, 80);
+        let after = report();
+        assert_eq!(after.writes, before.writes);
+        let e = after.entries.iter().rev().find(|e| e.path == "/api/overlay/feedback").unwrap();
+        assert_eq!(e.kind, "gönderim");
+        assert_eq!(e.target, "celeste");
+        assert_eq!(e.what, "Öneri / Hata formu (yalnızca Gönder'e basınca)");
+    }
+
     #[tokio::test]
     async fn exec_records_requests() {
         use std::io::{Read, Write};
@@ -286,6 +307,7 @@ mod tests {
             }
         });
         let c = reqwest::Client::new();
+        let _g = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
         let before = report();
         exec(&c, c.get(format!("http://127.0.0.1:{port}/mmr/v1/players/0d2e5b3a-1111-2222-3333-444455556666"))).await.unwrap();
         exec(&c, c.delete(format!("http://127.0.0.1:{port}/x"))).await.unwrap();
