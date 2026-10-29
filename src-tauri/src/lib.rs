@@ -65,6 +65,12 @@ fn get_net_report() -> NetReport {
     netlog::report()
 }
 
+/// F2 kısayolu şu an bu uygulamaya kayıtlı mı? (Başka bir program tutuyorsa false.)
+#[tauri::command]
+fn hotkey_ok(app: AppHandle) -> bool {
+    app.global_shortcut().is_registered(Shortcut::new(None, Code::F2))
+}
+
 /// Arayüzün kendi attığı istekleri (sözlük dosyaları, güncelleme denetimi) günlüğe ekler.
 #[tauri::command]
 fn net_note(method: String, url: String, status: u16, ms: u32) {
@@ -132,7 +138,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState { engine: Arc::new(Engine::new()) })
-        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note])
+        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note, hotkey_ok])
         .setup(move |app| {
             // F2 başka bir uygulamada kayıtlıysa uygulama yine açılır, tepsi simgesi çalışmaya devam eder.
             if let Err(e) = app.global_shortcut().register(f2) {

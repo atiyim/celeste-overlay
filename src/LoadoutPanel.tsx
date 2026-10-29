@@ -8,6 +8,7 @@ import { TAGS, type Entry, type TagId } from "./seen";
 import { actRows, agentBuckets, compOnly, firstAct, kdOf, oneTrick, pool, roleBuckets, tally, winPct, type Bucket, type Tally } from "./profile";
 import type { Player, PremierTeam } from "./types";
 import { CloseButton, NameLine } from "./ui";
+import { gunBadge, mapBadge, mapForm } from "./insights";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -196,8 +197,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
             <button className="namebtn" type="button" title="Kullanıcı adını kopyala" onClick={() => onCopy(anonymous ? entry?.label ?? null : p.name ?? null)}>
               <NameLine name={(anonymous ? entry?.label ?? "Oyuncu (isim gizli)" : p.name) ?? "…"} />
             </button>
-            {sb && <span className={`bd ${sb.tone}`} title={sb.tip}>{sb.text}</span>}
-            {fb && <span className={`bd ${fb.tone}`} title={fb.tip}>{fb.text}</span>}
+            {[gunBadge(p), mapBadge(p, mapId, mapName), sb, fb].filter((b): b is NonNullable<typeof b> => !!b).map((b) => <span key={b.text} className={`bd ${b.tone}`} title={b.tip}>{b.text}</span>)}
           </h2>
           <p className="m">
             <b className="ag-n">{agent?.name}</b>
@@ -325,6 +325,12 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
           <div>
             <h3 className="h2">Bu haritada{mapName ? ` · ${mapName}` : ""}<span className="hv">rekabet</span></h3>
             <Trio t={tally(onMap)} empty={mapName ? "Bu haritada rekabet maçı yok" : "Harita bilinmiyor"} />
+            {(() => {
+              const mf = mapForm(p, mapId);
+              return mf && mf.n > 0 ? (
+                <p className="m cap">Son {mf.of} rekabet maçından {mf.n} tanesi bu haritada · <b className={mf.rr >= 0 ? "pos" : "neg"}>{mf.rr > 0 ? "+" : ""}{mf.rr} RR</b></p>
+              ) : null;
+            })()}
             <h3 className="h2">Bu ajanda{agent ? ` · ${agent.name}` : ""}<span className="hv">rekabet</span></h3>
             <Trio t={tally(onAgent)} empty="Bu ajanla rekabet maçı yok" />
             <h3 className="h2">Roller<span className="hv">son {hist.length} rekabet maçı{p.deepLoading ? " · yükleniyor…" : ""}</span></h3>

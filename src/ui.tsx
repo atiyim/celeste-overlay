@@ -63,3 +63,18 @@ export function Row({ title, desc, children, dim }: { title: ReactNode; desc?: R
     </div>
   );
 }
+
+/** Boş ya da hata durumu: ne olduğunu ve ne yapılacağını söyler, varsa tekrar deneme düğmesi. */
+export function Empty({ title, text, onRetry, tone }: { title?: string; text: ReactNode; onRetry?: () => void; tone?: "err" }) {
+  return (
+    <div className={tone === "err" ? "emp err" : "emp"} role="status">
+      <span className="empi" aria-hidden="true">
+        {tone === "err"
+          ? <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="8" r="6" /><path d="M8 5v3.5M8 11h.01" /></svg>
+          : <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="8" r="6" /><path d="M5.5 8h5" /></svg>}
+      </span>
+      <span className="empt">{title && <b>{title}</b>}<span>{text}</span></span>
+      {onRetry && <button className="x" type="button" onClick={onRetry}>Tekrar dene</button>}
+    </div>
+  );
+}

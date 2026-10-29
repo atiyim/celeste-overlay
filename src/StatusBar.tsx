@@ -3,6 +3,7 @@ import { DISCORD_URL, FEEDBACK_URL } from "./community";
 import { invoke } from "@tauri-apps/api/core";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { Status } from "./types";
+import { Socials } from "./Socials";
 
 interface Props { status?: Status; inApp: boolean; assetsOk: boolean; assetsFailed: boolean; version: string; onToast: (t: string) => void; onOpen: (url: string) => void }
 interface Health { id: string; label: string; state: "ok" | "warn" | "fail" | "idle"; detail: string }
@@ -69,9 +70,8 @@ export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onTo
       )}
       <div className="sb" aria-label="Bağlantı durumu">
         <span className="credit">
-          Made by Claude &amp;{" "}
-          <button type="button" className="ig" title="Instagram: @bneceleste" onClick={() => onOpen("https://www.instagram.com/bneceleste")}>bneceleste</button>
-          {" · "}
+          <Socials onOpen={onOpen} />
+          <span className="made">Made by Claude &amp; <button type="button" className="ig" title="Instagram: @bneceleste" onClick={() => onOpen("https://www.instagram.com/bneceleste")}>bneceleste</button></span>
           <button type="button" className="ig" title="Topluluk: soru, hata bildirimi, öneri ve yeni sürümler" onClick={() => onOpen(DISCORD_URL)}>Discord</button>
           <button type="button" className="fbk" title="Discord'daki celeste-overlay forumunu açar: bir fikrini yaz ya da çalışmayan bir şeyi bildir" onClick={() => onOpen(FEEDBACK_URL)}>
             <i />Öneri / Hata bildir

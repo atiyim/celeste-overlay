@@ -291,7 +291,7 @@ struct State {
     session: Option<Session>,
     mmr: HashMap<String, (Instant, Mmr)>,
     history: HashMap<String, (Instant, Vec<(String, String)>)>, // (maç kimliği, kuyruk)
-    trend: HashMap<String, (Instant, Vec<i32>)>,
+    trend: HashMap<String, (Instant, Vec<RrMatch>)>,
     activity: HashMap<String, (u32, bool, Option<u64>)>,
     hidden_now: HashSet<String>,
     lobbies: HashMap<String, HashSet<String>>, // maç kimliği -> ismini gizleyenler
@@ -600,7 +600,10 @@ impl Engine {
                 p.played_24h_capped = *cap;
                 p.last_match_at = *last;
             }
-            p.rr_trend = st.trend.get(&p.puuid).map(|(_, t)| t.clone()).unwrap_or_default();
+            if let Some((_, t)) = st.trend.get(&p.puuid) {
+                p.rr_trend = t.iter().take(5).map(|m| m.rr).collect();
+                p.rr_maps = t.clone();
+            }
             match st.history.get(&p.puuid) {
                 Some((_, h)) => {
                     for (id, q) in recent_ids(h) {
@@ -639,12 +642,13 @@ impl Engine {
         Some(parse_mmr(&v, season))
     }
 
-    async fn fetch_trend(&self, s: &Session, puuid: &str) -> Option<Vec<i32>> {
+    /// Son 20 rekabet maçının RR değişimi ve haritası (tek istek; önceki 5 maçlık istek yerine).
+    async fn fetch_trend(&self, s: &Session, puuid: &str) -> Option<Vec<RrMatch>> {
         let v = self
-            .get(s, &s.pd, &format!("/mmr/v1/players/{puuid}/competitiveupdates?startIndex=0&endIndex=5&queue=competitive"))
+            .get(s, &s.pd, &format!("/mmr/v1/players/{puuid}/competitiveupdates?startIndex=0&endIndex=20&queue=competitive"))
             .await
             .ok()??;
-        Some(v["Matches"].as_array()?.iter().filter_map(|m| m["RankedRatingEarned"].as_i64().map(|x| x as i32)).collect())
+        Some(parse_updates(&v))
     }
 
     async fn fetch_history(&self, s: &Session, puuid: &str, n: usize) -> Option<(Vec<(String, String)>, (u32, bool, Option<u64>))> {
@@ -1056,6 +1060,21 @@ impl Engine {
 const VP: &str = "85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741";
 
 /// Fiyat haritasından (para birimi → miktar) VP miktarını alır.
+fn parse_updates(v: &Value) -> Vec<RrMatch> {
+    v["Matches"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|m| {
+            Some(RrMatch {
+                map_id: m["MapID"].as_str().unwrap_or("").to_string(),
+                rr: m["RankedRatingEarned"].as_i64()? as i32,
+                started: m["MatchStartTime"].as_u64().unwrap_or(0),
+            })
+        })
+        .collect()
+}
+
 fn parse_pairs(v: &Value) -> HashMap<String, HashMap<String, u32>> {
     let mut m: HashMap<String, HashMap<String, u32>> = HashMap::new();
     for r in v["roundResults"].as_array().into_iter().flatten() {
@@ -1602,5 +1621,18 @@ mod tests {
         // Sıralamada değilse (0) liderlik sırası yok.
         let v2 = json!({ "QueueSkills": { "competitive": { "SeasonalInfoBySeasonID": { "AAA": { "NumberOfGames": 3, "LeaderboardRank": 0 } } } } });
         assert_eq!(parse_mmr(&v2, "AAA").leaderboard, None);
+    }
+
+    #[test]
+    fn updates_read_map_and_rr() {
+        let v = serde_json::json!({ "Matches": [
+            { "MapID": "/Game/Maps/Ascent/Ascent", "RankedRatingEarned": 21, "MatchStartTime": 1700000000000u64 },
+            { "MapID": "/Game/Maps/Bonsai/Bonsai", "RankedRatingEarned": -14, "MatchStartTime": 1699990000000u64 },
+            { "MapID": "/Game/Maps/Ascent/Ascent" }
+        ]});
+        let r = parse_updates(&v);
+        assert_eq!(r.len(), 2);
+        assert_eq!(r[0], RrMatch { map_id: "/Game/Maps/Ascent/Ascent".into(), rr: 21, started: 1700000000000 });
+        assert_eq!(r[1].rr, -14);
     }
 }

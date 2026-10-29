@@ -6,7 +6,7 @@ import { tierColor } from "./LoadoutPanel";
 import { trackerUrl } from "./profile";
 import { TAGS, type Seen, type TagId } from "./seen";
 import type { MatchReport, ReportPlayer } from "./types";
-import { NameLine, PanelHead } from "./ui";
+import { Empty, NameLine, PanelHead } from "./ui";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 const NOT_READY = "Maç kaydı henüz hazır değil.";
@@ -52,7 +52,7 @@ export function ReportPanel({ assets, matchId, seen, onTag, onOpen, onClose }: R
   const head = (sub: string, right?: React.ReactNode) => <PanelHead title="Maç raporu" sub={sub} actions={right} onClose={onClose} />;
 
   if (!matchId) {
-    return <div className="panel fade">{head("Bu oturumda henüz maç oynanmadı. Maç bitince rapor kendiliğinden açılır.")}</div>;
+    return <div className="panel fade">{head("Son maçının skor tablosu")}<Empty title="Henüz maç yok" text="Bu oturumda maç oynanmadı. Maç bitince rapor kendiliğinden açılır." /></div>;
   }
   if (!rep) {
     return (

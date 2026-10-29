@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import type { useUpdater } from "./updater";
 import { ACCENTS, COLS, DEFAULT_THEME, DEFAULT_TH, FPS_HIDE_AFTER, HIDE_AFTER_OPTIONS, hideOf, type Theme, type Thresholds } from "./theme";
 import { copyDiagnostics } from "./StatusBar";
@@ -24,6 +25,7 @@ const SECS: { id: Sec; label: string; icon: ReactNode }[] = [
   { id: "about", label: "Hakkında", icon: ic(<><circle cx="8" cy="8" r="6" /><path d="M8 7.5V11M8 5h.01" /></>) },
 ];
 const SEC_KEY = "overlay-settings-sec";
+const inTauri = "__TAURI_INTERNALS__" in window;
 
 interface Props { onGuide: () => void; onOpen: (url: string) => void; updater: ReturnType<typeof useUpdater>; zoom: number; onZoom: (z: number) => void; zooms: number[]; theme: Theme; onChange: (t: Theme) => void; onToast: (t: string) => void; onClose: () => void }
 
@@ -34,6 +36,16 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
   const setSec = (s: Sec) => { setSecState(s); try { localStorage.setItem(SEC_KEY, s); } catch { /* depolama kapalı */ } };
   const [thOpen, setThOpen] = useState(false);
   const hide = hideOf(theme);
+  // F2 kısayolunun durumu: başka bir program tutuyorsa kullanıcı nedenini burada görür.
+  const [hotkey, setHotkey] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!inTauri || sec !== "overlay") return;
+    let live = true;
+    const ask = () => invoke<boolean>("hotkey_ok").then((v) => live && setHotkey(v)).catch(() => undefined);
+    ask();
+    const t = window.setInterval(ask, 5000);
+    return () => { live = false; window.clearInterval(t); };
+  }, [sec]);
   const set = (p: Partial<Theme>) => onChange({ ...theme, ...p });
   const alphaPct = Math.round(theme.alpha * 100);
 
@@ -123,6 +135,17 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
                       {HIDE_AFTER_OPTIONS.map((s) => <option key={s} value={s}>{s} saniye</option>)}
                     </select>
                   </Row>
+                </div>
+              </section>
+              <section>
+                <h3 className="h2">Kısayol</h3>
+                <div className="box">
+                  <Row
+                    title={<>F2 ile göster / gizle{hotkey !== null && <span className={hotkey ? "ustat ok" : "ustat bad"}><i />{hotkey ? "Çalışıyor" : "Çalışmıyor"}</span>}</>}
+                    desc={hotkey === false
+                      ? "Başka bir program F2'yi kullanıyor. O program kapanınca kendiliğinden çalışır; bu arada sistem tepsisindeki simgeye tıklayarak açıp kapatabilirsin."
+                      : "Oyunun içindeyken de çalışır. Sistem tepsisindeki simgeye tıklamak da aynı işi yapar."}
+                  />
                 </div>
               </section>
               <section>

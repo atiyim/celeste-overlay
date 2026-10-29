@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { Assets } from "./assets";
 import { lookup } from "./assets";
 import type { Store, StoreOffer, Wallet } from "./types";
-import { PanelHead } from "./ui";
+import { Empty, PanelHead } from "./ui";
 
 export const nf = (n?: number | null) => (n == null ? "–" : n.toLocaleString("tr-TR"));
 
@@ -69,18 +69,18 @@ export function StorePanel({ assets, onClose }: { assets: Assets; onClose: () =>
         actions={<button className="x" type="button" onClick={load} disabled={busy}>{busy ? "Yükleniyor" : "Yenile"}</button>}
         onClose={onClose}
       />
-      {err && <p className="empty">{err}</p>}
+      {err && <Empty tone="err" title="Mağaza alınamadı" text={err} onRetry={inTauri ? load : undefined} />}
       {store && (
         <>
           <WalletBar w={store.wallet} />
           <h3 className="h2">Günlük mağaza{store.dailyRemaining ? <span className="hv">{fmtLeft(store.dailyRemaining)} sonra yenilenir</span> : null}</h3>
           {store.daily.length ? (
             <div className="offers">{store.daily.map((o) => <Offer key={o.itemId} o={o} a={assets} vp={store.wallet?.vp} />)}</div>
-          ) : <p className="d none">Günlük teklifler alınamadı.</p>}
+          ) : <Empty tone="err" text="Günlük teklifler alınamadı." onRetry={load} />}
           <h3 className="h2">Gece pazarı{store.nightRemaining ? <span className="hv">{fmtLeft(store.nightRemaining)} sonra biter</span> : null}</h3>
           {store.night.length ? (
             <div className="offers">{store.night.map((o) => <Offer key={o.itemId} o={o} a={assets} vp={store.wallet?.vp} />)}</div>
-          ) : <p className="d none">Şu anda gece pazarı yok.</p>}
+          ) : <Empty text="Şu anda gece pazarı yok." />}
         </>
       )}
     </div>

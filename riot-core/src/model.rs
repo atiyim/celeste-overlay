@@ -71,8 +71,10 @@ pub struct Player {
     /// Yalnızca ayrıntısı açılan oyuncu için dolar; rozetler ve satır bilgisi `form`'dan gelmeye devam eder.
     pub deep: Vec<FormEntry>,
     pub deep_loading: bool,
-    /// Son rekabet maçlarındaki RR değişimi (en yeni başta).
+    /// Son rekabet maçlarındaki RR değişimi (en yeni başta, ilk 5).
     pub rr_trend: Vec<i32>,
+    /// Son 20 rekabet maçının harita ve RR değişimi (Riot'un rekabet güncellemeleri; en yeni başta).
+    pub rr_maps: Vec<RrMatch>,
     /// Son 24 saatte oynadığı maç sayısı (son 15 maç içinde; hepsi 24 saat içindeyse `played_24h_capped`).
     pub played_24h: u32,
     pub played_24h_capped: bool,
@@ -80,6 +82,15 @@ pub struct Player {
     pub last_match_at: Option<u64>,
     /// Bu maçlardaki toplam öldürme / ölüm oranı.
     pub kd: Option<f32>,
+}
+
+#[derive(Serialize, Clone, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RrMatch {
+    pub map_id: String,
+    pub rr: i32,
+    /// Maçın başlangıç zamanı (ms, Unix).
+    pub started: u64,
 }
 
 #[derive(Serialize, Clone, Debug, Default)]

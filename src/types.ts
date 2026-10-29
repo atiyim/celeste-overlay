@@ -21,6 +21,7 @@ export interface FormEntry { mapId?: string | null; agentId?: string | null; que
   rounds?: number; headshots?: number; bodyshots?: number; legshots?: number; damage?: number;
   firstKills?: number; firstDeaths?: number; started?: number;
   weaponKills?: WeaponCount[]; bought?: WeaponCount[] }
+export interface RrMatch { mapId: string; rr: number; started: number }
 export interface WeaponCount { weaponId: string; count: number }
 
 export interface Player {
@@ -44,6 +45,8 @@ export interface Player {
   deep?: FormEntry[];
   deepLoading?: boolean;
   rrTrend: number[];
+  /** Son 20 rekabet maçının haritası ve RR değişimi (en yeni başta). Eski sürüm çekirdeğinde gelmeyebilir. */
+  rrMaps?: RrMatch[];
   played24h: number;
   played24hCapped: boolean;
   lastMatchAt?: number | null;

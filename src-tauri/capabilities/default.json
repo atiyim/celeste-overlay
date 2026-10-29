@@ -2,7 +2,9 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Overlay penceresi izinleri",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "core:window:allow-set-ignore-cursor-events",
@@ -21,7 +23,35 @@
     "core:window:allow-outer-size",
     "core:webview:allow-set-webview-zoom",
     "clipboard-manager:allow-write-text",
-    { "identifier": "opener:allow-open-url", "allow": [{ "url": "https://tracker.gg/*" }, { "url": "https://www.riotgames.com/tr/terms-of-service-TR" }, { "url": "https://www.instagram.com/bneceleste" }, { "url": "https://celeste-feed.celestimbenim.workers.dev/discord" }, { "url": "https://celeste-feed.celestimbenim.workers.dev/discord/oneri" }] },
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "https://tracker.gg/*"
+        },
+        {
+          "url": "https://www.riotgames.com/tr/terms-of-service-TR"
+        },
+        {
+          "url": "https://www.instagram.com/bneceleste"
+        },
+        {
+          "url": "https://celeste-feed.celestimbenim.workers.dev/discord"
+        },
+        {
+          "url": "https://celeste-feed.celestimbenim.workers.dev/discord/oneri"
+        },
+        {
+          "url": "https://kick.com/bneceleste"
+        },
+        {
+          "url": "https://www.youtube.com/@bneceleste"
+        },
+        {
+          "url": "https://www.tiktok.com/@bneceleste"
+        }
+      ]
+    },
     "global-shortcut:allow-register",
     "global-shortcut:allow-unregister",
     "global-shortcut:allow-is-registered",

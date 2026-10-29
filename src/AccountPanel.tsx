@@ -4,7 +4,7 @@ import type { Assets, SkinMeta } from "./assets";
 import { cachedJson } from "./assets";
 import type { Account, ContractState } from "./types";
 import { WalletBar, nf } from "./StorePanel";
-import { PanelHead } from "./ui";
+import { Empty, PanelHead } from "./ui";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -209,7 +209,7 @@ export function AccountPanel({ assets, onClose }: { assets: Assets; onClose: () 
         actions={<button className="x" type="button" onClick={load} disabled={busy}>{busy ? "Yükleniyor" : "Yenile"}</button>}
         onClose={onClose}
       />
-      {err && <p className="empty">{err}</p>}
+      {err && <Empty tone="err" title="Hesap bilgileri alınamadı" text={err} onRetry={inTauri ? load : undefined} />}
       {acc && (
         <>
           <WalletBar w={acc.wallet} />

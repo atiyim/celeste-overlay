@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { Assets } from "./assets";
 import { lookup } from "./assets";
 import type { MyStats } from "./types";
-import { PanelHead } from "./ui";
+import { Empty, PanelHead } from "./ui";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -57,9 +57,9 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
         actions={<button className="x" type="button" onClick={load} disabled={busy}>{busy ? "Yükleniyor" : "Yenile"}</button>}
         onClose={onClose}
       />
-      {err && <p className="empty">{err}</p>}
-      {!err && !data && <p className="empty">Maçların okunuyor. İlk açılışta birkaç saniye sürebilir.</p>}
-      {data && !sum && <p className="empty">Sayılabilecek maç bulunamadı.</p>}
+      {err && <Empty tone="err" title="İstatistikler alınamadı" text={err} onRetry={inTauri ? load : undefined} />}
+      {!err && !data && <Empty text="Maçların okunuyor. İlk açılışta birkaç saniye sürebilir." />}
+      {data && !sum && <Empty text="Sayılabilecek maç bulunamadı. Bir rekabet maçı oynayınca burada görünür." />}
       {sum && data && (
         <div className="stgrid">
           <div>

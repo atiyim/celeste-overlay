@@ -7,6 +7,7 @@ import { tierColor } from "./LoadoutPanel";
 import { activityBadge, analyze, formBadge, isComp, modeName, styleBadge } from "./playstyle";
 import type { Player } from "./types";
 import { NameLine } from "./ui";
+import { gunBadge, mapBadge } from "./insights";
 
 interface Props {
   p: Player;
@@ -20,6 +21,8 @@ interface Props {
   onOpen: () => void;
   onCopy: (name: string | null) => void;
   onTracker: (url: string) => void;
+  mapId?: string | null;
+  mapName?: string;
 }
 
 // Satırda kaplaması gösterilecek silahlar (kimlikle bulunur, olmazsa isim/kategoriyle).
@@ -30,7 +33,7 @@ const THUMBS = [
   { id: "2f59173c-4bed-b6c3-2191-dea9b58be9c7", name: "Melee", category: "Melee" },
 ];
 
-export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker }: Props) {
+export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker, mapId, mapName }: Props) {
   const agent = assets.agents.get(lookup(p.agentId));
   const cur = assets.tiers.get(p.rank.current);
   const peak = assets.tiers.get(p.rank.peak);
@@ -74,7 +77,8 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
   });
 
   const play = analyze(p);
-  const badges = [formBadge(p), styleBadge(play, th), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 2); // satır sade kalsın: en önemli iki rozet
+  // Satır sade kalsın: en önemli iki rozet. Önce maç içinde işe yarayanlar (silah alışkanlığı, bu harita).
+  const badges = [gunBadge(p), mapBadge(p, mapId, mapName), formBadge(p), styleBadge(play, th), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 2);
 
   const stop = (fn: () => void) => (e: MouseEvent) => { e.stopPropagation(); fn(); };
   const key = (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };

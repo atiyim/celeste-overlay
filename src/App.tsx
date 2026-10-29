@@ -22,8 +22,11 @@ import { StorePanel } from "./StorePanel";
 import { StatsPanel } from "./StatsPanel";
 import { ReportPanel } from "./ReportPanel";
 import { TrustPanel } from "./TrustPanel";
+import { teamSummary } from "./insights";
 import { alertOf, fmtDur, fmtRr, sessionOf, type Session } from "./tilt";
 import { useUpdater } from "./updater";
+import { Empty } from "./ui";
+import { WhatsNew } from "./WhatsNew";
 import { useUsagePing } from "./community";
 import { applyTheme, COLS, gridTemplate, hideOf, loadTheme, overlayWidth } from "./theme";
 
@@ -456,6 +459,7 @@ export function App() {
       {!collapsed && !guide && sess && sess.games > 0 && theme.tilt.on && view === "roster" && (
         <p className="mode sess">Bu seans · {sess.wins}G {sess.losses}M · <span className={sess.rr < 0 ? "neg" : sess.rr > 0 ? "pos" : ""}>{fmtRr(sess.rr)}</span> · {fmtDur(sess.minutes)}</p>
       )}
+      {!collapsed && !guide && view === "roster" && !active && <WhatsNew version={updater.version} />}
       {!collapsed && guide && <Guide onDone={closeGuide} />}
 
       {!collapsed && !guide && (
@@ -489,14 +493,26 @@ export function App() {
             onCopy={copyName}
           />
         ) : snap.players.length === 0 || !assets ? (
-          <div className="empty">
-            <p>{emptyText}</p>
-            {st?.riotClient && !st.valorant && assets && <p className="d">Mağaza ve İstatistik sekmeleri oyun kapalıyken de çalışır.</p>}
-            {st?.valorant && <p className="d">Overlay oyunun arkasında kalıyorsa Valorant'ta Ekran Modu'nu Pencereli Tam Ekran yap.</p>}
-            {assetsFailed && !assets && <button className="x" type="button" onClick={retryAssets}>Tekrar dene</button>}
-          </div>
+          <Empty
+            tone={assetsFailed || st?.fault ? "err" : undefined}
+            text={<>
+              {emptyText}
+              {st?.riotClient && !st.valorant && assets && <small>Mağaza ve İstatistik sekmeleri oyun kapalıyken de çalışır.</small>}
+              {st?.valorant && <small>Overlay oyunun arkasında kalıyorsa Valorant'ta Ekran Modu'nu Pencereli Tam Ekran yap.</small>}
+            </>}
+            onRetry={assetsFailed && !assets ? retryAssets : undefined}
+          />
         ) : (
           <>
+            {(() => {
+              const foe = teamSummary(enemies, snap.mapId), mine = teamSummary(allies.filter((x) => !x.isSelf), snap.mapId);
+              return foe.length || mine.length ? (
+                <div className="lobby" role="note" aria-label="Lobi özeti">
+                  {foe.length > 0 && <span className="lob foe"><b>Rakipte</b>{foe.map((t) => <i key={t}>{t}</i>)}</span>}
+                  {mine.length > 0 && <span className="lob ally"><b>Takımında</b>{mine.map((t) => <i key={t}>{t}</i>)}</span>}
+                </div>
+              ) : null;
+            })()}
             <div className="g c" style={{ gridTemplateColumns: template }}>
               <div>Oyuncu</div>
               {COLS.filter((c) => theme.cols[c.id]).map((c) => (
@@ -534,6 +550,8 @@ export function App() {
                       onOpen={() => setSelected(p.puuid)}
                       onCopy={copyName}
                       onTracker={openTracker}
+                      mapId={snap.mapId}
+                      mapName={mapName}
                     />
                   ))}
                 </section>
