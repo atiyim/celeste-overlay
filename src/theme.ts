@@ -37,6 +37,8 @@ export interface Theme {
   tilt: TiltCfg;
   /** Anonim kullanım sayımına katıl (rastgele kimlik + sürüm). */
   count: boolean;
+  /** FPS modu: animasyonlar kapanır, maçta hemen gizlenir, gizliyken denetimler seyrekleşir. */
+  fps: boolean;
 }
 
 const ALL_ON = Object.fromEntries(COLS.map((c) => [c.id, true])) as Record<ColId, boolean>;
@@ -51,9 +53,15 @@ export const DEFAULT_THEME: Theme = {
   th: DEFAULT_TH,
   tilt: DEFAULT_TILT,
   count: true,
+  fps: false,
 };
 export const ACCENTS = ["#38bdf8", "#a78bfa", "#34d399", "#fbbf24", "#fb7185", "#ededed"];
 export const HIDE_AFTER_OPTIONS = [5, 10, 15, 30];
+/** FPS modunda overlay maç başladıktan en geç bu kadar saniye sonra gizlenir. */
+export const FPS_HIDE_AFTER = 5;
+
+/* FPS modu açıkken geçerli olan gizleme ayarları (kullanıcının kendi seçimi saklanır, mod kapanınca geri döner). */
+export const hideOf = (t: Theme) => ({ on: t.autoHide || t.fps, after: t.fps ? Math.min(t.hideAfter, FPS_HIDE_AFTER) : t.hideAfter });
 
 const KEY = "overlay-theme";
 
@@ -81,6 +89,7 @@ export function loadTheme(): Theme {
         hours: TILT_HOURS.includes((t.tilt as Partial<TiltCfg> | undefined)?.hours as number) ? (t.tilt as TiltCfg).hours : DEFAULT_TILT.hours,
       },
       count: t.count !== false,
+      fps: t.fps === true,
     };
   } catch { return DEFAULT_THEME; }
 }
@@ -89,6 +98,7 @@ export function applyTheme(t: Theme) {
   const r = document.documentElement.style;
   r.setProperty("--accent", t.accent);
   r.setProperty("--alpha", String(t.alpha));
+  document.documentElement.classList.toggle("fps", t.fps);
   try { localStorage.setItem(KEY, JSON.stringify(t)); } catch { /* depolama dolu */ }
 }
 

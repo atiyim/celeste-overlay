@@ -1,9 +1,9 @@
 import type { useUpdater } from "./updater";
 import { Fragment } from "react";
-import { ACCENTS, COLS, DEFAULT_THEME, DEFAULT_TH, HIDE_AFTER_OPTIONS, type Theme, type Thresholds } from "./theme";
+import { ACCENTS, COLS, DEFAULT_THEME, DEFAULT_TH, FPS_HIDE_AFTER, HIDE_AFTER_OPTIONS, hideOf, type Theme, type Thresholds } from "./theme";
 import { copyDiagnostics } from "./StatusBar";
 import { TILT_HOURS, TILT_LOSSES, TILT_RR, fmtRr } from "./tilt";
-import { DISCORD_URL } from "./community";
+import { DISCORD_URL, FEEDBACK_URL } from "./community";
 
 const TH_FIELDS: { key: keyof Thresholds; label: string; hint: string; unit: string }[] = [
   { key: "hs", label: "Kafa avcısı", hint: "Kafa isabeti en az", unit: "%" },
@@ -16,6 +16,7 @@ const TH_FIELDS: { key: keyof Thresholds; label: string; hint: string; unit: str
 interface Props { onGuide: () => void; onOpen: (url: string) => void; updater: ReturnType<typeof useUpdater>; zoom: number; onZoom: (z: number) => void; zooms: number[]; theme: Theme; onChange: (t: Theme) => void; onToast: (t: string) => void; onClose: () => void }
 
 export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme, onChange, onToast, onClose }: Props) {
+  const hide = hideOf(theme);
   return (
     <div className="panel" role="dialog" aria-label="Ayarlar">
       <div className="ph">
@@ -132,23 +133,30 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
         </div>
 
         <div>
+          <h2 className="h">FPS modu</h2>
+          <label className="chk">
+            <input type="checkbox" checked={theme.fps} onChange={(e) => { onChange({ ...theme, fps: e.target.checked }); onToast(e.target.checked ? "FPS modu açık" : "FPS modu kapalı"); }} />
+            <span>Oyunda FPS düşüşü yaşıyorsan aç</span>
+          </label>
+          <p className="m">Animasyonlar ve geçiş efektleri kapanır, overlay maç başlayınca en geç {FPS_HIDE_AFTER} saniyede gizlenir, gizliyken arka plandaki denetimler seyrekleşir. Gösterilen bilgiler değişmez.</p>
+
           <h2 className="h">Otomatik gizleme</h2>
           <label className="chk">
-            <input type="checkbox" checked={theme.autoHide} onChange={(e) => onChange({ ...theme, autoHide: e.target.checked })} />
+            <input type="checkbox" checked={hide.on} disabled={theme.fps} onChange={(e) => onChange({ ...theme, autoHide: e.target.checked })} />
             <span>Maç başlayınca overlay'i gizle</span>
           </label>
           <label className="chk">
             <span>Gizleme süresi</span>
             <select
-              value={theme.hideAfter}
-              disabled={!theme.autoHide}
+              value={hide.after}
+              disabled={!hide.on || theme.fps}
               onChange={(e) => onChange({ ...theme, hideAfter: Number(e.target.value) })}
               aria-label="Gizleme süresi"
             >
               {HIDE_AFTER_OPTIONS.map((s) => <option key={s} value={s}>{s} saniye</option>)}
             </select>
           </label>
-          <p className="m">Ajan seçiminde yeniden görünür. F2 ile açarsan o maç boyunca açık kalır; F2 ile gizlersen kendiliğinden dönmez.</p>
+          <p className="m">{theme.fps ? "FPS modu açıkken gizleme hep açık. " : ""}Ajan seçiminde yeniden görünür. F2 ile açarsan o maç boyunca açık kalır; F2 ile gizlersen kendiliğinden dönmez.</p>
 
           <h2 className="h">Güncelleme</h2>
           <p className="m">
@@ -181,7 +189,10 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
 
           <h2 className="h">Topluluk</h2>
           <p className="m">Soru, hata bildirimi, öneri ve yeni sürümler Discord'da. Beta sürümleri de önce orada denenir.</p>
-          <p className="m"><button className="x" type="button" onClick={() => onOpen(DISCORD_URL)}>Discord'a katıl</button></p>
+          <p className="m">
+            <button className="x go" type="button" onClick={() => onOpen(FEEDBACK_URL)}>Öneri / Hata bildir</button>{" "}
+            <button className="x" type="button" onClick={() => onOpen(DISCORD_URL)}>Discord'a katıl</button>
+          </p>
 
           <h2 className="h">Kullanım sayımı</h2>
           <label className="chk">

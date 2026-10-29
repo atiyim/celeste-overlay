@@ -107,6 +107,7 @@ Seans, aralarında 100 dakikadan uzun ara olmayan maçlardır. Oyuncular sekmesi
 - Hangi sütunların görüneceği, overlay genişliği buna göre ayarlanır
 - Rozet eşikleri
 - Saldıran / savunan yönü
+- **FPS modu:** oyunda FPS düşüşü yaşarsan aç. Animasyonlar ve geçiş efektleri kapanır, overlay maç başlayınca en geç 5 saniyede gizlenir, gizliyken arka plandaki denetimler seyrekleşir. Gösterilen bilgiler değişmez.
 - Otomatik gizleme: maç başlayınca overlay kendini gizler, ajan seçiminde geri gelir
 - Tilt koruyucu eşikleri
 - Güncelleme denetimi, rehberi yeniden göster, tanı bilgisini kopyala
@@ -119,6 +120,7 @@ Seans, aralarında 100 dakikadan uzun ara olmayan maçlardır. Oyuncular sekmesi
 - **Fare otomatik:** İmleç overlay'in üstündeyken tıklamalar overlay'e, dışındayken oyuna gider.
 - **Kendiliğinden güncelleme:** Yeni sürüm çıkınca uygulama haber verir, kurulum senin onayınla başlar.
 - Tepsi simgesi: göster/gizle, konumu sıfırla, çıkış.
+- **Öneri / Hata bildir:** Alt şeritteki düğme Discord'daki `celeste-overlay` forumunu açar. Hata bildirirken **Tanı bilgisini kopyala** ile kopyaladığını gönderiye yapıştır.
 
 Rekabet verileri (son 5 maç, kafa isabeti, K/D, rozetler) yalnızca **rekabet** maçlarından hesaplanır.
 

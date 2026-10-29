@@ -25,7 +25,7 @@ import { TrustPanel } from "./TrustPanel";
 import { alertOf, fmtDur, fmtRr, sessionOf, type Session } from "./tilt";
 import { useUpdater } from "./updater";
 import { useUsagePing } from "./community";
-import { applyTheme, COLS, gridTemplate, loadTheme, overlayWidth } from "./theme";
+import { applyTheme, COLS, gridTemplate, hideOf, loadTheme, overlayWidth } from "./theme";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 // Pencere genişliği açık sütunlara göre hesaplanır; yükseklik içeriğe göre otomatik ayarlanır.
@@ -81,6 +81,11 @@ export function App() {
   const template = gridTemplate(theme.cols);
   const widthRef = useRef(width);
   widthRef.current = width;
+  const hide = hideOf(theme);
+  // FPS modu: gizliyken (maçta ya da F2 ile) arka plandaki denetimler seyrekleşir.
+  const fpsRef = useRef(theme.fps);
+  fpsRef.current = theme.fps;
+  const idle = () => autoHiddenRef.current || document.hidden;
 
   useEffect(() => { applyTheme(theme); }, [theme]);
 
@@ -96,12 +101,13 @@ export function App() {
       return;
     }
     let stop = false;
+    let t = 0;
     const tick = async () => {
       try { if (!stop) setSnap(await invoke<Snapshot>("get_snapshot")); } catch { /* sonraki turda tekrar dene */ }
+      if (!stop) t = window.setTimeout(tick, fpsRef.current && idle() ? 5000 : 2500);
     };
     tick();
-    const t = setInterval(tick, 2500);
-    return () => { stop = true; clearInterval(t); };
+    return () => { stop = true; window.clearTimeout(t); };
   }, [assets]);
 
   // Aynı oyuncuyla karşılaşma geçmişini yerelde kaydet (isim saklanmaz).
@@ -179,12 +185,18 @@ export function App() {
     let stop = false;
     let ignoring: boolean | null = null;
     const loop = async () => {
+      // Gizliyken (otomatik gizleme ya da F2) imleç denetlenmez: pencere zaten tıklamayı geçirir ya da görünmez.
+      if (idle()) {
+        ignoring = null; // görünür olunca ilk turda yeniden belirlenir
+        if (!stop) window.setTimeout(loop, 500);
+        return;
+      }
       try {
         const [c, p, s] = await Promise.all([cursorPosition(), w.outerPosition(), w.outerSize()]);
         const inside = c.x >= p.x && c.x < p.x + s.width && c.y >= p.y && c.y < p.y + s.height;
         if (ignoring !== !inside) { ignoring = !inside; await w.setIgnoreCursorEvents(ignoring); }
       } catch { /* bir sonraki turda tekrar dene */ }
-      if (!stop) window.setTimeout(loop, 80);
+      if (!stop) window.setTimeout(loop, fpsRef.current ? 120 : 80);
     };
     loop();
     return () => { stop = true; w.setIgnoreCursorEvents(false).catch(() => undefined); };
@@ -199,6 +211,7 @@ export function App() {
     // startup=true: küçültülmüşse geri aç ve göster. Sonraki turlarda kullanıcının küçültmesine karışma.
     const heal = async (startup: boolean) => {
       if (autoHiddenRef.current) return; // otomatik gizliyken pencere bilerek çok küçük
+      if (!startup && document.hidden) return; // F2 ile gizliyken düzeltilecek bir şey yok
       try {
         if (await w.isMinimized()) {
           if (!startup) return;
@@ -255,7 +268,7 @@ export function App() {
   // Otomatik gizleme: maç başladıktan N saniye sonra pencere görünmez ve tıklanamaz hâle gelir (odak çalınmaz).
   // Ajan seçimi (pregame) ve menüde otomatik olarak geri görünür.
   useEffect(() => {
-    if (!theme.autoHide || !inTauri) { setAutoHidden(false); return; } // tarayıcıda (geliştirme) hiç gizlenmez
+    if (!hide.on || !inTauri) { setAutoHidden(false); return; } // tarayıcıda (geliştirme) hiç gizlenmez
     if (snap.phase !== "ingame") {
       ingameSince.current = null;
       manualKeep.current = false;
@@ -263,10 +276,10 @@ export function App() {
       return;
     }
     if (ingameSince.current === null) ingameSince.current = Date.now();
-    const wait = Math.max(0, theme.hideAfter * 1000 - (Date.now() - ingameSince.current));
+    const wait = Math.max(0, hide.after * 1000 - (Date.now() - ingameSince.current));
     const t = window.setTimeout(() => { if (!manualKeep.current) setAutoHidden(true); }, wait);
     return () => window.clearTimeout(t);
-  }, [snap.phase, theme.autoHide, theme.hideAfter]);
+  }, [snap.phase, hide.on, hide.after]);
 
   // Gizliyken pencere minik ve tıklamayı geçiren bir noktaya iner; görününce boyut yeniden hesaplanır.
   // (Bu efekt, boyutlandırma efektinden önce tanımlı olmalı: sıfırlama önce çalışsın.)
@@ -366,6 +379,7 @@ export function App() {
       <header className="hd drag" onMouseDown={startDrag} title="Sürükleyerek taşı">
         <span className="hl">
           <h1 className="t">{mapName ?? "Celeste Overlay"}</h1>
+          {theme.fps && <span className="fpsb" title="FPS modu açık: animasyonlar kapalı, maçta hemen gizlenir">FPS</span>}
           {mySide && (
             <span className={mySide === "Saldıran" ? "side atk" : "side def"} title="Takım rengine göre belirlenir; yalnızca ilk yarıda doğrudur">
               {mySide} (ilk yarı)

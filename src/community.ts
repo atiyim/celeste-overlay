@@ -10,6 +10,8 @@ import { tfetch } from "./net";
 export const SITE = "https://celeste-feed.celestimbenim.workers.dev";
 /** Uygulamadaki Discord düğmesi: site, Celeste'nin oluşturduğu kalıcı davete yönlendirir. */
 export const DISCORD_URL = `${SITE}/discord`;
+/** "Öneri / Hata" düğmesi: Discord'daki celeste-overlay forumuna açılır (forum yoksa sunucuya). */
+export const FEEDBACK_URL = `${SITE}/discord/oneri`;
 
 const ID_KEY = "overlay-install-id";
 const EVERY = 10 * 60_000;
