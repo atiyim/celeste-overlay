@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { DISCORD_URL } from "./community";
 import { invoke } from "@tauri-apps/api/core";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { Status } from "./types";
@@ -70,6 +71,8 @@ export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onTo
         <span className="credit">
           Made by Claude &amp;{" "}
           <button type="button" className="ig" title="Instagram: @bneceleste" onClick={() => onOpen("https://www.instagram.com/bneceleste")}>bneceleste</button>
+          {" · "}
+          <button type="button" className="ig" title="Topluluk: soru, hata bildirimi, öneri ve yeni sürümler" onClick={() => onOpen(DISCORD_URL)}>Discord</button>
         </span>
         <button type="button" className="sbtn" aria-expanded={open} title="Ayrıntı için tıkla" onClick={toggle}>
           {items.map((i) => (

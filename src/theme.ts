@@ -35,6 +35,8 @@ export interface Theme {
   cols: Record<ColId, boolean>;
   th: Thresholds;
   tilt: TiltCfg;
+  /** Anonim kullanım sayımına katıl (rastgele kimlik + sürüm). */
+  count: boolean;
 }
 
 const ALL_ON = Object.fromEntries(COLS.map((c) => [c.id, true])) as Record<ColId, boolean>;
@@ -48,6 +50,7 @@ export const DEFAULT_THEME: Theme = {
   cols: ALL_ON,
   th: DEFAULT_TH,
   tilt: DEFAULT_TILT,
+  count: true,
 };
 export const ACCENTS = ["#38bdf8", "#a78bfa", "#34d399", "#fbbf24", "#fb7185", "#ededed"];
 export const HIDE_AFTER_OPTIONS = [5, 10, 15, 30];
@@ -77,6 +80,7 @@ export function loadTheme(): Theme {
         rr: TILT_RR.includes((t.tilt as Partial<TiltCfg> | undefined)?.rr as number) ? (t.tilt as TiltCfg).rr : DEFAULT_TILT.rr,
         hours: TILT_HOURS.includes((t.tilt as Partial<TiltCfg> | undefined)?.hours as number) ? (t.tilt as TiltCfg).hours : DEFAULT_TILT.hours,
       },
+      count: t.count !== false,
     };
   } catch { return DEFAULT_THEME; }
 }

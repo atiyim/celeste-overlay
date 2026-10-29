@@ -15,7 +15,7 @@ pub struct NetEntry {
     pub t: u64,
     pub method: String,
     pub host: String,
-    /// "local" | "riot" | "assets" | "github" | "other"
+    /// "local" | "riot" | "assets" | "github" | "celeste" | "other"
     pub target: String,
     /// Türkçe açıklama: istek ne için atıldı.
     pub what: String,
@@ -86,6 +86,8 @@ fn classify(host: &str) -> &'static str {
         "assets"
     } else if host.ends_with("github.com") || host.ends_with("githubusercontent.com") {
         "github"
+    } else if host.starts_with("celeste-feed.") && host.ends_with(".workers.dev") {
+        "celeste"
     } else {
         "other"
     }
@@ -107,7 +109,8 @@ fn mask_path(path: &str) -> String {
 
 /// Bu istek ne için? Sıra önemli: özel olan önce.
 fn describe(path: &str) -> &'static str {
-    let rules: [(&str, &str); 22] = [
+    let rules: [(&str, &str); 23] = [
+        ("/api/overlay/ping", "Anonim kullanım sayımı (rastgele kimlik ve sürüm)"),
         ("/entitlements/v1/token", "Oturum bilgisi (açık Riot Client'tan, giriş yapılmaz)"),
         ("external-sessions", "Valorant açık mı?"),
         ("/chat/v4/presences", "Parti bilgisi"),
@@ -249,6 +252,8 @@ mod tests {
         assert_eq!(classify("glz-eu-1.eu.a.pvp.net"), "riot");
         assert_eq!(classify("valorant-api.com"), "assets");
         assert_eq!(classify("example.com"), "other");
+        assert_eq!(classify("celeste-feed.celestimbenim.workers.dev"), "celeste");
+        assert_eq!(classify("baska.workers.dev"), "other");
     }
 
     #[test]
@@ -264,6 +269,7 @@ mod tests {
         assert_eq!(describe("/core-game/v1/matches/x/loadouts"), "Oyuncuların kaplamaları");
         assert_eq!(describe("/mmr/v1/players/x/competitiveupdates"), "Rank değişimi");
         assert_eq!(describe("/store/v1/wallet/x"), "Bakiye");
+        assert_eq!(describe("/api/overlay/ping"), "Anonim kullanım sayımı (rastgele kimlik ve sürüm)");
     }
 
     #[tokio::test]

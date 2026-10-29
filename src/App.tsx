@@ -24,6 +24,7 @@ import { ReportPanel } from "./ReportPanel";
 import { TrustPanel } from "./TrustPanel";
 import { alertOf, fmtDur, fmtRr, sessionOf, type Session } from "./tilt";
 import { useUpdater } from "./updater";
+import { useUsagePing } from "./community";
 import { applyTheme, COLS, gridTemplate, loadTheme, overlayWidth } from "./theme";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
@@ -61,6 +62,7 @@ export function App() {
   const [autoHidden, setAutoHidden] = useState(false);
   const [assetsFailed, setAssetsFailed] = useState(false);
   const updater = useUpdater();
+  useUsagePing(theme.count, updater.version);
   const [lastMatch, setLastMatch] = useState<string | null>(() => {
     try { return localStorage.getItem("overlay-last-match"); } catch { return null; }
   });
@@ -442,7 +444,7 @@ export function App() {
 
       {!collapsed && !guide && (
         view === "settings" ? (
-          <Settings updater={updater} theme={theme} onChange={setTheme} onGuide={() => { setGuide(true); setView("roster"); }} zoom={zoom} onZoom={setZoom} zooms={ZOOMS} onToast={showToast} onClose={() => setView("roster")} />
+          <Settings updater={updater} onOpen={openTracker} theme={theme} onChange={setTheme} onGuide={() => { setGuide(true); setView("roster"); }} zoom={zoom} onZoom={setZoom} zooms={ZOOMS} onToast={showToast} onClose={() => setView("roster")} />
         ) : view === "report" ? (
           assets ? <ReportPanel assets={assets} matchId={lastMatch} seen={seen} onTag={(id, t) => setSeen(setTag(id, t))} onOpen={openTracker} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "store" ? (

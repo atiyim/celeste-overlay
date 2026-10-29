@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { ACCENTS, COLS, DEFAULT_THEME, DEFAULT_TH, HIDE_AFTER_OPTIONS, type Theme, type Thresholds } from "./theme";
 import { copyDiagnostics } from "./StatusBar";
 import { TILT_HOURS, TILT_LOSSES, TILT_RR, fmtRr } from "./tilt";
+import { DISCORD_URL } from "./community";
 
 const TH_FIELDS: { key: keyof Thresholds; label: string; hint: string; unit: string }[] = [
   { key: "hs", label: "Kafa avcısı", hint: "Kafa isabeti en az", unit: "%" },
@@ -12,9 +13,9 @@ const TH_FIELDS: { key: keyof Thresholds; label: string; hint: string; unit: str
   { key: "lowHs", label: "Düşük HS", hint: "Kafa isabeti en çok", unit: "%" },
 ];
 
-interface Props { onGuide: () => void; updater: ReturnType<typeof useUpdater>; zoom: number; onZoom: (z: number) => void; zooms: number[]; theme: Theme; onChange: (t: Theme) => void; onToast: (t: string) => void; onClose: () => void }
+interface Props { onGuide: () => void; onOpen: (url: string) => void; updater: ReturnType<typeof useUpdater>; zoom: number; onZoom: (z: number) => void; zooms: number[]; theme: Theme; onChange: (t: Theme) => void; onToast: (t: string) => void; onClose: () => void }
 
-export function Settings({ onGuide, updater, zoom, onZoom, zooms, theme, onChange, onToast, onClose }: Props) {
+export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme, onChange, onToast, onClose }: Props) {
   return (
     <div className="panel" role="dialog" aria-label="Ayarlar">
       <div className="ph">
@@ -177,6 +178,17 @@ export function Settings({ onGuide, updater, zoom, onZoom, zooms, theme, onChang
             </label>
           ))}
           <p className="m">Kapattığın sütun kadar overlay daralır.</p>
+
+          <h2 className="h">Topluluk</h2>
+          <p className="m">Soru, hata bildirimi, öneri ve yeni sürümler Discord'da. Beta sürümleri de önce orada denenir.</p>
+          <p className="m"><button className="x" type="button" onClick={() => onOpen(DISCORD_URL)}>Discord'a katıl</button></p>
+
+          <h2 className="h">Kullanım sayımı</h2>
+          <label className="chk">
+            <input type="checkbox" checked={theme.count} onChange={(e) => onChange({ ...theme, count: e.target.checked })} />
+            <span>Anonim kullanım sayımına katıl</span>
+          </label>
+          <p className="m">Uygulama açıkken 10 dakikada bir rastgele bir kimlik ve sürüm numarası gönderir; böylece kaç kişinin kullandığı görülür. Riot hesabın, oyuncu adları ve maç bilgisi gönderilmez. Kapatınca kimlik de silinir.</p>
 
           <h2 className="h">Hakkında</h2>
           <p className="m">Celeste Overlay, Riot Games ile bağlantılı değildir. Oyuna dokunmaz; yalnızca açık Riot Client oturumunu okur. Etiketler ve notlar yalnızca bu bilgisayarda saklanır.</p>

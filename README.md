@@ -8,7 +8,7 @@ Valorant lobisinde herkesin rankını, son maçlarını ve kaplamalarını tek b
 
 - **Giriş yok.** Riot hesabına giriş yapmazsın. Uygulama, açık Riot Client oturumunu okur.
 - **Yalnızca okur.** Oyuna tuş göndermez, oyun belleğine girmez, oyun dosyalarını değiştirmez. Hile değildir.
-- **Veriler sende kalır.** Etiketler, notlar ve ayarlar yalnızca bu bilgisayarda saklanır. Uygulamanın kendi sunucusu yoktur.
+- **Veriler sende kalır.** Etiketler, notlar ve ayarlar yalnızca bu bilgisayarda saklanır. Uygulama yalnızca kaç kişinin kullandığını saymak için rastgele bir kimlik ve sürüm numarası gönderir (Riot hesabı, oyuncu adları ve maç bilgisi gönderilmez); Ayarlar'dan kapatılabilir.
 - **Gizli isimler gizli kalır.** İsmini gizleyen oyuncunun adı sorgulanmaz, saklanmaz, gösterilmez.
 - **Kanıtı uygulamanın içinde.** **S.S.S & Panel** sekmesi, uygulamanın attığı her isteği canlı listeler.
 - Kaynak kodu bu depoda açıktır.
@@ -84,7 +84,7 @@ Panelin üst yarısı sık sorulan soruları kısaca cevaplar: neden güvenmeli,
 
 - Her isteğin saati, ne için atıldığı, durum kodu ve süresi
 - Toplam istek, son dakikadaki istek, okuma / sorgu / **yazma** sayacı. Yazma sayacı Riot'ta bir şey değiştiren istekleri sayar ve sıfır kalmalıdır.
-- Hangi adreslere bağlandığı (Riot sunucuları, bu bilgisayar, valorant-api.com, GitHub). Beklenmeyen bir adres kırmızı görünür.
+- Hangi adreslere bağlandığı (Riot sunucuları, bu bilgisayar, valorant-api.com, GitHub, Celeste'nin anonim sayımı). Beklenmeyen bir adres kırmızı görünür.
 - İsmi gizli olduğu için sorgulanmayan oyuncu sayısı
 - Bilgisayarda saklanan veriler ve **Verilerimi sil** düğmesi
 - Akışı tek tuşla kopyalama

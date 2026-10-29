@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 const inTauri = "__TAURI_INTERNALS__" in window;
 
 export interface NetEntry {
-  t: number; method: string; host: string; target: "local" | "riot" | "assets" | "github" | "other";
+  t: number; method: string; host: string; target: "local" | "riot" | "assets" | "github" | "celeste" | "other";
   what: string; path: string; kind: "okuma" | "sorgu" | "yazma"; status: number; ms: number;
 }
 export interface HostCount { host: string; target: NetEntry["target"]; count: number }
