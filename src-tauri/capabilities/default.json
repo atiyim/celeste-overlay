@@ -21,7 +21,7 @@
     "core:window:allow-outer-size",
     "core:webview:allow-set-webview-zoom",
     "clipboard-manager:allow-write-text",
-    { "identifier": "opener:allow-open-url", "allow": [{ "url": "https://tracker.gg/*" }, { "url": "https://www.riotgames.com/tr/terms-of-service-TR" }, { "url": "https://www.instagram.com/bneceleste" }] },
+    { "identifier": "opener:allow-open-url", "allow": [{ "url": "https://tracker.gg/*" }, { "url": "https://www.riotgames.com/tr/terms-of-service-TR" }, { "url": "https://www.instagram.com/bneceleste" }, { "url": "https://celeste-feed.celestimbenim.workers.dev/discord" }, { "url": "https://celeste-feed.celestimbenim.workers.dev/discord/oneri" }] },
     "global-shortcut:allow-register",
     "global-shortcut:allow-unregister",
     "global-shortcut:allow-is-registered",
