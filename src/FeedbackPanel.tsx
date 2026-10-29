@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { DISCORD_URL, FEEDBACK_API, installId } from "./community";
 import { tfetch } from "./net";
+import { PanelHead, Toggle } from "./ui";
 
 /* Öneri / Hata formu. Gönder'e basınca yazı, Riot ID, (yazıldıysa) Discord adı, sürüm ve cihaz kimliği
    Celeste'ye gider; Celeste bunu yetkililerin gördüğü kanala koyar. Formda ne gönderileceği açıkça yazar. */
@@ -59,13 +60,7 @@ export function FeedbackPanel({ version, onOpen, onClose }: Props) {
 
   return (
     <div className="panel fb" role="dialog" aria-label="Öneri / Hata bildir">
-      <div className="ph">
-        <div>
-          <h2 className="t">Öneri / Hata bildir</h2>
-          <p className="m">Yazdığın doğrudan Celeste yetkililerine ulaşır. Discord'a geçmen gerekmez.</p>
-        </div>
-        <button className="x" type="button" onClick={onClose}>Kapat</button>
-      </div>
+      <PanelHead title="Öneri / Hata bildir" sub="Yazdığın doğrudan Celeste yetkililerine ulaşır. Discord'a geçmen gerekmez." onClose={onClose} />
 
       {state.kind === "done" ? (
         <div className="fbdone" role="status">
@@ -95,10 +90,10 @@ export function FeedbackPanel({ version, onOpen, onClose }: Props) {
               <input type="text" value={contact} maxLength={40} placeholder="ör. celeste" onChange={(e) => setContact(e.target.value)} />
             </label>
             {kind === "hata" && (
-              <label className="chk fbdiag">
-                <input type="checkbox" checked={diag} onChange={(e) => setDiag(e.target.checked)} />
-                <span>Tanı bilgisini ekle <small>Sürüm ve hangi bağlantının çalışmadığı; isim ve kimlik içermez.</small></span>
-              </label>
+              <div className="fbdiag">
+                <Toggle on={diag} onChange={setDiag} label="Tanı bilgisini ekle" />
+                <span><b>Tanı bilgisini ekle</b><small>Sürüm ve hangi bağlantının çalışmadığı; isim ve kimlik içermez.</small></span>
+              </div>
             )}
           </div>
 

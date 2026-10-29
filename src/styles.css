@@ -837,7 +837,8 @@ html:has(body.web) { overflow-y: auto; }
 .fbfield textarea, .fbfield input { font: inherit; font-size: 13px; color: var(--fg); background: var(--s1); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; resize: vertical; outline: none; }
 .fbfield textarea:focus, .fbfield input:focus { border-color: var(--accent); }
 .fbrow { display: flex; gap: 16px; align-items: flex-end; }
-.fbdiag { flex: 1; align-items: flex-start; }
+.fbdiag { flex: 1; display: flex; align-items: center; gap: 10px; padding-bottom: 6px; }
+.fbdiag b { display: block; font-size: 13px; font-weight: 500; color: var(--fg); }
 .fbdiag small { display: block; font-size: 11.5px; color: var(--fg-3); }
 .fbnote { margin: 2px 0 0; padding: 9px 11px; font-size: 12px; line-height: 1.5; color: var(--fg-2); border: 1px dashed var(--line); border-radius: 8px; }
 .fbactions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
