@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CROSSHAIRS, type Crosshair } from "./crosshairs";
 import { drawCrosshair } from "./crosshairRender";
+import { PanelHead } from "./ui";
 
 /* Nişangah kütüphanesi: karta tıkla, kod panoya kopyalansın. Önizleme koddan çizilir (internet gerekmez).
    Oyunun ayar dosyasına yazılmaz, oyuna tuş vuruşu gönderilmez. */
@@ -19,13 +20,7 @@ function Preview({ code, n }: { code: string; n: number }) {
 export function Crosshairs({ onCopy, onClose }: Props) {
   return (
     <div className="panel" role="dialog" aria-label="Nişangah">
-      <div className="ph">
-        <div>
-          <h2 className="t">Nişangah</h2>
-          <p className="m">Karta tıkla, kod kopyalansın. Oyunda Ayarlar → Nişangah → Profil kodunu içe aktar'a yapıştır.</p>
-        </div>
-        <button className="x" type="button" onClick={onClose}>Kapat</button>
-      </div>
+      <PanelHead title="Nişangah" sub="Karta tıkla, kod kopyalansın. Oyunda Ayarlar → Nişangah → Profil kodunu içe aktar'a yapıştır." onClose={onClose} />
       <div className="xgrid">
         {CROSSHAIRS.map((c: Crosshair, i: number) => (
           <button key={c.code} type="button" className="xc" onClick={() => onCopy(c.code, `${c.name} kopyalandı`)} aria-label={`${c.name}, kodu kopyala`} title={c.code}>

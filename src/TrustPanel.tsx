@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { NetEntry, NetReport } from "./net";
 import { mockNet } from "./mock";
+import { PanelHead } from "./ui";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -79,13 +80,7 @@ export function TrustPanel({ onClose, onToast, onOpen }: { onClose: () => void; 
 
   return (
     <div className="panel trust" role="dialog" aria-label="S.S.S & Panel">
-      <div className="ph">
-        <div>
-          <h2 className="t">S.S.S &amp; Panel</h2>
-          <p className="m">Bu uygulama ne yapar, ne yapmaz? Önce kısa cevaplar, altında bunları doğrulayan canlı kayıt.</p>
-        </div>
-        <button className="x" type="button" onClick={onClose}>Kapat</button>
-      </div>
+      <PanelHead title="S.S.S & Panel" sub="Bu uygulama ne yapar, ne yapmaz? Önce kısa cevaplar, altında bunları doğrulayan canlı kayıt." onClose={onClose} />
 
       <div className="faq">
         {FAQ.map((f, i) => (
@@ -117,7 +112,7 @@ export function TrustPanel({ onClose, onToast, onOpen }: { onClose: () => void; 
         <div className="ngrid">
           <div>
             <h2 className="h">Nereye bağlanıyor</h2>
-            <ul className="hosts">
+            <ul className="hosts box">
               {(rep?.hosts ?? []).map((h) => (
                 <li key={h.host} className={h.target === "other" ? "odd" : ""}>
                   <span><b>{TARGET[h.target]}</b><small>{h.host}</small></span>
@@ -132,7 +127,7 @@ export function TrustPanel({ onClose, onToast, onOpen }: { onClose: () => void; 
             <p className="m"><b className="big">{rep?.hiddenSkipped ?? 0}</b> oyuncu ismini gizliyor, adları sorgulanmadı.</p>
 
             <h2 className="h">Bu bilgisayardaki verilerin</h2>
-            <ul className="hosts plain">
+            <ul className="hosts plain box">
               {data.map((d) => <li key={d.label}><span>{d.label}</span><em>{d.n}</em></li>)}
             </ul>
             <p className="m small">Uygulama ayarları da burada saklanır. Anonim sayımın rastgele kimliği dışında hiçbiri bilgisayarından çıkmaz.</p>
@@ -141,7 +136,7 @@ export function TrustPanel({ onClose, onToast, onOpen }: { onClose: () => void; 
 
           <div>
             <h2 className="h">Son istekler</h2>
-            <ul className="feed" aria-live="off">
+            <ul className="feed box" aria-live="off">
               {feed.map((e, i) => (
                 <li key={`${e.t}-${i}`} className={`${e.kind} ${open === i ? "open" : ""}`} onClick={() => setOpen(open === i ? null : i)}>
                   <span className="ft">{hhmmss(e.t)}</span>

@@ -6,6 +6,7 @@ import { tierColor } from "./LoadoutPanel";
 import { trackerUrl } from "./profile";
 import { TAGS, type Seen, type TagId } from "./seen";
 import type { MatchReport, ReportPlayer } from "./types";
+import { NameLine, PanelHead } from "./ui";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 const NOT_READY = "Maç kaydı henüz hazır değil.";
@@ -48,12 +49,7 @@ export function ReportPanel({ assets, matchId, seen, onTag, onOpen, onClose }: R
     return () => window.clearTimeout(t);
   }, [rep, err, tries, load]);
 
-  const head = (sub: string, right?: React.ReactNode) => (
-    <div className="ph">
-      <div><h2 className="t">Maç raporu</h2><p className="m">{sub}</p></div>
-      <div className="phr">{right}<button className="x" type="button" onClick={onClose}>Kapat</button></div>
-    </div>
-  );
+  const head = (sub: string, right?: React.ReactNode) => <PanelHead title="Maç raporu" sub={sub} actions={right} onClose={onClose} />;
 
   if (!matchId) {
     return <div className="panel fade">{head("Bu oturumda henüz maç oynanmadı. Maç bitince rapor kendiliğinden açılır.")}</div>;
@@ -94,6 +90,7 @@ export function ReportPanel({ assets, matchId, seen, onTag, onOpen, onClose }: R
       )}
       {teams.map((t, ti) => (
         <section key={t.id} className="rteam">
+          <div className="box">
           <div className="rg c">
             <div className="tm"><i className={t.info?.won ? "tbar pos" : "tbar neg"} />{ti === 0 ? "Takımın" : "Rakipler"}</div>
             <div className="num" title="Rank">Rank</div>
@@ -125,10 +122,11 @@ export function ReportPanel({ assets, matchId, seen, onTag, onOpen, onClose }: R
                 >
                   <div className="who2">
                     {ag && <img className="agent" src={ag.icon} alt={ag.name} />}
-                    <span className="n pn">{p.name ?? (p.hidden ? "İsim gizli" : "…")}</span>
-                    {tag && <span className="tg" style={{ color: tag.color, borderColor: tag.color }}>{tag.label}</span>}
-                    {p.party && <span className="p mini" title="Maçta aynı partideydi">{p.party}</span>}
-                    {a === top && <span className="bd gold mvp">MVP</span>}
+                    <NameLine name={p.name ?? (p.hidden ? "İsim gizli" : "…")}>
+                      {tag && <span className="tg" style={{ color: tag.color, borderColor: tag.color }}>{tag.label}</span>}
+                      {p.party && <span className="p mini" title="Maçta aynı partideydi">{p.party}</span>}
+                      {a === top && <span className="bd gold mvp">MVP</span>}
+                    </NameLine>
                   </div>
                   <div className="num">{tier && p.tier > 0 ? <img className="rk" src={tier.icon} alt={tier.name} title={tier.name} style={{ filter: `drop-shadow(0 0 4px ${tierColor(tier.color)}55)` }} /> : <span className="d">–</span>}</div>
                   <div className="num"><b>{a}</b></div>
@@ -159,6 +157,7 @@ export function ReportPanel({ assets, matchId, seen, onTag, onOpen, onClose }: R
               </div>
             );
           })}
+          </div>
         </section>
       ))}
     </div>

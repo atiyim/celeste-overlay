@@ -104,5 +104,5 @@ export const gridTemplate = (cols: Record<ColId, boolean>) =>
 /* Açık sütunlara göre pencere genişliği (CSS px). */
 export function overlayWidth(cols: Record<ColId, boolean>): number {
   const on = COLS.filter((c) => cols[c.id]);
-  return Math.max(720, 48 + 170 + on.reduce((a, c) => a + c.px, 0) + 12 * on.length);
+  return Math.max(720, 48 + 190 + on.reduce((a, c) => a + c.px, 0) + 12 * on.length);
 }

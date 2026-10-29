@@ -6,6 +6,7 @@ import type { ColId, Thresholds } from "./theme";
 import { tierColor } from "./LoadoutPanel";
 import { activityBadge, analyze, formBadge, isComp, modeName, styleBadge } from "./playstyle";
 import type { Player } from "./types";
+import { NameLine } from "./ui";
 
 interface Props {
   p: Player;
@@ -83,10 +84,14 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
       <button className="who" type="button" onClick={stop(() => onCopy(anonymous ? label ?? null : p.name ?? null))} title={blur ? "Kullanıcı adını kopyala" : sub || "Kullanıcı adını kopyala"}>
         {agent && <img className="agent" src={agent.icon} alt={agent.name} loading="lazy" />}
         <span className="n">
-          <span className="pn">{name}</span>
-          {times > 0 && <span className="rep" title={`Bu oyuncuyla ${times}. kez aynı maçtasın`}>{times}. kez</span>}
-          {tag && <span className="tg" style={{ color: tag.color, borderColor: tag.color }}>{tag.label}</span>}
-          {sub && <small className="pn">{sub}</small>}
+          <NameLine name={name} />
+          {(times > 0 || tag || sub) && (
+            <span className="sub2">
+              {tag && <span className="tg" style={{ color: tag.color, borderColor: tag.color }}>{tag.label}</span>}
+              {times > 0 && <span className="rep" title={`Bu oyuncuyla ${times}. kez aynı maçtasın`}>{times}. kez</span>}
+              {sub && <small className="pn">{sub}</small>}
+            </span>
+          )}
         </span>
       </button>
       {cols.rank && (

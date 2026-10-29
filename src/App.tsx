@@ -373,9 +373,11 @@ export function App() {
   };
 
   if (autoHidden) return null;
+  // Menüler ve oyuncu ayrıntısı her zaman tam opaktır; saydamlık yalnızca oyuncu listesinde geçerlidir.
+  const solid = !collapsed && (guide || view !== "roster" || !!active);
 
   return (
-    <main className={blur ? "ov blur" : "ov"} ref={rootRef} style={{ width }}>
+    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}`} ref={rootRef} style={{ width }}>
       <header className="hd drag" onMouseDown={startDrag} title="Sürükleyerek taşı">
         <span className="hl">
           <h1 className="t">{mapName ?? "Celeste Overlay"}</h1>
@@ -390,10 +392,10 @@ export function App() {
           <span className="m">{PHASE_TEXT[snap.phase]}</span>
           <span className="zoom" onMouseDown={noDrag}>
             {!collapsed && (
-              <>
-                <button type="button" onClick={() => stepZoom(-1)} aria-label="Küçült">A−</button>
-                <button type="button" onClick={() => stepZoom(1)} aria-label="Büyüt">A+</button>
-              </>
+              <span className="pair" role="group" aria-label="Yazı boyutu">
+                <button type="button" onClick={() => stepZoom(-1)} aria-label="Küçült" title="Küçült">A−</button>
+                <button type="button" onClick={() => stepZoom(1)} aria-label="Büyüt" title="Büyüt">A+</button>
+              </span>
             )}
             {!collapsed && (
               <button

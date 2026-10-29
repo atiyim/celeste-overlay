@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { Assets } from "./assets";
 import { lookup } from "./assets";
 import type { MyStats } from "./types";
+import { PanelHead } from "./ui";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -50,19 +51,12 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
 
   return (
     <div className="panel" role="dialog" aria-label="İstatistiklerim">
-      <div className="ph">
-        <div>
-          <h2 className="t">İstatistiklerim</h2>
-          <p className="m">
-            {cur ? `${cur.name} · ${data!.rank.rr} RR` : "Derece bilgisi yok"}
-            {sum ? ` · son ${sum.n} maç` : ""}
-          </p>
-        </div>
-        <span className="zoom">
-          <button type="button" onClick={load} disabled={busy}>{busy ? "Yükleniyor" : "Yenile"}</button>
-          <button type="button" onClick={onClose}>Kapat</button>
-        </span>
-      </div>
+      <PanelHead
+        title="İstatistiklerim"
+        sub={<>{cur ? `${cur.name} · ${data!.rank.rr} RR` : "Derece bilgisi yok"}{sum ? ` · son ${sum.n} maç` : ""}</>}
+        actions={<button className="x" type="button" onClick={load} disabled={busy}>{busy ? "Yükleniyor" : "Yenile"}</button>}
+        onClose={onClose}
+      />
       {err && <p className="empty">{err}</p>}
       {!err && !data && <p className="empty">Maçların okunuyor. İlk açılışta birkaç saniye sürebilir.</p>}
       {data && !sum && <p className="empty">Sayılabilecek maç bulunamadı.</p>}
@@ -75,7 +69,8 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
               <div><b>{sum.acs}</b><small>Ort. ACS</small></div>
               <div><b className={sum.rr >= 0 ? "pos" : "neg"}>{sum.rr > 0 ? "+" : ""}{sum.rr}</b><small>Rekabetçi RR</small></div>
             </div>
-            <h3 className="h2" style={{ marginTop: 14 }}>Ajanlar</h3>
+            <h3 className="h2">Ajanlar</h3>
+            <div className="box pad">
             <div className="ag hd2"><span /><span>Ajan</span><span className="num">Maç</span><span className="num">Galibiyet</span><span className="num">K/D</span></div>
             {sum.agents.map(([id, e]) => {
               const ag = assets.agents.get(id);
@@ -89,9 +84,11 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
                 </div>
               );
             })}
+            </div>
           </div>
           <div>
             <h3 className="h2">Son maçlar</h3>
+            <div className="box pad">
             <div className="mm hd2"><span /><span>Harita</span><span>Ajan</span><span className="num">K / D / A</span><span className="num">ACS</span><span className="num">RR</span><span className="num">Önce</span></div>
             {data.matches.slice(0, 10).map((m) => {
               const ag = assets.agents.get(lookup(m.agentId));
@@ -107,6 +104,7 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
                 </div>
               );
             })}
+            </div>
           </div>
         </div>
       )}

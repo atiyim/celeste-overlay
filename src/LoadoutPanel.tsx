@@ -7,6 +7,7 @@ import { DEFAULT_TH, type Thresholds } from "./theme";
 import { TAGS, type Entry, type TagId } from "./seen";
 import { actRows, agentBuckets, compOnly, firstAct, kdOf, oneTrick, pool, roleBuckets, tally, winPct, type Bucket, type Tally } from "./profile";
 import type { Player, PremierTeam } from "./types";
+import { CloseButton, NameLine } from "./ui";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -69,14 +70,14 @@ function WeaponTable({ title, list, assets, unit }: { title: string; list: Weapo
   return (
     <div>
       <h3 className="h2">{title}</h3>
-      {rows.length ? rows.map(({ w, info }) => (
+      {rows.length ? <div className="box pad">{rows.map(({ w, info }) => (
         <div className="wr" key={w.id}>
           <img src={info!.icon} alt="" />
           <span className="wn">{info!.name}</span>
           <span className="wb"><i style={{ width: `${(100 * w.count) / max}%` }} /></span>
           <span className="wv">{w.count} {unit}</span>
         </div>
-      )) : <None text="Veri yok" />}
+      ))}</div> : <None text="Veri yok" />}
     </div>
   );
 }
@@ -97,7 +98,7 @@ function Trio({ t, empty }: { t: Tally; empty: string }) {
 /* Satır: ikon, ad, pay çubuğu ve "7 maç · %57 · 1,24". */
 function BucketRows({ list, total, limit }: { list: Bucket[]; total: number; limit: number }) {
   return (
-    <>
+    <div className="box pad">
       {list.slice(0, limit).map((b) => (
         <div className="br" key={b.id} title={`${b.name}: ${b.t.matches} maç, ${b.t.wins} galibiyet`}>
           {b.icon ? <img src={b.icon} alt="" loading="lazy" /> : <span />}
@@ -106,7 +107,7 @@ function BucketRows({ list, total, limit }: { list: Bucket[]; total: number; lim
           <span className="wv">{b.t.matches} maç · %{winPct(b.t)} · {kdOf(b.t).toFixed(2)}</span>
         </div>
       ))}
-    </>
+    </div>
   );
 }
 
@@ -190,10 +191,10 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
   return (
     <div className="panel" role="dialog" aria-label="Oyuncu ayrıntısı">
       <div className="ph">
-        <div>
+        <div className="phl">
           <h2 className="t">
             <button className="namebtn" type="button" title="Kullanıcı adını kopyala" onClick={() => onCopy(anonymous ? entry?.label ?? null : p.name ?? null)}>
-              <span className="pn">{anonymous ? entry?.label ?? "Oyuncu (isim gizli)" : p.name}</span>
+              <NameLine name={(anonymous ? entry?.label ?? "Oyuncu (isim gizli)" : p.name) ?? "…"} />
             </button>
             {sb && <span className={`bd ${sb.tone}`} title={sb.tip}>{sb.text}</span>}
             {fb && <span className={`bd ${fb.tone}`} title={fb.tip}>{fb.text}</span>}
@@ -225,7 +226,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
               ))}
             </span>
           )}
-          <button className="x" onClick={onClose} type="button">Kapat</button>
+          <CloseButton onClick={onClose} />
         </div>
       </div>
 
@@ -264,7 +265,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
               </div>
             )}
             {shown.length === 0 ? <None text={p.formLoading ? "Yükleniyor…" : p.form.length ? `${modeLabel} maçı yok` : "Maç verisi yok"} /> : (
-              <div className="tb">
+              <div className="tb box pad">
                 <div className="tr tmx hd2"><span /><span>Harita</span><span>Ajan</span><span className="num">K / D / A</span><span className="num">K/D</span><span className="num">Zaman</span></div>
                 {shown.map((f, i) => {
                   const fa = assets.agents.get(lookup(f.agentId));
@@ -342,7 +343,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
                   <span className="chev" aria-hidden="true" />Geçmiş actler<small>{acts.length}</small>
                 </button>
                 {actsOpen && (
-                  <div className="tb acts fade">
+                  <div className="tb acts box pad fade">
                     <div className="tr hd2 actr"><span>Act</span><span>Act sonu</span><span>En yüksek</span><span className="num">Galibiyet</span></div>
                     {acts.map((r) => {
                       const end = assets.tiers.get(r.tier), top = assets.tiers.get(r.peak);
@@ -367,15 +368,15 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
         <div className="prof3 fade">
           <div>
             <h3 className="h2">Spreyler</h3>
-            {sprays.length ? sprays.map((s) => (
+            {sprays.length ? <div className="box pad">{sprays.map((s) => (
               <div className="chrow" key={s.name}><img src={s.icon} alt="" loading="lazy" /><span>{s.name}</span></div>
-            )) : <None />}
+            ))}</div> : <None />}
           </div>
           <div>
             <h3 className="h2">Flex</h3>
-            {flex.length ? flex.map((f) => (
+            {flex.length ? <div className="box pad">{flex.map((f) => (
               <div className="chrow" key={f.name}><img src={f.icon} alt="" loading="lazy" /><span>{f.name}</span></div>
-            )) : <None />}
+            ))}</div> : <None />}
             <h3 className="h2">Kart ve ünvan</h3>
             {card || title ? (
               <div className="card">
@@ -403,7 +404,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
             {p.together.length > 0 && (
               <>
                 <h3 className="h2">Son rekabet maçlarında birlikte<span className="hv">Aynı partide girilen maç</span></h3>
-                <div className="tb">
+                <div className="tb box pad">
                   {p.together.slice(0, 4).map((t) => {
                     const mate = lobby.find((x) => x.puuid === t.puuid);
                     const now = p.partySure && mate?.partySure && mate.party === p.party;
@@ -436,7 +437,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
             {entry && entry.history.length >= 2 && (
               <>
                 <h3 className="h2">Daha önce karşılaştınız<span className="hv">{entry.n}. maç</span></h3>
-                <div className="tb">
+                <div className="tb box pad">
                   {entry.history.slice(-4, -1).reverse().map((h, i) => (
                     <div className="tr met" key={i}>
                       <span className="mn pn">{!anonymous && h.name ? h.name : "–"}</span>

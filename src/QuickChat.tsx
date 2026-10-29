@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PanelHead } from "./ui";
 
 /* Hızlı mesajlar: yazdığın mesajlar listede durur, birine tıklayınca panoya kopyalanır.
    Oyuna tuş vuruşu gönderilmez; yapıştırmayı sen yaparsın. */
@@ -31,13 +32,7 @@ export function QuickChat({ onCopy, onClose }: Props) {
 
   return (
     <div className="panel" role="dialog" aria-label="Hızlı mesajlar">
-      <div className="ph">
-        <div>
-          <h2 className="t">Hızlı mesajlar</h2>
-          <p className="m">Mesajı yaz ve ekle. Listeden birine tıklayınca kopyalanır; oyunda sohbeti açıp Ctrl+V ile yapıştır.</p>
-        </div>
-        <button className="x" type="button" onClick={onClose}>Kapat</button>
-      </div>
+      <PanelHead title="Hızlı mesajlar" sub="Mesajı yaz ve ekle. Listeden birine tıklayınca kopyalanır; oyunda sohbeti açıp Ctrl+V ile yapıştır." onClose={onClose} />
 
       <div className="note">
         <input
@@ -48,11 +43,12 @@ export function QuickChat({ onCopy, onClose }: Props) {
           placeholder="Yeni mesaj"
           aria-label="Yeni mesaj"
         />
-        <button className="x" type="button" onClick={add}>Ekle</button>
+        <button className="x go" type="button" onClick={add} disabled={!text.trim()}>Ekle</button>
       </div>
 
-      <h2 className="h">Mesajlarım</h2>
-      {msgs.length === 0 && <p className="d none">Henüz mesaj yok.</p>}
+      <h2 className="h">Mesajlarım<span className="hv">{msgs.length} mesaj</span></h2>
+      <div className="box pad">
+      {msgs.length === 0 && <p className="d none">Henüz mesaj yok. Yukarıya yazıp Ekle'ye bas.</p>}
       {msgs.map((m) => (
         <div className="msg" key={m}>
           <button className="mt" type="button" onClick={() => onCopy(m, "Mesaj kopyalandı")} title="Tıkla: kopyala">{m}</button>
@@ -60,6 +56,7 @@ export function QuickChat({ onCopy, onClose }: Props) {
           <button className="x" type="button" onClick={() => setMsgs((l) => l.filter((x) => x !== m))} aria-label="Mesajı sil">Sil</button>
         </div>
       ))}
+      </div>
     </div>
   );
 }

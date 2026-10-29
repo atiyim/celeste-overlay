@@ -4,6 +4,7 @@ import type { Assets, SkinMeta } from "./assets";
 import { cachedJson } from "./assets";
 import type { Account, ContractState } from "./types";
 import { WalletBar, nf } from "./StorePanel";
+import { PanelHead } from "./ui";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -53,7 +54,7 @@ function Missions({ acc, defs }: { acc: Account; defs: Defs | null }) {
       {groups.filter(([, l]) => l.length).map(([name, list]) => (
         <section key={name}>
           <h3 className="h2">{name}{name === "Haftalık" && untilText(acc.weeklyRefill) ? <span className="hv">{untilText(acc.weeklyRefill)} sonra yenilenir</span> : null}</h3>
-          <div className="tb">
+          <div className="tb box pad">
             {list.map(({ m, title, need, have, xp }) => (
               <div key={m.id} className={`msn${m.complete ? " done" : ""}`}>
                 <span className="mt">{title}</span>
@@ -202,16 +203,12 @@ export function AccountPanel({ assets, onClose }: { assets: Assets; onClose: () 
 
   return (
     <div className="panel" role="dialog" aria-label="Hesabım">
-      <div className="ph">
-        <div>
-          <h2 className="t">Hesabım</h2>
-          <p className="m">Cüzdan, görevler, battle pass ve envanter. Valorant kapalıyken de çalışır; Riot Client'ta oturum açık olması yeter.</p>
-        </div>
-        <span className="zoom">
-          <button type="button" onClick={load} disabled={busy}>{busy ? "Yükleniyor" : "Yenile"}</button>
-          <button type="button" onClick={onClose}>Kapat</button>
-        </span>
-      </div>
+      <PanelHead
+        title="Hesabım"
+        sub="Cüzdan, görevler, battle pass ve envanter. Valorant kapalıyken de çalışır; Riot Client'ta oturum açık olması yeter."
+        actions={<button className="x" type="button" onClick={load} disabled={busy}>{busy ? "Yükleniyor" : "Yenile"}</button>}
+        onClose={onClose}
+      />
       {err && <p className="empty">{err}</p>}
       {acc && (
         <>

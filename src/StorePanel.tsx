@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { Assets } from "./assets";
 import { lookup } from "./assets";
 import type { Store, StoreOffer, Wallet } from "./types";
+import { PanelHead } from "./ui";
 
 export const nf = (n?: number | null) => (n == null ? "–" : n.toLocaleString("tr-TR"));
 
@@ -62,16 +63,12 @@ export function StorePanel({ assets, onClose }: { assets: Assets; onClose: () =>
 
   return (
     <div className="panel" role="dialog" aria-label="Mağaza">
-      <div className="ph">
-        <div>
-          <h2 className="t">Mağaza</h2>
-          <p className="m">Kendi hesabının mağazası. Valorant kapalıyken de çalışır; Riot Client'ta oturum açık olması yeter.</p>
-        </div>
-        <span className="zoom">
-          <button type="button" onClick={load} disabled={busy}>{busy ? "Yükleniyor" : "Yenile"}</button>
-          <button type="button" onClick={onClose}>Kapat</button>
-        </span>
-      </div>
+      <PanelHead
+        title="Mağaza"
+        sub="Kendi hesabının mağazası. Valorant kapalıyken de çalışır; Riot Client'ta oturum açık olması yeter."
+        actions={<button className="x" type="button" onClick={load} disabled={busy}>{busy ? "Yükleniyor" : "Yenile"}</button>}
+        onClose={onClose}
+      />
       {err && <p className="empty">{err}</p>}
       {store && (
         <>
