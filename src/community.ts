@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { tfetch } from "./net";
 
 /* Celeste topluluğu: Discord bağlantısı ve anonim kullanım sayımı.
@@ -45,4 +45,21 @@ export function useUsagePing(enabled: boolean, version: string) {
     const t = window.setInterval(ping, EVERY);
     return () => window.clearInterval(t);
   }, [enabled, version]);
+}
+
+/** Şu an kaç kişinin kullandığı (son 15 dakikada sinyal gönderen kurulumlar). 5 dakikada bir yenilenir. */
+export function useActiveCount(): number | null {
+  const [n, setN] = useState<number | null>(null);
+  useEffect(() => {
+    if (!inTauri) return;
+    const load = () =>
+      tfetch(`${SITE}/api/overlay/stats`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d: { activeNow?: unknown } | null) => { if (d && typeof d.activeNow === "number") setN(d.activeNow); })
+        .catch(() => undefined);
+    load();
+    const t = window.setInterval(load, 5 * 60_000);
+    return () => window.clearInterval(t);
+  }, []);
+  return n;
 }

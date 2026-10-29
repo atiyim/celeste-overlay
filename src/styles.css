@@ -572,3 +572,6 @@ button.tg:hover { opacity: 1; }
 /* Tarayıcıda (geliştirme) sayfa kaydırılabilir; uygulamada pencere içeriğe göre büyür. */
 body.web, body.web html { overflow-y: auto; }
 html:has(body.web) { overflow-y: auto; }
+
+/* ---------- 0.6.3: şu an kullanan sayısı ---------- */
+.usersnow { display: inline-flex; align-items: center; gap: 6px; color: var(--fg-2); font-weight: 500; white-space: nowrap; }

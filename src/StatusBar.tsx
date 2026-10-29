@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { Status } from "./types";
 
-interface Props { status?: Status; inApp: boolean; assetsOk: boolean; assetsFailed: boolean; version: string; onToast: (t: string) => void; onOpen: (url: string) => void }
+interface Props { active?: number | null; status?: Status; inApp: boolean; assetsOk: boolean; assetsFailed: boolean; version: string; onToast: (t: string) => void; onOpen: (url: string) => void }
 interface Health { id: string; label: string; state: "ok" | "warn" | "fail" | "idle"; detail: string }
 type Dot = boolean | null;
 
@@ -22,7 +22,7 @@ export async function copyDiagnostics(version: string, conn: [string, Dot][], on
 }
 
 /* Alt şerit: dört bağlantı noktası. Tıklayınca özelliklerin son durumu ve tanı kopyalama düğmesi açılır. */
-export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onToast, onOpen }: Props) {
+export function StatusBar({ active, status, inApp, assetsOk, assetsFailed, version, onToast, onOpen }: Props) {
   const [open, setOpen] = useState(false);
   const [health, setHealth] = useState<Health[] | null>(null);
 
@@ -74,6 +74,11 @@ export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onTo
           {" · "}
           <button type="button" className="ig" title="Topluluk: soru, hata bildirimi, öneri ve yeni sürümler" onClick={() => onOpen(DISCORD_URL)}>Discord</button>
         </span>
+        {active != null && active > 0 && (
+          <span className="usersnow" title="Son 15 dakikada uygulamayı açık tutanların sayısı (anonim sayım)">
+            <i className="dot ok" />{active.toLocaleString("tr-TR")} kişi şu an kullanıyor
+          </span>
+        )}
         <button type="button" className="sbtn" aria-expanded={open} title="Ayrıntı için tıkla" onClick={toggle}>
           {items.map((i) => (
             <span key={i.label} className="si" title={i.hint}>
