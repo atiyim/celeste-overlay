@@ -49,7 +49,9 @@ export function FeedbackPanel({ version, onOpen, onClose }: Props) {
       // text/plain: tarayıcı ön isteği (OPTIONS) gerekmez.
       const r = await tfetch(FEEDBACK_API, { method: "POST", headers: { "content-type": "text/plain" }, body: JSON.stringify(body) });
       if (r.ok) { setState({ kind: "done" }); setText(""); return; }
-      const msg = await r.json().then((j: { error?: string }) => j.error).catch(() => null);
+      // 404: sunucuda form adresi yok (site güncellenmemiş). Ham "bulunamadı" yerine ne yapılacağını söyle.
+      if (r.status === 404) { setState({ kind: "error", msg: "Bildirim servisi şu an kapalı. Biraz sonra tekrar dene ya da Discord'da destek talebi aç." }); return; }
+      const msg = r.status < 500 ? await r.json().then((j: { error?: string }) => j.error).catch(() => null) : null;
       setState({ kind: "error", msg: msg ?? "Gönderilemedi. Biraz sonra tekrar dene." });
     } catch {
       setState({ kind: "error", msg: "İnternete bağlanılamadı. Bağlantını kontrol edip tekrar dene." });
