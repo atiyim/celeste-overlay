@@ -109,9 +109,8 @@ fn mask_path(path: &str) -> String {
 
 /// Bu istek ne için? Sıra önemli: özel olan önce.
 fn describe(path: &str) -> &'static str {
-    let rules: [(&str, &str); 24] = [
+    let rules: [(&str, &str); 23] = [
         ("/api/overlay/ping", "Anonim kullanım sayımı (rastgele kimlik ve sürüm)"),
-        ("/api/overlay/stats", "Şu an kaç kişinin kullandığı"),
         ("/entitlements/v1/token", "Oturum bilgisi (açık Riot Client'tan, giriş yapılmaz)"),
         ("external-sessions", "Valorant açık mı?"),
         ("/chat/v4/presences", "Parti bilgisi"),

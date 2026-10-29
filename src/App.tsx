@@ -24,7 +24,7 @@ import { ReportPanel } from "./ReportPanel";
 import { TrustPanel } from "./TrustPanel";
 import { alertOf, fmtDur, fmtRr, sessionOf, type Session } from "./tilt";
 import { useUpdater } from "./updater";
-import { useActiveCount, useUsagePing } from "./community";
+import { useUsagePing } from "./community";
 import { applyTheme, COLS, gridTemplate, loadTheme, overlayWidth } from "./theme";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
@@ -63,7 +63,6 @@ export function App() {
   const [assetsFailed, setAssetsFailed] = useState(false);
   const updater = useUpdater();
   useUsagePing(theme.count, updater.version);
-  const activeUsers = useActiveCount();
   const [lastMatch, setLastMatch] = useState<string | null>(() => {
     try { return localStorage.getItem("overlay-last-match"); } catch { return null; }
   });
@@ -540,7 +539,7 @@ export function App() {
           </>
         )
       )}
-      {!collapsed && <StatusBar active={activeUsers} status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} />}
+      {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} />}
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
   );
