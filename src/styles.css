@@ -845,3 +845,10 @@ html:has(body.web) { overflow-y: auto; }
 .fbactions .x.go:disabled { opacity: .45; cursor: default; filter: none; }
 .fbdone { display: flex; flex-direction: column; gap: 6px; padding: 16px; border: 1px solid color-mix(in srgb, var(--win) 45%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--win) 8%, var(--s1)); }
 .fbdone b { font-size: 15px; color: var(--fg); }
+
+/* ---------- "ele alındı" haberi ---------- */
+.notice { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--win) 40%, var(--line)); border-radius: var(--r); background: linear-gradient(90deg, color-mix(in srgb, var(--win) 10%, var(--box)), var(--box) 60%); animation: rise .35s cubic-bezier(.2, .8, .2, 1) both; }
+.notice .ni { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: #04170b; background: var(--win); }
+.notice .nt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.notice .nt b { font-size: 13px; }
+.notice .nt small { font-size: 12px; color: var(--fg-2); }

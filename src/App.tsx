@@ -28,7 +28,7 @@ import { alertOf, fmtDur, fmtRr, sessionOf, type Session } from "./tilt";
 import { useUpdater } from "./updater";
 import { Empty } from "./ui";
 import { WhatsNew } from "./WhatsNew";
-import { useUsagePing } from "./community";
+import { useNotices, useUsagePing } from "./community";
 import { applyTheme, COLS, gridTemplate, hideOf, loadTheme, overlayWidth } from "./theme";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
@@ -67,6 +67,7 @@ export function App() {
   const [assetsFailed, setAssetsFailed] = useState(false);
   const updater = useUpdater();
   useUsagePing(updater.version);
+  const [notices, clearNotices] = useNotices();
   const [lastMatch, setLastMatch] = useState<string | null>(() => {
     try { return localStorage.getItem("overlay-last-match"); } catch { return null; }
   });
@@ -459,6 +460,16 @@ export function App() {
 
       {!collapsed && !guide && sess && sess.games > 0 && theme.tilt.on && view === "roster" && (
         <p className="mode sess">Bu seans · {sess.wins}G {sess.losses}M · <span className={sess.rr < 0 ? "neg" : sess.rr > 0 ? "pos" : ""}>{fmtRr(sess.rr)}</span> · {fmtDur(sess.minutes)}</p>
+      )}
+      {!collapsed && !guide && notices.length > 0 && (
+        <div className="notice" role="status">
+          <span className="ni" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3.5 8.5 3 3 6-7" /></svg></span>
+          <span className="nt">
+            <b>{notices.some((n) => n.kind === "hata") && notices.some((n) => n.kind === "oneri") ? "Bildirimlerin ele alındı" : notices[0].kind === "hata" ? "Bildirdiğin hata ele alındı" : "Önerin ele alındı"}</b>
+            <small>Celeste ekibi gönderdiğin {notices.length > 1 ? `${notices.length} bildirimi` : "bildirimi"} inceledi. Teşekkürler!</small>
+          </span>
+          <button className="x" type="button" onClick={clearNotices}>Tamam</button>
+        </div>
       )}
       {!collapsed && !guide && view === "roster" && !active && <WhatsNew version={updater.version} />}
       {!collapsed && guide && <Guide onDone={closeGuide} />}

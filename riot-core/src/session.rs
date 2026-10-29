@@ -269,6 +269,31 @@ impl Session {
         Some(scan)
     }
 
+    /// Kendi Riot ID'n ("isim#etiket"), Riot Client'ın yerel API'sinden. Valorant'ın açık olması gerekmez.
+    pub async fn local_riot_id(&self) -> Option<String> {
+        for path in ["/chat/v1/session", "/player-account/aliases/v1/active"] {
+            let Ok(r) = netlog::exec(
+                &self.local,
+                self.local.get(format!("https://127.0.0.1:{}{path}", self.port)).basic_auth("riot", Some(&self.password)),
+            )
+            .await
+            else {
+                continue;
+            };
+            if !r.status().is_success() {
+                continue;
+            }
+            let Ok(v) = r.json::<Value>().await else { continue };
+            let v = if v.is_array() { v[0].clone() } else { v };
+            let name = v["game_name"].as_str().unwrap_or("").trim();
+            let tag = v["game_tag"].as_str().or_else(|| v["tag_line"].as_str()).unwrap_or("").trim();
+            if !name.is_empty() && !tag.is_empty() {
+                return Some(format!("{name}#{tag}"));
+            }
+        }
+        None
+    }
+
     pub fn headers(&self) -> HeaderMap {
         let platform = STANDARD.encode(
             r#"{"platformType":"PC","platformOS":"Windows","platformOSVersion":"10.0.19042.1.256.64bit","platformChipset":"Unknown"}"#,

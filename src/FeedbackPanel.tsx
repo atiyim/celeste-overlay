@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { DISCORD_URL, FEEDBACK_API, installId } from "./community";
+import { DISCORD_URL, FEEDBACK_API, installId, markFeedbackSent } from "./community";
 import { tfetch } from "./net";
 import { PanelHead, Toggle } from "./ui";
 
@@ -30,13 +30,16 @@ export function FeedbackPanel({ version, onOpen, onClose }: Props) {
   const [riot, setRiot] = useState<string | null>(null);
   const [state, setState] = useState<State>({ kind: "idle" });
 
-  useEffect(() => {
+  // Riot ID olmadan gönderilmez: kimin yazdığı bilinsin, spam engellensin.
+  const loadRiot = () => {
     if (!inTauri) { setRiot("Celeste#TR1"); return; }
-    invoke<string>("get_riot_id").then(setRiot).catch(() => setRiot(""));
-  }, []);
+    setRiot(null);
+    invoke<string>("get_riot_id").then((v) => setRiot(v || "")).catch(() => setRiot(""));
+  };
+  useEffect(loadRiot, []);
 
   const length = text.trim().length;
-  const ready = length >= MIN && state.kind !== "sending";
+  const ready = length >= MIN && !!riot && state.kind !== "sending";
 
   const send = async () => {
     if (!ready) return;
@@ -48,7 +51,7 @@ export function FeedbackPanel({ version, onOpen, onClose }: Props) {
     try {
       // text/plain: tarayıcı ön isteği (OPTIONS) gerekmez.
       const r = await tfetch(FEEDBACK_API, { method: "POST", headers: { "content-type": "text/plain" }, body: JSON.stringify(body) });
-      if (r.ok) { setState({ kind: "done" }); setText(""); return; }
+      if (r.ok) { markFeedbackSent(); setState({ kind: "done" }); setText(""); return; }
       // 404: sunucuda form adresi yok (site güncellenmemiş). Ham "bulunamadı" yerine ne yapılacağını söyle.
       if (r.status === 404) { setState({ kind: "error", msg: "Bildirim servisi şu an kapalı. Biraz sonra tekrar dene ya da Discord'da destek talebi aç." }); return; }
       const msg = r.status < 500 ? await r.json().then((j: { error?: string }) => j.error).catch(() => null) : null;
@@ -67,6 +70,7 @@ export function FeedbackPanel({ version, onOpen, onClose }: Props) {
       {state.kind === "done" ? (
         <div className="fbdone" role="status">
           <b>Gönderildi, teşekkürler!</b>
+          <p className="m">Ekip ele aldığında burada haber vereceğiz.</p>
           <p className="m">Yetkililer okuyacak. Cevap vermemiz gerekirse {contact.trim() ? <>Discord'da <b>{contact.trim()}</b> adına yazarız.</> : "Discord adını yazmadığın için sana ulaşamayabiliriz."}</p>
           <p className="m"><button className="x" type="button" onClick={() => setState({ kind: "idle" })}>Yeni bildirim yaz</button> <button className="x" type="button" onClick={onClose}>Kapat</button></p>
         </div>
@@ -103,6 +107,12 @@ export function FeedbackPanel({ version, onOpen, onClose }: Props) {
             Gönderirken <b>Riot ID'n{riot ? ` (${riot})` : ""}</b>, sürüm ve cihazın rastgele kimliği de eklenir; yetkililer kimin yazdığını görür. Küfür ve spam gönderen cihazdan bildirim kapatılır.
           </p>
 
+          {riot === "" && (
+            <p className="m err" role="alert">
+              Riot ID'n alınamadı. Bildirim göndermek için Riot Client açık ve hesabına giriş yapılmış olmalı.{" "}
+              <button className="lnk" type="button" onClick={loadRiot}>Tekrar dene</button>
+            </p>
+          )}
           {state.kind === "error" && <p className="m err" role="alert">{state.msg}</p>}
 
           <div className="fbactions">

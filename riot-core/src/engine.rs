@@ -908,9 +908,17 @@ impl Engine {
             st.session = None;
             friendly(&e)
         })?;
+        // Önce Riot Client'ın yerel API'si (Valorant kapalıyken de çalışır), olmazsa isim servisi.
+        if let Some(id) = s.local_riot_id().await {
+            return Ok(id);
+        }
         let me = s.puuid.clone();
         self.load_names(&mut st, &s, std::slice::from_ref(&me)).await;
-        st.names.get(&me).cloned().ok_or_else(|| "Riot ID alınamadı".to_string())
+        st.names
+            .iter()
+            .find(|(k, _)| k.eq_ignore_ascii_case(&me))
+            .map(|(_, v)| v.clone())
+            .ok_or_else(|| "Riot ID alınamadı. Riot Client'ta oturumunun açık olduğundan emin ol.".to_string())
     }
 
     pub async fn account(&self) -> Result<Account, String> {

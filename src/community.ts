@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { tfetch } from "./net";
 
 /* Celeste topluluğu: Discord bağlantısı ve anonim kullanım sayımı.
@@ -41,4 +41,34 @@ export function useUsagePing(version: string) {
     const t = window.setInterval(ping, EVERY);
     return () => window.clearInterval(t);
   }, [version]);
+}
+
+/* "Ele alındı" haberleri: yalnızca bu cihazdan son 30 günde bildirim gönderildiyse, 5 dakikada bir sorulur.
+   İstek yalnızca cihazın rastgele kimliğini taşır; gelen haber bir kez gösterilir ve sunucudan silinir. */
+export const SENT_KEY = "overlay-feedback-sent";
+export const markFeedbackSent = () => { try { localStorage.setItem(SENT_KEY, String(Date.now())); } catch { /* depolama kapalı */ } };
+export interface Notice { kind: "oneri" | "hata"; at: number }
+
+export function useNotices(): [Notice[], () => void] {
+  const [list, setList] = useState<Notice[]>([]);
+  useEffect(() => {
+    if (!inTauri) return;
+    const ask = async () => {
+      let sent = 0;
+      try { sent = Number(localStorage.getItem(SENT_KEY)) || 0; } catch { /* depolama kapalı */ }
+      if (!sent || Date.now() - sent > 30 * 24 * 3_600_000) return;
+      const id = installId();
+      if (!id) return;
+      try {
+        const r = await tfetch(`${SITE}/api/overlay/notices?id=${id}`);
+        if (!r.ok) return;
+        const got = (await r.json()) as Notice[];
+        if (Array.isArray(got) && got.length) setList((l) => [...l, ...got.filter((n) => n.kind === "oneri" || n.kind === "hata")]);
+      } catch { /* sonraki turda */ }
+    };
+    const t0 = window.setTimeout(ask, 20_000);
+    const t = window.setInterval(ask, 5 * 60_000);
+    return () => { window.clearTimeout(t0); window.clearInterval(t); };
+  }, []);
+  return [list, () => setList([])];
 }
