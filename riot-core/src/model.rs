@@ -58,6 +58,9 @@ pub struct Player {
     /// değilse son maçlarda sık birlikte oynamaktan gelir (yalnızca geçmiş bilgisi).
     pub party: Option<String>,
     pub party_sure: bool,
+    /// Parti bilgisinin kaynağı: "live" (Riot Client, kesin), "last" (önceki maçı aynı partide oynadılar),
+    /// "history" (son maçlarında aynı partide oldukları maçlar var). Parti yoksa `None`.
+    pub party_src: Option<String>,
     /// Bu lobideki takım arkadaşlarıyla son maçlarda aynı partide girilen maç sayıları.
     pub together: Vec<Together>,
     /// 0-100 arası smurf olasılığı (sezgisel).
@@ -97,9 +100,11 @@ pub struct RrMatch {
 #[serde(rename_all = "camelCase")]
 pub struct Together {
     pub puuid: String,
-    /// Aynı parti kimliğini paylaştıkları maç sayısı / bu oyuncunun incelenen maç sayısı.
+    /// Aynı parti kimliğini paylaştıkları maç sayısı / bu oyuncunun incelenen maç sayısı (tüm modlar).
     pub count: u32,
     pub of: u32,
+    /// Bir önceki maçlarını birlikte, aynı partide oynadılar.
+    pub last: bool,
 }
 
 #[derive(Serialize, Clone, Debug, Default)]

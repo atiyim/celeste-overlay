@@ -36,7 +36,9 @@ export interface Player {
   rank: Rank;
   party?: string | null;
   partySure: boolean;
-  together: { puuid: string; count: number; of: number }[];
+  /** Parti bilgisinin kaynağı: Riot Client (kesin), önceki maç ya da son maçlar. */
+  partySrc?: "live" | "last" | "history" | null;
+  together: { puuid: string; count: number; of: number; last?: boolean }[];
   smurf: number;
   loadout: Loadout;
   isSelf: boolean;

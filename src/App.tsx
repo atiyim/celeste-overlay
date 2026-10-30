@@ -566,6 +566,7 @@ export function App() {
                       onTracker={openTracker}
                       mapId={snap.mapId}
                       mapName={mapName}
+                      lobby={snap.players}
                     />
                   ))}
                 </section>
@@ -581,7 +582,7 @@ export function App() {
             {snap.players.some((x) => x.party) && (
               <p className="mode legend">
                 <span className="p mini">A</span>Aynı parti
-                {snap.players.some((x) => x.party && !x.partySure) && <><span className="p mini soft">A</span>Son rekabet maçlarında sık birlikte</>}
+                <span className="d">· üstüne gelince nereden bilindiği görünür</span>
               </p>
             )}
           </>

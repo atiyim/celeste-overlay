@@ -75,7 +75,7 @@ export function teamSummary(list: Player[], mapId?: string | null): string[] {
   if (usta) out.push(`${usta} haritada usta`);
   if (zayif) out.push(`${zayif} haritada zayıf`);
   const parties = new Map<string, number>();
-  for (const p of list) if (p.party && p.partySure) parties.set(p.party, (parties.get(p.party) ?? 0) + 1);
+  for (const p of list) if (p.party) parties.set(p.party, (parties.get(p.party) ?? 0) + 1);
   for (const n of [...parties.values()].filter((n) => n >= 2).sort((a, b) => b - a)) out.push(`${n} kişilik parti`);
   return out;
 }

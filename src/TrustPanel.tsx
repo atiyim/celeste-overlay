@@ -14,6 +14,7 @@ const FAQ: { q: string; a: string; tos?: boolean }[] = [
   { q: "Şifremi istiyor mu?", a: "Hayır, giriş ekranı yok. Açık Riot Client oturumunu kullanır ve oturum bilgisi yalnızca Riot sunucularına gider." },
   { q: "Oyuna dokunuyor mu?", a: "Hayır. Yalnızca okur: oyun belleğine girmez, tuş ya da tıklama göndermez, dosyaları değiştirmez." },
   { q: "Hile sayılır mı?", a: "Rakibin konumu ya da görüşü gibi anlık oyun bilgisi göstermez; yalnızca rank, maç geçmişi ve kaplama gibi sonradan da öğrenilebilen bilgiler." },
+  { q: "Partiyi nasıl biliyor?", a: "Arkadaşların için Riot Client'tan, kesin olarak. Diğer oyuncular için önceki maç kayıtlarından: bir önceki maçlarını ya da son maçlarını aynı partide oynayıp şimdi aynı takımdalarsa aynı parti gösterilir. Harfin üstüne gelince hangisi olduğu yazar." },
   { q: "Gizli isimleri açar mı?", a: "Hayır. İsmini gizleyen oyuncunun adı sorgulanmaz, saklanmaz, gösterilmez." },
   { q: "Verilerim nereye gidiyor?", a: "Etiketler, notlar ve ayarlar bu bilgisayarda kalır. Uygulama kaç kişinin kullandığını saymak için yalnızca rastgele bir kimlik ve sürüm numarası gönderir. Öneri / Hata formunu gönderirsen yazdığınla birlikte Riot ID'n de gider. Şifren, oturum bilgilerin, lobideki oyuncular ve maç bilgisi hiç gönderilmez. Hepsi aşağıdaki canlı kayıtta görünür." },
   { q: "Windows neden uyarı veriyor?", a: "Kurulum dosyası ücretli bir kod imzasıyla imzalanmadı. Windows yeni ve imzasız her dosyada uyarır; virüs anlamına gelmez." },

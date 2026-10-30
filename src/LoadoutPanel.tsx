@@ -409,16 +409,16 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
               )}
             {p.together.length > 0 && (
               <>
-                <h3 className="h2">Son rekabet maçlarında birlikte<span className="hv">Aynı partide girilen maç</span></h3>
+                <h3 className="h2">Birlikte parti<span className="hv">Son maçlarında aynı partide (bütün modlar)</span></h3>
                 <div className="tb box pad">
                   {p.together.slice(0, 4).map((t) => {
                     const mate = lobby.find((x) => x.puuid === t.puuid);
-                    const now = p.partySure && mate?.partySure && mate.party === p.party;
+                    const now = !!p.party && mate?.party === p.party;
                     return (
                       <div className="tr tog" key={t.puuid}>
                         <span className="pair"><b className="pn">{mate ? (mate.hiddenName && !mate.isSelf ? "İsim gizli" : mate.name ?? "…") : "?"}</b></span>
-                        <span className="num">{t.count}/{t.of} maç</span>
-                        {now ? <span className="bd win">Şu an aynı parti</span> : <span />}
+                        <span className="num">{t.last ? "Önceki maç · " : ""}{t.count}/{t.of} maç</span>
+                        {now ? <span className="bd pos">Bu maçta aynı parti</span> : <span />}
                       </div>
                     );
                   })}

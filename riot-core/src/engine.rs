@@ -198,10 +198,6 @@ const DEEP_OTHER: usize = 10;
 const DETAIL_BUDGET: usize = 10; // her turda en fazla bu kadar maç ayrıntısı çekilir
 
 /// Yalnızca rekabet maçları (party eşleşmesi gibi hesaplar bunu kullanır).
-fn form_ids(h: &[(String, String)]) -> Vec<(String, String)> {
-    h.iter().filter(|(_, q)| FORM_QUEUES.contains(&q.as_str())).take(FORM_N).cloned().collect()
-}
-
 /// Rekabet + diğer modlar (özel maçlar hariç), yeniden eskiye.
 fn recent_ids(h: &[(String, String)]) -> Vec<(String, String)> {
     pick_ids(h, FORM_N, FORM_N)
@@ -555,6 +551,16 @@ impl Engine {
         }
         if st.block_until.map_or(true, |t| Instant::now() >= t) {
             let mut want: Vec<String> = Vec::new();
+            // Önce herkesin bir önceki maçı: parti bilgisi maç içinde en hızlı buradan çıkar.
+            for p in players.iter() {
+                if let Some((_, h)) = st.history.get(&p.puuid) {
+                    if let Some((id, q)) = h.first() {
+                        if q != "custom" && !q.is_empty() && !st.details.contains_key(id) && !want.contains(id) {
+                            want.push(id.clone());
+                        }
+                    }
+                }
+            }
             for p in players.iter() {
                 if let Some((_, h)) = st.history.get(&p.puuid) {
                     // Önce herkesin son 5+5 maçı; ayrıntısı açılan oyuncunun derin geçmişi bunlardan sonra gelir.
@@ -1423,7 +1429,8 @@ fn find(p: &mut Vec<usize>, x: usize) -> usize {
 }
 
 /// Geçmişte aynı partide girilen maç sayısı eşiği ("sık birlikte").
-const TOGETHER_MIN: u32 = 3;
+/// Önceki maç dışında, en az bu kadar maçta aynı partide olmuşlarsa aynı parti sayılır (tüm modlar).
+const TOGETHER_MIN: u32 = 1;
 
 impl Engine {
     /// Parti bilgisi yalnızca kesin kaynaklardan gelir:
@@ -1525,60 +1532,104 @@ impl Engine {
             st.health.insert("party", h);
         }
 
-        // 2) Geçmiş: aynı takımdaki iki oyuncunun son maçlarında ortak parti kimliği
-        let mut parent: Vec<usize> = (0..n).collect();
-        for i in 0..n {
-            players[i].together.clear();
-            let Some((_, h)) = st.history.get(&players[i].puuid) else { continue };
-            let ds: Vec<&Detail> = form_ids(h).iter().filter_map(|(id, _)| st.details.get(id)).collect();
-            if ds.is_empty() {
+        infer_parties(players, &st.history, &st.details, label);
+        let count = |src: &str| players.iter().filter(|p| p.party_src.as_deref() == Some(src)).count();
+        st.health.insert(
+            "party",
+            (
+                if players.iter().any(|p| p.party.is_some()) { "ok" } else { "warn" },
+                format!("Parti: Riot Client {} · önceki maç {} · son maçlar {} (lobide {n} oyuncu)", count("live"), count("last"), count("history")),
+            ),
+        );
+    }
+}
+
+/// Riot Client'tan (kesin) gelmeyen parti bilgisini oyuncuların önceki maç kayıtlarından çıkarır. Bütün modlar sayılır.
+fn infer_parties(players: &mut [Player], history: &HashMap<String, (Instant, Vec<(String, String)>)>, details: &HashMap<String, Detail>, mut label: u8) {
+    let n = players.len();
+    for p in players.iter_mut() {
+        p.party_src = if p.party_sure { Some("live".into()) } else { None };
+    }
+
+    // 2) Geçmiş (bütün modlar: rekabet, derecesiz, tam gaz, ölüm maçı...): aynı takımdaki iki oyuncu
+    //    a) bir önceki maçlarını aynı partide oynadıysa ("last"), ya da
+    //    b) elimizdeki son maçlarından en az birinde aynı partideydiyse ("history").
+    //    Parti kimliği maç kaydında kesin yazar; yalnızca o maçta birlikte oldukları kesindir, şu an da birlikte oldukları çıkarımdır.
+    let mut parent: Vec<usize> = (0..n).collect();
+    let mut strong: Vec<bool> = vec![false; n]; // grupta "önceki maç" kanıtı var mı
+    for i in 0..n {
+        players[i].together.clear();
+        let Some((_, hi)) = history.get(&players[i].puuid) else { continue };
+        let mine: Vec<(&String, &Detail)> = hi.iter().filter_map(|(id, _)| details.get(id).map(|d| (id, d))).collect();
+        if mine.is_empty() {
+            continue;
+        }
+        let last_i = hi.first().map(|(id, _)| id);
+        for j in 0..n {
+            if i == j || players[i].team != players[j].team {
                 continue;
             }
-            for j in 0..n {
-                if i == j || players[i].team != players[j].team {
-                    continue;
-                }
-                let count = ds
-                    .iter()
-                    .filter(|d| {
-                        let a = d.players.iter().find(|x| x.puuid == players[i].puuid).map(|x| x.party_id.as_str());
-                        let b = d.players.iter().find(|x| x.puuid == players[j].puuid).map(|x| x.party_id.as_str());
-                        matches!((a, b), (Some(a), Some(b)) if !a.is_empty() && a == b)
-                    })
-                    .count() as u32;
-                if count > 0 {
-                    players[i].together.push(Together { puuid: players[j].puuid.clone(), count, of: ds.len() as u32 });
-                }
-            }
-            players[i].together.sort_by(|a, b| b.count.cmp(&a.count));
-        }
-        for i in 0..n {
-            for t in &players[i].together {
-                if t.count >= TOGETHER_MIN {
-                    if let Some(j) = players.iter().position(|p| p.puuid == t.puuid) {
-                        let (ri, rj) = (find(&mut parent, i), find(&mut parent, j));
-                        parent[ri] = rj;
+            let party_of = |d: &Detail, who: &str| d.players.iter().find(|x| x.puuid == who).map(|x| x.party_id.clone()).filter(|x| !x.is_empty());
+            let mut count = 0u32;
+            for (_, d) in &mine {
+                if let (Some(a), Some(b)) = (party_of(d, &players[i].puuid), party_of(d, &players[j].puuid)) {
+                    if a == b {
+                        count += 1;
                     }
                 }
             }
-        }
-        let mut groups: HashMap<usize, Vec<usize>> = HashMap::new();
-        for i in 0..n {
-            let r = find(&mut parent, i);
-            groups.entry(r).or_default().push(i);
-        }
-        let mut ordered: Vec<Vec<usize>> = groups.into_values().filter(|g| g.len() > 1).collect();
-        ordered.sort_by_key(|g| g[0]);
-        for g in ordered {
-            // Canlı parti kimliği olan oyuncuların etiketi değişmez.
-            if g.iter().any(|&i| players[i].party_sure) {
-                continue;
+            let last_j = history.get(&players[j].puuid).and_then(|(_, h)| h.first().map(|(id, _)| id));
+            let last = match (last_i, last_j) {
+                (Some(a), Some(b)) if a == b => details
+                    .get(a)
+                    .and_then(|d| Some((party_of(d, &players[i].puuid)?, party_of(d, &players[j].puuid)?)))
+                    .is_some_and(|(x, y)| x == y),
+                _ => false,
+            };
+            if count > 0 || last {
+                players[i].together.push(Together { puuid: players[j].puuid.clone(), count, of: mine.len() as u32, last });
             }
-            for i in g {
-                players[i].party = Some((label as char).to_string());
-            }
-            label += 1;
         }
+        players[i].together.sort_by(|a, b| b.last.cmp(&a.last).then(b.count.cmp(&a.count)));
+    }
+    for i in 0..n {
+        let links: Vec<(String, bool)> = players[i].together.iter().filter(|t| t.last || t.count >= TOGETHER_MIN).map(|t| (t.puuid.clone(), t.last)).collect();
+        for (puuid, last) in links {
+            if let Some(j) = players.iter().position(|p| p.puuid == puuid) {
+                let (ri, rj) = (find(&mut parent, i), find(&mut parent, j));
+                parent[ri] = rj;
+                if last {
+                    strong[i] = true;
+                    strong[j] = true;
+                }
+            }
+        }
+    }
+    let mut groups: HashMap<usize, Vec<usize>> = HashMap::new();
+    for i in 0..n {
+        let r = find(&mut parent, i);
+        groups.entry(r).or_default().push(i);
+    }
+    let mut ordered: Vec<Vec<usize>> = groups.into_values().filter(|g| g.len() > 1).collect();
+    ordered.sort_by_key(|g| g[0]);
+    for g in ordered {
+        // Canlı (kesin) parti kimliği olan grupta harf değişmez; o grupta olmayanlar canlı gruba katılır.
+        if let Some(&k) = g.iter().find(|&&i| players[i].party_sure) {
+            let letter = players[k].party.clone();
+            for &i in &g {
+                if !players[i].party_sure {
+                    players[i].party = letter.clone();
+                    players[i].party_src = Some(if strong[i] { "last" } else { "history" }.into());
+                }
+            }
+            continue;
+        }
+        let src = if g.iter().any(|&i| strong[i]) { "last" } else { "history" };
+        for i in g {
+            players[i].party = Some((label as char).to_string());
+            players[i].party_src = Some(src.into());
+        }
+        label += 1;
     }
 }
 
@@ -1654,5 +1705,64 @@ mod tests {
         assert_eq!(r.len(), 2);
         assert_eq!(r[0], RrMatch { map_id: "/Game/Maps/Ascent/Ascent".into(), rr: 21, started: 1700000000000 });
         assert_eq!(r[1].rr, -14);
+    }
+
+    fn pd(puuid: &str, party: &str) -> Pd {
+        Pd { puuid: puuid.into(), party_id: party.into(), ..Default::default() }
+    }
+    fn pl(puuid: &str, team: &str) -> Player {
+        Player { puuid: puuid.into(), team: team.into(), ..Default::default() }
+    }
+
+    #[test]
+    fn parties_from_previous_match_and_history_all_modes() {
+        let now = Instant::now();
+        let mut history = HashMap::new();
+        let h = |ids: &[(&str, &str)]| (now, ids.iter().map(|(a, b)| (a.to_string(), b.to_string())).collect::<Vec<_>>());
+        // a ve b: bir önceki maçları aynı (tam gaz), aynı partide.
+        history.insert("a".to_string(), h(&[("m1", "spikerush"), ("x1", "competitive")]));
+        history.insert("b".to_string(), h(&[("m1", "spikerush")]));
+        // c ve d: önceki maçları farklı, ama eski bir ölüm maçında aynı partideydiler.
+        history.insert("c".to_string(), h(&[("x2", "unrated"), ("m2", "hurm")]));
+        history.insert("d".to_string(), h(&[("x3", "competitive"), ("m2", "hurm")]));
+        // e ve f: aynı önceki maç ama farklı partiler.
+        history.insert("e".to_string(), h(&[("m3", "competitive")]));
+        history.insert("f".to_string(), h(&[("m3", "competitive")]));
+        // g: rakip takımda, a ile aynı partide oynamış olsa da takım farklı.
+        history.insert("g".to_string(), h(&[("m1", "spikerush")]));
+        let mut details = HashMap::new();
+        details.insert("m1".to_string(), Detail { players: vec![pd("a", "P1"), pd("b", "P1"), pd("g", "P1")], ..Default::default() });
+        details.insert("m2".to_string(), Detail { players: vec![pd("c", "P2"), pd("d", "P2")], ..Default::default() });
+        details.insert("m3".to_string(), Detail { players: vec![pd("e", "P3"), pd("f", "P4")], ..Default::default() });
+        let mut players = vec![pl("a", "Blue"), pl("b", "Blue"), pl("c", "Blue"), pl("d", "Blue"), pl("e", "Red"), pl("f", "Red"), pl("g", "Red")];
+        infer_parties(&mut players, &history, &details, b'A');
+        let get = |id: &str| players.iter().find(|p| p.puuid == id).unwrap();
+        assert_eq!(get("a").party, get("b").party);
+        assert_eq!(get("a").party_src.as_deref(), Some("last"));
+        assert_eq!(get("c").party, get("d").party);
+        assert_ne!(get("a").party, get("c").party);
+        assert_eq!(get("c").party_src.as_deref(), Some("history"));
+        assert!(get("e").party.is_none() && get("f").party.is_none());
+        assert!(get("g").party.is_none());
+        assert!(get("a").together.iter().any(|t| t.puuid == "b" && t.last && t.count == 1));
+    }
+
+    #[test]
+    fn live_party_keeps_letter_and_absorbs_previous_match_mate() {
+        let now = Instant::now();
+        let mut history = HashMap::new();
+        history.insert("a".to_string(), (now, vec![("m1".to_string(), "competitive".to_string())]));
+        history.insert("c".to_string(), (now, vec![("m1".to_string(), "competitive".to_string())]));
+        let mut details = HashMap::new();
+        details.insert("m1".to_string(), Detail { players: vec![pd("a", "P"), pd("c", "P")], ..Default::default() });
+        let mut players = vec![pl("a", "Blue"), pl("b", "Blue"), pl("c", "Blue")];
+        for p in players.iter_mut().take(2) {
+            p.party = Some("A".into());
+            p.party_sure = true;
+        }
+        infer_parties(&mut players, &history, &details, b'B');
+        assert_eq!(players[2].party.as_deref(), Some("A"));
+        assert_eq!(players[2].party_src.as_deref(), Some("last"));
+        assert_eq!(players[0].party_src.as_deref(), Some("live"));
     }
 }

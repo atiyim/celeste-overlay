@@ -3,6 +3,11 @@ import { useState } from "react";
 /* Güncellemeden sonra bir kez görünen "neler yeni" kartı. Kapatınca bu sürüm için bir daha çıkmaz. */
 const KEY = "overlay-whatsnew";
 const NOTES: Record<string, string[]> = {
+  "0.7.1": [
+    "Parti bilgisi artık maç sırasında da görünüyor: arkadaş olmayan oyuncular için önceki maç kayıtlarından çıkarılıyor.",
+    "Rekabet, derecesiz, tam gaz, ölüm maçı: bütün modlardaki partiler sayılıyor.",
+    "Parti harfinin üstüne gelince nereden bilindiği yazıyor.",
+  ],
   "0.7.0": [
     "Yeni görünüm: bütün menüler aynı sade düzende, Ayarlar yan menülü.",
     "Lobi özeti: rakipte kaç Operator'cu, kaç kişilik parti ve haritada usta olan var, tek satırda.",

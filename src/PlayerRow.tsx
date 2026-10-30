@@ -8,6 +8,7 @@ import { activityBadge, analyze, formBadge, isComp, modeName, styleBadge } from 
 import type { Player } from "./types";
 import { NameLine } from "./ui";
 import { gunBadge, mapBadge } from "./insights";
+import { partyInfo } from "./party";
 
 interface Props {
   p: Player;
@@ -23,6 +24,7 @@ interface Props {
   onTracker: (url: string) => void;
   mapId?: string | null;
   mapName?: string;
+  lobby: Player[];
 }
 
 // Satırda kaplaması gösterilecek silahlar (kimlikle bulunur, olmazsa isim/kategoriyle).
@@ -33,7 +35,7 @@ const THUMBS = [
   { id: "2f59173c-4bed-b6c3-2191-dea9b58be9c7", name: "Melee", category: "Melee" },
 ];
 
-export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker, mapId, mapName }: Props) {
+export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker, mapId, mapName, lobby }: Props) {
   const agent = assets.agents.get(lookup(p.agentId));
   const cur = assets.tiers.get(p.rank.current);
   const peak = assets.tiers.get(p.rank.peak);
@@ -154,8 +156,8 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
         <div>
           {p.party ? (
             <span
-              className={p.partySure ? "p" : "p soft"}
-              title={p.partySure ? "Aynı partide (Riot verisi)" : "Son rekabet maçlarında sık birlikte girdiler (şu an aynı partide olduklarının kanıtı değil)"}
+              className={partyInfo(p, lobby).soft ? "p soft" : "p"}
+              title={partyInfo(p, lobby).tip}
             >{p.party}</span>
           ) : null}
         </div>
