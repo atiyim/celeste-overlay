@@ -90,6 +90,41 @@ fn obs_push(data: serde_json::Value) {
     obs::push(data.to_string());
 }
 
+/// Maç kartı: PNG baytları ham gövde olarak gelir, panoya resim olarak kopyalanır.
+#[tauri::command]
+fn card_copy(app: AppHandle, request: tauri::ipc::Request<'_>) -> Result<(), String> {
+    use tauri_plugin_clipboard_manager::ClipboardExt;
+    let tauri::ipc::InvokeBody::Raw(png) = request.body() else { return Err("Görsel gelmedi.".into()) };
+    let img = tauri::image::Image::from_bytes(png).map_err(|e| e.to_string())?;
+    app.clipboard().write_image(&img).map_err(|e| e.to_string())
+}
+
+/// Maç kartı: Resimler/Celeste Overlay klasörüne kaydeder ve klasörde gösterir. Dosya yolunu döner.
+#[tauri::command]
+fn card_save(app: AppHandle, request: tauri::ipc::Request<'_>) -> Result<String, String> {
+    use tauri_plugin_opener::OpenerExt;
+    let tauri::ipc::InvokeBody::Raw(png) = request.body() else { return Err("Görsel gelmedi.".into()) };
+    if png.len() < 8 || &png[1..4] != b"PNG" {
+        return Err("Geçersiz görsel.".into());
+    }
+    let dir = app.path().picture_dir().map_err(|e| e.to_string())?.join("Celeste Overlay");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let name: String = request
+        .headers()
+        .get("x-name")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("mac-karti")
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || *c == '-')
+        .take(60)
+        .collect();
+    let name = if name.is_empty() { "mac-karti".to_string() } else { name };
+    let path = dir.join(format!("{name}.png"));
+    std::fs::write(&path, png).map_err(|e| e.to_string())?;
+    let _ = app.opener().reveal_item_in_dir(&path);
+    Ok(path.display().to_string())
+}
+
 /// F2 kısayolu şu an bu uygulamaya kayıtlı mı? (Başka bir program tutuyorsa false.)
 #[tauri::command]
 fn hotkey_ok(app: AppHandle) -> bool {
@@ -163,7 +198,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState { engine: Arc::new(Engine::new()) })
-        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note, hotkey_ok, get_riot_id, verify_install, obs_set, obs_push])
+        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note, hotkey_ok, get_riot_id, verify_install, obs_set, obs_push, card_copy, card_save])
         .setup(move |app| {
             // F2 başka bir uygulamada kayıtlıysa uygulama yine açılır, tepsi simgesi çalışmaya devam eder.
             if let Err(e) = app.global_shortcut().register(f2) {

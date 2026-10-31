@@ -11,6 +11,9 @@ const NOTES: Record<string, string[]> = {
     "OBS kaynağı: yayında rankın ve seansın görünsün (Ayarlar › Overlay › Yayın).",
     "S.S.S & Panel sekmeli ve ekrana sığıyor; Bu kurulumu doğrula düğmesi.",
     "Öneri / Hata gönderdiysen ekibin durum ve mesajları uygulamada görünür.",
+    "Ajanlar sütunu: herkesin son maçlarda oynadığı 3 ajan; Main / Alışık değil rozeti.",
+    "İstatistik › Act hedefi: hedef ranka kalan RR ve tahmini galibiyet.",
+    "Maç kartı: maçını Discord'a ya da hikâyeye atmak için görsel (Kopyala / Kaydet).",
   ],
 
   "0.7.0": [

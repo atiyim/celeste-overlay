@@ -117,3 +117,54 @@ export function mmrBadge(p: Player, tierName?: (t: number) => string | undefined
   ].filter(Boolean).join(" ");
   return s.diff > 0 ? { text: "MMR ↑", tone: "pos", tip } : { text: "MMR ↓", tone: "neg", tip };
 }
+
+/* ---------- Ajan havuzu ---------- */
+
+/** Havuz için gereken en az maç (ajanı bilinen). */
+export const POOL_MIN = 3;
+/** "Main" / "Alışık değil" etiketi için gereken en az maç. */
+export const POOL_TAG_MIN = 5;
+
+export interface Pool { n: number; top: { agentId: string; count: number }[]; counts: Map<string, number> }
+
+/** Son maçlarında oynadığı ajanlar (bütün modlar). Ayrıntı açıldıysa daha uzun geçmiş kullanılır. */
+export function agentPool(p: Player): Pool | null {
+  const src = p.deep && p.deep.length > p.form.length ? p.deep : p.form;
+  const list = src.filter((f) => !!f.agentId);
+  if (list.length < POOL_MIN) return null;
+  const counts = new Map<string, number>();
+  for (const f of list) { const id = (f.agentId as string).toLowerCase(); counts.set(id, (counts.get(id) ?? 0) + 1); }
+  const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([agentId, count]) => ({ agentId, count }));
+  return { n: list.length, top, counts };
+}
+
+/** Şu anki ajanı mainiyse ya da hiç oynamadığı bir ajansa etiket. */
+export function poolBadge(p: Player, agentName?: string): Badge | null {
+  if (!p.agentId || p.isSelf) return null;
+  const pool = agentPool(p);
+  if (!pool || pool.n < POOL_TAG_MIN) return null;
+  const c = pool.counts.get(p.agentId.toLowerCase()) ?? 0;
+  const name = agentName ?? "Bu ajan";
+  if (c / pool.n >= 0.5) return { text: "Main", tone: "gold", tip: `${name}: son ${pool.n} maçının ${c} tanesinde oynadı. Bu ajanı iyi biliyor.` };
+  if (c === 0) return { text: "Alışık değil", tone: "gray", tip: `${name}: son ${pool.n} maçında bu ajanla hiç oynamamış.` };
+  return null;
+}
+
+/* ---------- Act hedefi ---------- */
+
+/** Hedef seçilebilen en yüksek rank: Ölümsüzlük 1 (üstünde RR sınırları bölgeye göre değişir). */
+export const GOAL_MAX_TIER = 24;
+export const points = (tier: number, rr: number) => tier * 100 + rr;
+
+export interface GoalEta { left: number; wins: number | null; games: number | null; wr: number }
+
+/** Hedefe kalan RR ve son rekabet maçlarındaki RR'a göre tahmin. */
+export function goalEta(tier: number, rr: number, target: number, deltas: number[]): GoalEta | null {
+  if (tier < 3 || tier >= GOAL_MAX_TIER || target <= tier) return null;
+  const left = points(target, 0) - points(tier, rr);
+  const s = rrStats(deltas);
+  if (!s) return { left, wins: null, games: null, wr: 0 };
+  const wr = s.wins / (s.wins + s.losses);
+  const net = wr * s.gain - (1 - wr) * s.loss;
+  return { left, wins: Math.ceil(left / s.gain), games: net > 0.5 ? Math.ceil(left / net) : null, wr };
+}

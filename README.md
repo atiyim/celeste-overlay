@@ -58,6 +58,7 @@ Ajan seçiminde ve maç sırasında herkes tek tabloda:
 - **Kaplamalar.** Silah başına kaplama görselleri. Görselin altındaki renkli çizgi kaplamanın nadirliğini gösterir (Select, Deluxe, Premium, Ultra, Exclusive); en nadir üçü ayrıca hafifçe parlar.
 - **Lobi özeti.** Tablonun üstünde tek satır: rakipte ve takımında kaç Operator'cu, Sheriff'çi, haritada usta/zayıf oyuncu ve kaç kişilik parti olduğu.
 - **Parti.** Aynı partideki oyuncular aynı harfi alır (A, B…). Arkadaşların için Riot Client'tan (kesin); diğer oyuncular için önceki maç kayıtlarından: bir önceki maçlarını ya da son maçlarını aynı partide oynayıp şimdi aynı takımdalarsa (bütün modlar: rekabet, derecesiz, tam gaz, ölüm maçı...). Harfin üstüne gelince kaynağı yazar.
+- **Ajanlar.** Son maçlarında (bütün modlar, en çok 10; ayrıntısı açıldıysa daha fazla) en çok oynadığı 3 ajan ve kaçar maç. Ajan seçiminde takım arkadaşların, yükleme ekranından itibaren rakipler de görünür (Riot rakipleri ajan seçiminde vermez). Şu anki ajanı son maçlarının en az yarısındaysa **Main**, hiç oynamadığı bir ajansa **Alışık değil** rozeti çıkar (en az 5 maç gerekir).
 - **Rozetler.** Yalnızca ölçülen değerlere göre: Operator'cu / Sheriff'çi (satın aldığı silahlar), Haritada usta / zayıf (bu haritadaki RR), MMR ↑ / ↓ (kazanınca ve kaybedince alınan ortalama RR), Kafa avcısı, Yüksek hasar, Öncü, İlk ölen, Düşük HS, Formda, Düşüşte. Üstüne gelince hesap ve maç sayısı yazar.
 - **MMR göstergesi.** Gizli MMR'ı Riot vermez; uygulama son 20 rekabet maçında kazanınca ve kaybedince ortalama kaç RR alındığını gösterir. Kazanılan belirgin fazlaysa MMR rankın üstündedir. Oyuncu ayrıntısında ve İstatistik'te sonraki ranka yaklaşık kaç galibiyet kaldığı ve bir mağlubiyette düşme ihtimali de yazar.
 - **Takım karşılaştırması.** Her takımın ortalama ranki ve K/D'si.
@@ -69,6 +70,12 @@ Ajan seçiminde ve maç sırasında herkes tek tabloda:
 ### İstatistik › Round analizi ve Haritalar
 
 Kendi maçların (rekabet, derecesiz, Premier) round round: saldırı ve savunmada round kazanma oranı, tarafa göre ilk kan / ilk ölüm, ölümlerinin 5 saniye içinde takaslanma oranı ve aldığın intikamlar, clutch (1vX), KAST, 3+ öldürmeli round'lar, spike kurma/çözme ve alım türüne göre (tabanca, eko, yarım, tam) round kazanma. Haritalar sekmesinde harita başına galibiyet, saldırı/savunma round oranı ve K/D.
+
+### İstatistik › Act hedefi ve maç kartı
+
+**Act hedefi:** hedef rankı seç (Ölümsüzlük 1'e kadar); kalan RR, hedefi seçtiğinden beri ilerleme çubuğu ve son rekabet maçlarındaki ortalama RR'ına göre yaklaşık kaç galibiyet / maç gerektiği görünür. Tahmindir.
+
+**Maç kartı:** Son maçlar listesinden bir maçın kartını oluştur: harita, ajan, skor, K/D/A, ACS, RR, rank ve öne çıkanlar (clutch, ilk kan, KAST). Yatay (Discord) ya da Hikâye (Instagram) biçimi; **Kopyala** panoya resim olarak koyar, **Kaydet** Resimler › Celeste Overlay klasörüne PNG kaydeder. Riot ID'nin görünmesi kapatılabilir. Kart yalnızca bu bilgisayarda oluşturulur, hiçbir yere gönderilmez.
 
 ### OBS kaynağı
 

@@ -500,7 +500,7 @@ export function App() {
         ) : view === "account" ? (
           assets ? <AccountPanel assets={assets} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "stats" ? (
-          assets ? <StatsPanel assets={assets} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
+          assets ? <StatsPanel assets={assets} onToast={showToast} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "cross" ? (
           <Crosshairs onCopy={copyName} onClose={() => setView("roster")} />
         ) : view === "trust" ? (

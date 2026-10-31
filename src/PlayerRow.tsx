@@ -7,7 +7,7 @@ import { tierColor } from "./LoadoutPanel";
 import { activityBadge, analyze, formBadge, isComp, modeName, styleBadge } from "./playstyle";
 import type { Player } from "./types";
 import { NameLine } from "./ui";
-import { gunBadge, mapBadge, mmrBadge } from "./insights";
+import { agentPool, gunBadge, mapBadge, mmrBadge, poolBadge } from "./insights";
 import { partyInfo } from "./party";
 
 interface Props {
@@ -80,7 +80,8 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
 
   const play = analyze(p);
   // Satır sade kalsın: en önemli iki rozet. Önce maç içinde işe yarayanlar (silah alışkanlığı, bu harita).
-  const badges = [gunBadge(p), mapBadge(p, mapId, mapName), mmrBadge(p, (t) => assets.tiers.get(t)?.name), formBadge(p), styleBadge(play, th), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 2);
+  const pool = agentPool(p);
+  const badges = [poolBadge(p, agent?.name), gunBadge(p), mapBadge(p, mapId, mapName), mmrBadge(p, (t) => assets.tiers.get(t)?.name), formBadge(p), styleBadge(play, th), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 2);
 
   const stop = (fn: () => void) => (e: MouseEvent) => { e.stopPropagation(); fn(); };
   const key = (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };
@@ -160,6 +161,20 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
               title={partyInfo(p, lobby).tip}
             >{p.party}</span>
           ) : null}
+        </div>
+      )}
+      {cols.pool && (
+        <div className="pool" title={pool ? `Son ${pool.n} maçında oynadığı ajanlar (bütün modlar)` : undefined}>
+          {pool ? pool.top.map((a) => {
+            const ag = assets.agents.get(lookup(a.agentId));
+            const now = !!p.agentId && lookup(p.agentId) === lookup(a.agentId);
+            return (
+              <span key={a.agentId} className={now ? "pa now" : "pa"} title={`${ag?.name ?? "?"}: ${pool.n} maçın ${a.count} tanesi`}>
+                {ag ? <img src={ag.icon} alt={ag.name} loading="lazy" /> : <i />}
+                <small>{a.count}</small>
+              </span>
+            );
+          }) : <span className="d">{p.formLoading ? "…" : "–"}</span>}
         </div>
       )}
       {cols.badges && (

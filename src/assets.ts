@@ -32,7 +32,7 @@ async function invalidateOnNewVersion() {
 }
 
 export interface Img { name: string; icon: string }
-export interface AgentInfo extends Img { role?: string; roleIcon?: string }
+export interface AgentInfo extends Img { role?: string; roleIcon?: string; portrait?: string }
 /* Rekabet act'i: "V25 · ACT 2" gibi ad (varsa) ve başlangıç/bitiş zamanı (ms). */
 export interface SeasonInfo { name: string; start: number; end: number }
 export interface Tier { name: string; icon: string; color: string }
@@ -58,6 +58,8 @@ export interface Assets {
   titles: Map<string, string>;
   tiers: Map<number, Tier>;
   maps: Map<string, string>;
+  /** Harita kimliği (mapUrl) → geniş görsel (maç kartı için). */
+  mapArt: Map<string, string>;
   mapList: MapInfo[]; // yalnızca rekabet haritaları (minimap'i olanlar)
   skinMeta: Map<string, SkinMeta>; // yalnızca ana kaplama kimliği
   levelToSkin: Map<string, string>; // seviye ve chroma kimliği → ana kaplama kimliği
@@ -85,13 +87,13 @@ export async function loadAssets(): Promise<Assets> {
 
   const a: Assets = {
     agents: new Map(), seasons: new Map(), weapons: [], skins: new Map(), chromas: new Map(), charms: new Map(),
-    sprays: new Map(), flex: new Map(), cards: new Map(), titles: new Map(), tiers: new Map(), maps: new Map(), mapList: [],
+    sprays: new Map(), flex: new Map(), cards: new Map(), titles: new Map(), tiers: new Map(), maps: new Map(), mapArt: new Map(), mapList: [],
     skinMeta: new Map(), levelToSkin: new Map(), contentTiers: new Map(),
   };
   const TIER_RANK: Record<string, number> = { Select: 1, Deluxe: 2, Premium: 3, Ultra: 4, Exclusive: 5 };
   for (const t of ctiers ?? []) a.contentTiers.set(k(t.uuid), { name: t.displayName, color: `#${String(t.highlightColor ?? "888888").slice(0, 6)}`, rank: TIER_RANK[t.devName] ?? 0 });
 
-  for (const x of agents) a.agents.set(k(x.uuid), { name: x.displayName, icon: x.displayIcon, role: x.role?.displayName, roleIcon: x.role?.displayIcon });
+  for (const x of agents) a.agents.set(k(x.uuid), { name: x.displayName, icon: x.displayIcon, role: x.role?.displayName, roleIcon: x.role?.displayIcon, portrait: x.fullPortrait ?? x.bustPortrait ?? undefined });
 
   /* Act adı: bağlı olduğu bölümle birlikte ("EPISODE 9 · ACT 2"). Ad gelmezse arayüz tarihe döner. */
   const seasonById = new Map<string, any>((seasons ?? []).map((s: any) => [k(s.uuid), s]));
@@ -142,6 +144,7 @@ export async function loadAssets(): Promise<Assets> {
   }
   for (const m of maps) {
     a.maps.set(k(m.mapUrl), m.displayName);
+    if (m.splash || m.listViewIcon) a.mapArt.set(k(m.mapUrl), m.splash ?? m.listViewIcon);
     if (!m.displayIcon || !m.tacticalDescription) continue; // ölüm maçı, eğitim vb. hariç
     const callouts: Callout[] = [];
     for (const c of m.callouts ?? []) {

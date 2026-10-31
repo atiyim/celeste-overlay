@@ -6,6 +6,9 @@ import type { MyStats } from "./types";
 import { Empty, PanelHead } from "./ui";
 import { MapsView, RoundsView } from "./RoundsView";
 import { MMR_GAP, derankRisk, nextRank, rrStats } from "./insights";
+import { Goal } from "./Goal";
+import { MatchCard } from "./MatchCard";
+import type { MyMatch } from "./types";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -18,11 +21,12 @@ function ago(ms: number): string {
   return `${Math.floor(m / 1440)}g`;
 }
 
-export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () => void }) {
+export function StatsPanel({ assets, onClose, onToast }: { assets: Assets; onClose: () => void; onToast: (t: string) => void }) {
   const [data, setData] = useState<MyStats | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<"sum" | "rounds" | "maps">("sum");
+  const [card, setCard] = useState<MyMatch | null>(null);
 
   const load = useCallback(async () => {
     if (!inTauri) { setErr("İstatistikler yalnızca masaüstü uygulamasında çalışır."); return; }
@@ -97,6 +101,7 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
                 </div>
               );
             })()}
+            <Goal assets={assets} tier={data.rank.current} rr={data.rank.rr} deltas={data.matches.filter((m) => m.queue === "competitive" && m.rrDelta != null).map((m) => m.rrDelta as number)} />
             <h3 className="h2">Ajanlar</h3>
             <div className="box pad">
             <div className="ag hd2"><span /><span>Ajan</span><span className="num">Maç</span><span className="num">Galibiyet</span><span className="num">K/D</span></div>
@@ -115,9 +120,9 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
             </div>
           </div>
           <div>
-            <h3 className="h2">Son maçlar</h3>
+            <h3 className="h2 hrow">Son maçlar<button className="x" type="button" onClick={() => setCard(data.matches[0])}>Son maçın kartı</button></h3>
             <div className="box pad">
-            <div className="mm hd2"><span /><span>Harita</span><span>Ajan</span><span className="num">K / D / A</span><span className="num">ACS</span><span className="num">RR</span><span className="num">Önce</span></div>
+            <div className="mm hd2"><span /><span>Harita</span><span>Ajan</span><span className="num">K / D / A</span><span className="num">ACS</span><span className="num">RR</span><span className="num">Önce</span><span /></div>
             {data.matches.slice(0, 10).map((m) => {
               const ag = assets.agents.get(lookup(m.agentId));
               return (
@@ -129,6 +134,9 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
                   <span className="num d">{m.acs}</span>
                   <span className={m.rrDelta == null ? "num d" : m.rrDelta >= 0 ? "num pos" : "num neg"}>{m.rrDelta == null ? "–" : `${m.rrDelta > 0 ? "+" : ""}${m.rrDelta}`}</span>
                   <span className="num d">{ago(m.started)}</span>
+                  <button className="mcbtn" type="button" title="Bu maçın kartını oluştur" aria-label="Bu maçın kartını oluştur" onClick={() => setCard(m)}>
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"><rect x="2" y="3" width="12" height="10" rx="2" /><path d="M2 10.5l3.5-3 3 2.5 2-1.5L14 11" /></svg>
+                  </button>
                 </div>
               );
             })}
@@ -136,6 +144,7 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
           </div>
         </div>
       )}
+      {card && <MatchCard m={card} assets={assets} onToast={onToast} onClose={() => setCard(null)} />}
     </div>
   );
 }

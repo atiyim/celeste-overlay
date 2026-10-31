@@ -900,3 +900,37 @@ html:has(body.web) { overflow-y: auto; }
 .ebar i { display: block; height: 100%; background: var(--teal); }
 @media (max-width: 780px) { .rgrid { grid-template-columns: minmax(0, 1fr); } }
 .obsurl { font-family: "Geist Mono Variable", ui-monospace, monospace; font-size: 12.5px; font-weight: 500; color: var(--accent); }
+
+/* ---------- 0.7.1: ajan havuzu ---------- */
+.pool { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.pa { position: relative; display: inline-flex; align-items: flex-end; }
+.pa img, .pa i { width: 22px; height: 22px; border-radius: 5px; background: rgba(255,255,255,.05); display: block; opacity: .8; }
+.pa small { position: absolute; right: -4px; bottom: -3px; min-width: 12px; padding: 0 2px; font-size: 9px; line-height: 12px; text-align: center; font-weight: 600; color: var(--fg); background: var(--s2); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
+.pa.now img { opacity: 1; outline: 1.5px solid var(--gold); outline-offset: 1px; }
+.mm { grid-template-columns: 24px minmax(0, 1fr) 84px 76px 38px 38px 34px 22px; }
+.mcbtn { width: 22px; height: 22px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--fg-3); cursor: pointer; }
+.mcbtn:hover, .mcbtn:focus-visible { color: var(--fg); background: rgba(255,255,255,.06); }
+.h2.hrow { align-items: center; }
+.h2.hrow .x { font-size: 11px; padding: 2px 8px; }
+
+/* ---------- 0.7.1: act hedefi ---------- */
+.goal { margin-top: 8px; }
+.goal .glh { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; font-size: 12px; color: var(--fg-2); }
+.goal .glh b { font-weight: 600; }
+.goal .glm { display: flex; gap: 12px; align-items: center; }
+.goal .glm img { width: 40px; height: 40px; flex: none; }
+.goal .glt { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; font-size: 13px; }
+.goal .glt small { font-size: 11.5px; line-height: 1.45; }
+.gbar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.gbar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width .4s ease; }
+.goal p.d { margin: 0; font-size: 12px; line-height: 1.5; }
+
+/* ---------- 0.7.1: maç kartı ---------- */
+.panel { position: relative; }
+.mcard { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; background: var(--s1); border-radius: inherit; }
+.mcbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+.mcbar .sp { flex: 1; }
+.mcname { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-2); cursor: pointer; }
+.mcview { position: relative; flex: 1; min-height: 240px; display: flex; align-items: center; justify-content: center; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; overflow: hidden; }
+.mcview canvas { position: absolute; inset: 10px; width: calc(100% - 20px); height: calc(100% - 20px); object-fit: contain; }
+.mcard > small { font-size: 11.5px; }

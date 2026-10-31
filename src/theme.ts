@@ -1,7 +1,7 @@
 import { DEFAULT_TILT, TILT_HOURS, TILT_LOSSES, TILT_RR, type TiltCfg } from "./tilt";
 
 /* Kullanıcı ayarları (görünüm, taraf bilgisi, otomatik gizleme, sütunlar). Yalnızca bu bilgisayarda saklanır. */
-export type ColId = "rank" | "peak" | "wr" | "form" | "skins" | "party" | "badges" | "tracker";
+export type ColId = "rank" | "peak" | "wr" | "form" | "skins" | "party" | "pool" | "badges" | "tracker";
 export interface ColDef { id: ColId; label: string; px: number }
 
 // "Oyuncu" sütunu her zaman açıktır ve kalan genişliği alır.
@@ -12,6 +12,7 @@ export const COLS: ColDef[] = [
   { id: "form", label: "Son maçlar", px: 120 },
   { id: "skins", label: "Kaplamalar", px: 172 },
   { id: "party", label: "Parti", px: 28 },
+  { id: "pool", label: "Ajanlar", px: 100 },
   { id: "badges", label: "Rozetler", px: 190 },
   { id: "tracker", label: "Tracker düğmesi", px: 56 },
 ];
