@@ -11,6 +11,9 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
+      # Derleme kanıtı (attestation): GitHub, kurulum dosyasının bu depodaki koddan bu iş akışıyla derlendiğini imzalar.
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -44,3 +47,44 @@ jobs:
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
+
+      # Kurulum dosyasının parmak izi (SHA256) ve GitHub'ın derleme kanıtı.
+      # Doğrulama: PowerShell'de Get-FileHash <dosya>  ·  gh attestation verify <dosya> -R ${{ github.repository }}
+      - name: Parmak izi
+        id: hash
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd src-tauri/target/release/bundle/nsis
+          ls -1 *.exe
+          # GitHub, yüklenen dosya adındaki boşlukları noktaya çevirir; liste indirilen adla yazılır.
+          : > "$GITHUB_WORKSPACE/SHA256SUMS.txt"
+          for f in *.exe; do
+            h=$(sha256sum "$f" | cut -d' ' -f1 | tr 'a-f' 'A-F')
+            echo "$h  ${f// /.}" >> "$GITHUB_WORKSPACE/SHA256SUMS.txt"
+          done
+          cat "$GITHUB_WORKSPACE/SHA256SUMS.txt"
+          {
+            echo "### Parmak izi (SHA256)"
+            echo '```'
+            cat "$GITHUB_WORKSPACE/SHA256SUMS.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Derleme kanıtı
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "src-tauri/target/release/bundle/nsis/*.exe"
+      - name: Parmak izini sürüme ekle
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${{ github.ref_name }}"
+          gh release upload "$tag" SHA256SUMS.txt --clobber
+          body=$(gh release view "$tag" --json body -q .body)
+          case "$body" in *"## Doğrulama"*) exit 0 ;; esac
+          file=$(head -n1 SHA256SUMS.txt | cut -d' ' -f3-)
+          hash=$(head -n1 SHA256SUMS.txt | cut -d' ' -f1)
+          printf '%s\n\n## Doğrulama\n\nKurulum dosyası GitHub'"'"'ın sunucularında, bu depodaki açık koddan derlendi ve GitHub tarafından mühürlendi.\n\n**SHA256:** `%s`\n\nİndirdiğin dosyayı kontrol et (PowerShell):\n```\nGet-FileHash .\\%s\n```\nÇıkan değer yukarıdakiyle aynıysa dosya birebir aynıdır.\n\nGitHub mührünü kontrol et ([GitHub CLI](https://cli.github.com) ile):\n```\ngh attestation verify %s -R ${{ github.repository }}\n```\n' "$body" "$hash" "$file" "$file" > notes.md
+          gh release edit "$tag" --notes-file notes.md
