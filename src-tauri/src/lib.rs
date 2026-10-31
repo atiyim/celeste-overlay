@@ -1,3 +1,4 @@
+mod obs;
 use riot_core::netlog::{self, NetReport};
 use riot_core::{Account, Engine, HealthEntry, MatchReport, MyStats, PremierTeam, Snapshot, Store};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -77,6 +78,18 @@ async fn verify_install(app: AppHandle) -> Result<riot_core::verify::InstallChec
     riot_core::verify::check_install("atiyim/celeste-overlay", &version).await
 }
 
+/// OBS tarayıcı kaynağını açar/kapatır; adresi döner.
+#[tauri::command]
+fn obs_set(enabled: bool) -> Result<String, String> {
+    obs::set(enabled)
+}
+
+/// OBS sayfasının göstereceği son durum (rank, RR, bu seans).
+#[tauri::command]
+fn obs_push(data: serde_json::Value) {
+    obs::push(data.to_string());
+}
+
 /// F2 kısayolu şu an bu uygulamaya kayıtlı mı? (Başka bir program tutuyorsa false.)
 #[tauri::command]
 fn hotkey_ok(app: AppHandle) -> bool {
@@ -150,7 +163,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState { engine: Arc::new(Engine::new()) })
-        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note, hotkey_ok, get_riot_id, verify_install])
+        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note, hotkey_ok, get_riot_id, verify_install, obs_set, obs_push])
         .setup(move |app| {
             // F2 başka bir uygulamada kayıtlıysa uygulama yine açılır, tepsi simgesi çalışmaya devam eder.
             if let Err(e) = app.global_shortcut().register(f2) {

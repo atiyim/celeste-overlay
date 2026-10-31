@@ -4,12 +4,15 @@ import { useState } from "react";
 const KEY = "overlay-whatsnew";
 const NOTES: Record<string, string[]> = {
   "0.7.1": [
-    "Parti bilgisi artık maç sırasında da görünüyor: arkadaş olmayan oyuncular için önceki maç kayıtlarından çıkarılıyor.",
-    "Rekabet, derecesiz, tam gaz, ölüm maçı: bütün modlardaki partiler sayılıyor.",
-    "Parti harfinin üstüne gelince nereden bilindiği yazıyor.",
-    "MMR göstergesi: kazanınca ve kaybedince alınan RR'dan MMR ↑ / ↓ ve sonraki ranka kaç galibiyet kaldığı.",
-    "S.S.S & Panel › Bu kurulumu doğrula: dosyanın GitHub'daki açık koddan derlenenle aynı olduğunu tek tıkla gör.",
+    "Parti artık maç sırasında da görünüyor; bütün modlardaki önceki maç kayıtlarından çıkarılıyor.",
+    "MMR göstergesi: MMR ↑ / ↓ rozeti ve sonraki ranka kaç galibiyet kaldığı.",
+    "İstatistik › Round analizi: saldırı/savunma, ilk kan, takas, clutch, KAST ve alım türüne göre round.",
+    "İstatistik › Haritalar: haritalarındaki galibiyet ve saldırı/savunma oranların.",
+    "OBS kaynağı: yayında rankın ve seansın görünsün (Ayarlar › Overlay › Yayın).",
+    "S.S.S & Panel sekmeli ve ekrana sığıyor; Bu kurulumu doğrula düğmesi.",
+    "Öneri / Hata gönderdiysen ekibin durum ve mesajları uygulamada görünür.",
   ],
+
   "0.7.0": [
     "Yeni görünüm: bütün menüler aynı sade düzende, Ayarlar yan menülü.",
     "Lobi özeti: rakipte kaç Operator'cu, kaç kişilik parti ve haritada usta olan var, tek satırda.",

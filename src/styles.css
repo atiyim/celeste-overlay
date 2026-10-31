@@ -861,3 +861,42 @@ html:has(body.web) { overflow-y: auto; }
 .verify.bad { border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); }
 .vhash { display: flex; align-items: center; gap: 10px; margin: 0; padding: 0 14px 12px; font-size: 11px; color: var(--fg-3); }
 .vhash code { font-family: "Geist Mono Variable", ui-monospace, monospace; font-size: 11px; color: var(--fg-2); word-break: break-all; }
+
+/* ---------- S.S.S & Panel: sekmeli, ekrana sığan düzen ---------- */
+.trust .ph .t { font-size: 17px; }
+.tbody { display: flex; flex-direction: column; gap: 10px; }
+.tdot { width: 6px; height: 6px; margin-left: 7px; border-radius: 50%; background: var(--win); animation: pulse 1.6s ease-in-out infinite; }
+.tdot.off { background: var(--fg-3); animation: none; }
+.faq2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; align-items: start; }
+.fq2 { border: 1px solid var(--line); border-radius: var(--r); background: var(--box); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035); transition: border-color .15s; }
+.fq2.on { border-color: color-mix(in srgb, var(--violet) 45%, var(--line)); }
+.fq2 > button { all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 40px; padding: 0 14px; font-size: 13px; font-weight: 500; color: var(--fg); cursor: pointer; }
+.fq2 > button:hover { color: #fff; }
+.fq2 > button:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: var(--r); }
+.fq2 .chev { width: 7px; height: 7px; flex: none; border-right: 1.5px solid var(--fg-3); border-bottom: 1.5px solid var(--fg-3); transform: rotate(45deg); margin-top: -3px; transition: transform .18s; }
+.fq2.on .chev { transform: rotate(-135deg); margin-top: 3px; border-color: var(--violet); }
+.fq2 > p { margin: 0; padding: 0 14px 12px; font-size: 12px; line-height: 1.6; color: var(--fg-2); }
+.lhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lhead .m { display: inline-flex; align-items: center; gap: 8px; }
+.trust .nstats { margin: 0; }
+.trust .nstats > div { padding: 8px 12px; }
+.trust .nstats b { font-size: 17px; }
+.trust .feed { max-height: 248px; }
+.trust .ngrid .h2 { margin-top: 2px; }
+.trust .big { font-size: 18px; margin: 0; }
+@media (max-width: 780px) { .faq2 { grid-template-columns: minmax(0, 1fr); } .trust .nstats { grid-template-columns: repeat(3, 1fr); } }
+.notice .nt { gap: 6px; }
+.notice .nrow { display: flex; flex-direction: column; gap: 1px; }
+.notice .nrow + .nrow { padding-top: 6px; border-top: 1px solid var(--line-soft); }
+
+/* ---------- round analizi ve haritalar ---------- */
+.kpis.rk6 { grid-template-columns: repeat(4, 1fr); }
+.kpis.rk6 div b { color: var(--fg); }
+.rgrid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; align-items: start; }
+.tr.rrow { grid-template-columns: minmax(0, 1.2fr) 70px 80px 110px; }
+.tr.rrow2 { grid-template-columns: minmax(0, 1fr) auto; }
+.tr.mrow { grid-template-columns: minmax(0, 1.3fr) 50px 80px 80px 80px 60px; }
+.ebar { display: inline-block; width: 44px; height: 4px; margin-right: 8px; vertical-align: middle; border-radius: 2px; background: var(--s2); overflow: hidden; }
+.ebar i { display: block; height: 100%; background: var(--teal); }
+@media (max-width: 780px) { .rgrid { grid-template-columns: minmax(0, 1fr); } }
+.obsurl { font-family: "Geist Mono Variable", ui-monospace, monospace; font-size: 12.5px; font-weight: 500; color: var(--accent); }

@@ -47,7 +47,7 @@ export function useUsagePing(version: string) {
    İstek yalnızca cihazın rastgele kimliğini taşır; gelen haber bir kez gösterilir ve sunucudan silinir. */
 export const SENT_KEY = "overlay-feedback-sent";
 export const markFeedbackSent = () => { try { localStorage.setItem(SENT_KEY, String(Date.now())); } catch { /* depolama kapalı */ } };
-export interface Notice { kind: "oneri" | "hata"; at: number }
+export interface Notice { kind: "oneri" | "hata"; status?: "ele" | "plan" | "ekl" | "yok"; message?: string; at: number }
 
 export function useNotices(): [Notice[], () => void] {
   const [list, setList] = useState<Notice[]>([]);
@@ -63,7 +63,7 @@ export function useNotices(): [Notice[], () => void] {
         const r = await tfetch(`${SITE}/api/overlay/notices?id=${id}`);
         if (!r.ok) return;
         const got = (await r.json()) as Notice[];
-        if (Array.isArray(got) && got.length) setList((l) => [...l, ...got.filter((n) => n.kind === "oneri" || n.kind === "hata")]);
+        if (Array.isArray(got) && got.length) setList((l) => [...l, ...got.filter((n) => n.kind === "oneri" || n.kind === "hata").map((n) => ({ ...n, message: typeof n.message === "string" ? n.message.slice(0, 300) : "" }))]);
       } catch { /* sonraki turda */ }
     };
     const t0 = window.setTimeout(ask, 20_000);

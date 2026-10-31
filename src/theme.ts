@@ -37,6 +37,8 @@ export interface Theme {
   tilt: TiltCfg;
   /** FPS modu: animasyonlar kapanır, maçta hemen gizlenir, gizliyken denetimler seyrekleşir. */
   fps: boolean;
+  /** OBS tarayıcı kaynağı (yalnızca bu bilgisayardan erişilir). */
+  obs: boolean;
 }
 
 const ALL_ON = Object.fromEntries(COLS.map((c) => [c.id, true])) as Record<ColId, boolean>;
@@ -51,6 +53,7 @@ export const DEFAULT_THEME: Theme = {
   th: DEFAULT_TH,
   tilt: DEFAULT_TILT,
   fps: false,
+  obs: false,
 };
 export const ACCENTS = ["#38bdf8", "#a78bfa", "#34d399", "#fbbf24", "#fb7185", "#ededed"];
 export const HIDE_AFTER_OPTIONS = [5, 10, 15, 30];
@@ -86,6 +89,7 @@ export function loadTheme(): Theme {
         hours: TILT_HOURS.includes((t.tilt as Partial<TiltCfg> | undefined)?.hours as number) ? (t.tilt as TiltCfg).hours : DEFAULT_TILT.hours,
       },
       fps: t.fps === true,
+      obs: t.obs === true,
     };
   } catch { return DEFAULT_THEME; }
 }

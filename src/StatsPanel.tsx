@@ -4,6 +4,7 @@ import type { Assets } from "./assets";
 import { lookup } from "./assets";
 import type { MyStats } from "./types";
 import { Empty, PanelHead } from "./ui";
+import { MapsView, RoundsView } from "./RoundsView";
 import { MMR_GAP, derankRisk, nextRank, rrStats } from "./insights";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
@@ -21,6 +22,7 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
   const [data, setData] = useState<MyStats | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<"sum" | "rounds" | "maps">("sum");
 
   const load = useCallback(async () => {
     if (!inTauri) { setErr("İstatistikler yalnızca masaüstü uygulamasında çalışır."); return; }
@@ -62,7 +64,16 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
       {!err && !data && <Empty text="Maçların okunuyor. İlk açılışta birkaç saniye sürebilir." />}
       {data && !sum && <Empty text="Sayılabilecek maç bulunamadı. Bir rekabet maçı oynayınca burada görünür." />}
       {sum && data && (
-        <div className="stgrid">
+        <div className="tabs" role="tablist">
+          {([["sum", "Genel"], ["rounds", "Round analizi"], ["maps", "Haritalar"]] as const).map(([id, label]) => (
+            <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? "on" : ""} onClick={() => setTab(id)}>{label}</button>
+          ))}
+        </div>
+      )}
+      {sum && data && tab === "rounds" && <div className="fade"><RoundsView matches={data.matches} /></div>}
+      {sum && data && tab === "maps" && <div className="fade"><MapsView matches={data.matches} assets={assets} /></div>}
+      {sum && data && tab === "sum" && (
+        <div className="stgrid fade">
           <div>
             <div className="kpis">
               <div><b>%{sum.wr}</b><small>Kazanma · {sum.w}/{sum.n}</small></div>

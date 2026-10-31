@@ -286,6 +286,37 @@ pub struct Account {
     pub owned: Owned,
 }
 
+/// Bir oyuncunun tek maçtaki round round özeti (rekabet, derecesiz ve Premier gibi 12 round'luk yarılarda).
+#[derive(Serialize, Clone, Debug, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RoundAgg {
+    pub atk_rounds: u32,
+    pub atk_won: u32,
+    pub def_rounds: u32,
+    pub def_won: u32,
+    /// Round'un ilk öldürmesi / ilk ölümü, tarafa göre.
+    pub fk_atk: u32,
+    pub fd_atk: u32,
+    pub fk_def: u32,
+    pub fd_def: u32,
+    /// Takımın alım türüne göre [oynanan, kazanılan]: tabanca, eko, yarım alım, tam alım.
+    pub eco: [[u32; 2]; 4],
+    /// Ölümlerinden kaçı 5 saniye içinde takım arkadaşınca intikamla karşılandı; kaç kez sen intikam aldın.
+    pub deaths: u32,
+    pub traded: u32,
+    pub trades: u32,
+    /// Takımında tek kaldığın (1vX) round'lar ve kazandıkların.
+    pub clutch: u32,
+    pub clutch_won: u32,
+    /// Öldürme, asist, hayatta kalma ya da takaslanma olan round sayısı.
+    pub kast: u32,
+    pub rounds: u32,
+    /// 3 ve üstü öldürmeli round'lar, spike kurma ve çözme.
+    pub multi: u32,
+    pub plants: u32,
+    pub defuses: u32,
+}
+
 #[derive(Serialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct MyMatch {
@@ -301,6 +332,8 @@ pub struct MyMatch {
     pub rr_delta: Option<i32>,
     pub tier_after: Option<u32>,
     pub started: u64,
+    /// Round analizi (yalnızca rekabet, derecesiz ve Premier).
+    pub rounds: Option<RoundAgg>,
 }
 
 #[derive(Serialize, Clone, Debug, Default)]

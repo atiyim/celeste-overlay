@@ -117,6 +117,144 @@ struct Pd {
     score: u32,
     rounds: u32,
     combat: Combat,
+    /// Round round özet (yalnızca 12 round'luk yarılı modlarda anlamlı).
+    round: RoundAgg,
+}
+
+/// Round round analiz: taraf, alım türü, ilk kan, takas, clutch, KAST. 12 round'luk yarılar varsayılır
+/// (rekabet, derecesiz, Premier); saldıran taraf spike'ı kuranlardan, kurulmadıysa "ilk yarıda Kırmızı saldırır" kuralından bulunur.
+const TRADE_MS: u64 = 5000;
+fn parse_rounds(v: &Value) -> HashMap<String, RoundAgg> {
+    let team_of: HashMap<String, String> = v["players"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|p| Some((p["subject"].as_str()?.to_string(), p["teamId"].as_str()?.to_string())))
+        .collect();
+    let mut out: HashMap<String, RoundAgg> = team_of.keys().map(|k| (k.clone(), RoundAgg::default())).collect();
+    let rounds: Vec<&Value> = v["roundResults"].as_array().map(|a| a.iter().collect()).unwrap_or_default();
+    let planter_team = |r: &Value| r["bombPlanter"].as_str().and_then(|p| team_of.get(p)).cloned();
+    // İlk yarıda saldıran takım: spike'ı kuranlardan, bulunamazsa Kırmızı.
+    let first_atk = rounds
+        .iter()
+        .filter(|r| r["roundNum"].as_u64().unwrap_or(99) < 12)
+        .find_map(|r| planter_team(r))
+        .unwrap_or_else(|| "Red".to_string());
+    let other = |t: &str| team_of.values().find(|x| x.as_str() != t).cloned().unwrap_or_default();
+    let second_atk = other(&first_atk);
+    for r in &rounds {
+        let rn = r["roundNum"].as_u64().unwrap_or(0);
+        let winner = r["winningTeam"].as_str().unwrap_or("");
+        let atk = planter_team(r).unwrap_or_else(|| {
+            if rn < 12 {
+                first_atk.clone()
+            } else if rn < 24 {
+                second_atk.clone()
+            } else if (rn - 24) % 2 == 0 {
+                first_atk.clone()
+            } else {
+                second_atk.clone()
+            }
+        });
+        // Bu round'daki öldürmeler, zamana göre.
+        let mut kills: Vec<(u64, String, String, Vec<String>)> = Vec::new();
+        let mut loadout: HashMap<String, (u64, u32)> = HashMap::new(); // takım → (toplam alım değeri, oyuncu)
+        for ps in r["playerStats"].as_array().into_iter().flatten() {
+            let Some(sub) = ps["subject"].as_str() else { continue };
+            if let Some(t) = team_of.get(sub) {
+                let e = loadout.entry(t.clone()).or_default();
+                e.0 += ps["economy"]["loadoutValue"].as_u64().unwrap_or(0);
+                e.1 += 1;
+            }
+            for k in ps["kills"].as_array().into_iter().flatten() {
+                let (Some(killer), Some(victim)) = (k["killer"].as_str(), k["victim"].as_str()) else { continue };
+                let assists = k["assistants"].as_array().into_iter().flatten().filter_map(|a| a.as_str().map(String::from)).collect();
+                kills.push((k["roundTime"].as_u64().unwrap_or(0), killer.to_string(), victim.to_string(), assists));
+            }
+        }
+        kills.sort_by_key(|k| k.0);
+        let first = kills.first().cloned();
+        let mut alive: HashMap<String, Vec<String>> = HashMap::new();
+        for (p, t) in &team_of {
+            alive.entry(t.clone()).or_default().push(p.clone());
+        }
+        let mut clutch_of: HashMap<String, String> = HashMap::new(); // takım → tek kalan oyuncu
+        let mut traded_victims: Vec<String> = Vec::new();
+        let mut trade_makers: Vec<String> = Vec::new();
+        for (i, (t, killer, victim, _)) in kills.iter().enumerate() {
+            let (Some(vt), Some(kt)) = (team_of.get(victim), team_of.get(killer)) else { continue };
+            if vt != kt {
+                if let Some((_, avenger, _, _)) = kills[i + 1..].iter().find(|(t2, k2, v2, _)| *t2 <= t + TRADE_MS && v2 == killer && team_of.get(k2) == Some(vt)) {
+                    traded_victims.push(victim.clone());
+                    trade_makers.push(avenger.clone());
+                }
+            }
+            if let Some(list) = alive.get_mut(vt) {
+                list.retain(|p| p != victim);
+            }
+            for (team, list) in &alive {
+                let enemies = alive.iter().filter(|(t2, _)| *t2 != team).map(|(_, l)| l.len()).sum::<usize>();
+                if list.len() == 1 && enemies >= 1 && !clutch_of.contains_key(team) {
+                    clutch_of.insert(team.clone(), list[0].clone());
+                }
+            }
+        }
+        for (p, team) in &team_of {
+            let a = out.entry(p.clone()).or_default();
+            let on_atk = *team == atk;
+            let won = winner == team;
+            a.rounds += 1;
+            if on_atk {
+                a.atk_rounds += 1;
+                a.atk_won += won as u32;
+            } else {
+                a.def_rounds += 1;
+                a.def_won += won as u32;
+            }
+            if let Some((_, k, vic, _)) = &first {
+                if k == p {
+                    if on_atk { a.fk_atk += 1 } else { a.fk_def += 1 }
+                }
+                if vic == p {
+                    if on_atk { a.fd_atk += 1 } else { a.fd_def += 1 }
+                }
+            }
+            // Alım türü: takımın ortalama alım değeri.
+            let class = if rn == 0 || rn == 12 {
+                0
+            } else {
+                let (sum, n) = loadout.get(team).copied().unwrap_or((0, 1));
+                let avg = sum / n.max(1) as u64;
+                if avg < 1500 { 1 } else if avg < 3700 { 2 } else { 3 }
+            };
+            a.eco[class][0] += 1;
+            a.eco[class][1] += won as u32;
+            let my_kills = kills.iter().filter(|k| &k.1 == p && team_of.get(&k.2) != Some(team)).count() as u32;
+            let assisted = kills.iter().any(|k| k.3.iter().any(|x| x == p));
+            let died = kills.iter().any(|k| &k.2 == p);
+            let traded = traded_victims.contains(p);
+            a.deaths += died as u32;
+            a.traded += traded as u32;
+            a.trades += trade_makers.iter().filter(|x| *x == p).count() as u32;
+            if my_kills > 0 || assisted || !died || traded {
+                a.kast += 1;
+            }
+            if my_kills >= 3 {
+                a.multi += 1;
+            }
+            if clutch_of.get(team) == Some(p) {
+                a.clutch += 1;
+                a.clutch_won += won as u32;
+            }
+            if r["bombPlanter"].as_str() == Some(p.as_str()) {
+                a.plants += 1;
+            }
+            if r["bombDefuser"].as_str() == Some(p.as_str()) {
+                a.defuses += 1;
+            }
+        }
+    }
+    out
 }
 
 /// Bir maçın özeti: harita, oyuncular ve takımların galibiyeti.
@@ -156,6 +294,7 @@ impl Detail {
 fn parse_detail(v: &Value) -> Detail {
     let n = |x: &Value| x.as_u64().unwrap_or(0) as u32;
     let mut combat = parse_combat(v);
+    let mut rounds = parse_rounds(v);
     Detail {
         map_id: v["matchInfo"]["mapId"].as_str().unwrap_or("").to_string(),
         started: v["matchInfo"]["gameStartMillis"].as_u64().unwrap_or(0),
@@ -175,6 +314,7 @@ fn parse_detail(v: &Value) -> Detail {
                     score: n(&p["stats"]["score"]),
                     rounds: n(&p["stats"]["roundsPlayed"]),
                     combat: combat.remove(p["subject"].as_str()?).unwrap_or_default(),
+                    round: rounds.remove(p["subject"].as_str()?).unwrap_or_default(),
                 })
             })
             .collect(),
@@ -192,6 +332,8 @@ fn parse_detail(v: &Value) -> Detail {
 const FORM_QUEUES: [&str; 1] = ["competitive"];
 // Kendi istatistik sayfan tüm ana modları kapsar.
 const STATS_QUEUES: [&str; 4] = ["competitive", "unrated", "swiftplay", "premier"];
+/// 12 round'luk yarıları olan modlar: round analizi yalnızca bunlarda yapılır.
+const ROUND_QUEUES: [&str; 3] = ["competitive", "unrated", "premier"];
 const FORM_N: usize = 5;
 const DEEP_COMP: usize = 20;
 const DEEP_OTHER: usize = 10;
@@ -280,6 +422,8 @@ fn to_rank(m: &Mmr) -> Rank {
 
 #[derive(Default)]
 struct State {
+    /// Riot Client kapalıyken ya da oturum açılmamışken her turda tekrar sorulmaz; bu ana kadar son durum döner.
+    retry_at: Option<(Instant, Snapshot)>,
     debug_match: Option<String>,
     debug_party: Option<String>,
     debug_pre: Option<String>,
@@ -328,12 +472,18 @@ impl Engine {
     /// Arayüzün periyodik olarak çağırdığı tek giriş noktası.
     pub async fn snapshot(&self) -> Snapshot {
         let mut st = self.state.lock().await;
+        if let Some((t, snap)) = &st.retry_at {
+            if Instant::now() < *t {
+                return snap.clone();
+            }
+        }
+        st.retry_at = None;
         match self.run(&mut st).await {
             Ok(s) => s,
             Err(e) => {
                 st.session = None; // süresi dolmuş token / kapanmış istemci: bir sonraki turda yeniden aç
                 let f = fault_of(&e);
-                Snapshot {
+                let snap = Snapshot {
                     phase: Phase::Offline,
                     status: Status {
                         riot_client: f != Fault::NoRiotClient,
@@ -345,7 +495,12 @@ impl Engine {
                     },
                     error: Some(friendly(&e)),
                     ..Default::default()
+                };
+                // Riot Client kapalı ya da oturum açık değil: 2,5 saniyede bir sormak yerine 10 saniye bekle.
+                if matches!(f, Fault::NoRiotClient | Fault::NotLoggedIn) {
+                    st.retry_at = Some((Instant::now() + Duration::from_secs(10), snap.clone()));
                 }
+                snap
             }
         }
     }
@@ -1077,6 +1232,7 @@ impl Engine {
                 rr_delta: rr.get(id).map(|x| x.0),
                 tier_after: rr.get(id).map(|x| x.1),
                 started: d.started,
+                rounds: ROUND_QUEUES.contains(&q.as_str()).then(|| p.round.clone()).filter(|r| r.rounds > 0),
             });
         }
         Ok(MyStats { matches, rank })
@@ -1764,5 +1920,43 @@ mod tests {
         assert_eq!(players[2].party.as_deref(), Some("A"));
         assert_eq!(players[2].party_src.as_deref(), Some("last"));
         assert_eq!(players[0].party_src.as_deref(), Some("live"));
+    }
+
+    #[test]
+    fn rounds_side_first_kill_trade_clutch_kast_eco() {
+        let v = serde_json::json!({
+            "players": [
+                { "subject": "a", "teamId": "Red" }, { "subject": "b", "teamId": "Red" },
+                { "subject": "c", "teamId": "Blue" }, { "subject": "d", "teamId": "Blue" }
+            ],
+            "roundResults": [
+                { "roundNum": 0, "winningTeam": "Blue", "bombPlanter": "a", "playerStats": [
+                    { "subject": "c", "economy": { "loadoutValue": 800 }, "kills": [ { "roundTime": 1000, "killer": "c", "victim": "a", "assistants": ["d"] } ] },
+                    { "subject": "b", "economy": { "loadoutValue": 800 }, "kills": [ { "roundTime": 3000, "killer": "b", "victim": "c", "assistants": [] } ] },
+                    { "subject": "d", "economy": { "loadoutValue": 800 }, "kills": [ { "roundTime": 5000, "killer": "d", "victim": "b", "assistants": [] } ] },
+                    { "subject": "a", "economy": { "loadoutValue": 800 }, "kills": [] }
+                ] },
+                { "roundNum": 5, "winningTeam": "Red", "playerStats": [
+                    { "subject": "a", "economy": { "loadoutValue": 4500 }, "kills": [] },
+                    { "subject": "b", "economy": { "loadoutValue": 4300 }, "kills": [] },
+                    { "subject": "c", "economy": { "loadoutValue": 900 }, "kills": [] },
+                    { "subject": "d", "economy": { "loadoutValue": 1100 }, "kills": [] }
+                ] },
+                { "roundNum": 12, "winningTeam": "Red", "playerStats": [] }
+            ]
+        });
+        let r = parse_rounds(&v);
+        let a = &r["a"];
+        assert_eq!((a.atk_rounds, a.atk_won, a.def_rounds, a.def_won), (2, 1, 1, 1));
+        assert_eq!((a.fd_atk, a.deaths, a.traded, a.plants), (1, 1, 1, 1));
+        assert_eq!(a.kast, 3); // ölse de takaslandı; diğer iki round hayatta
+        assert_eq!(a.eco[0], [2, 1]); // tabanca round'ları: 0 ve 12
+        assert_eq!(a.eco[3], [1, 1]); // tam alım
+        let b = &r["b"];
+        assert_eq!((b.trades, b.clutch, b.clutch_won), (1, 1, 0));
+        let c = &r["c"];
+        assert_eq!((c.fk_def, c.def_rounds), (1, 2));
+        assert_eq!(r["d"].eco[1], [1, 0]); // eko round'u kaybetti
+        assert_eq!(r["d"].kast, 3); // asist + hayatta
     }
 }

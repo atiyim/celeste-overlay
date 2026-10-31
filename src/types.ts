@@ -83,6 +83,15 @@ export interface MyMatch {
   matchId: string; mapId: string; agentId: string; queue: string; won: boolean;
   kills: number; deaths: number; assists: number; acs: number;
   rrDelta?: number | null; tierAfter?: number | null; started: number;
+  rounds?: RoundAgg | null;
+}
+export interface RoundAgg {
+  atkRounds: number; atkWon: number; defRounds: number; defWon: number;
+  fkAtk: number; fdAtk: number; fkDef: number; fdDef: number;
+  /** [oynanan, kazanılan]: tabanca, eko, yarım alım, tam alım */
+  eco: [number, number][];
+  deaths: number; traded: number; trades: number; clutch: number; clutchWon: number;
+  kast: number; rounds: number; multi: number; plants: number; defuses: number;
 }
 export interface MyStats { matches: MyMatch[]; rank: Rank }
 

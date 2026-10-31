@@ -28,6 +28,7 @@ import { alertOf, fmtDur, fmtRr, sessionOf, type Session } from "./tilt";
 import { useUpdater } from "./updater";
 import { Empty } from "./ui";
 import { WhatsNew } from "./WhatsNew";
+import { NoticeCard } from "./NoticeCard";
 import { useNotices, useUsagePing } from "./community";
 import { applyTheme, COLS, gridTemplate, hideOf, loadTheme, overlayWidth } from "./theme";
 
@@ -154,6 +155,28 @@ export function App() {
     }
   }, [snap.phase, theme.tilt.on]); // eslint-disable-line react-hooks/exhaustive-deps
   const tilt = alertOf(sess, theme.tilt, newest);
+
+  // OBS tarayıcı kaynağı: açıksa uygulama yerelde küçük bir sayfa sunar; rank, RR ve bugünkü seans 2 dakikada bir ve maç bitince yenilenir.
+  useEffect(() => {
+    if (!inTauri) return;
+    invoke<string>("obs_set", { enabled: theme.obs }).catch((e) => { if (theme.obs) showToast(String(e)); });
+  }, [theme.obs]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!inTauri || !theme.obs || !assets) return;
+    let stop = false;
+    const push = async () => {
+      try {
+        const d = await invoke<MyStats>("get_my_stats");
+        if (stop) return;
+        const t = assets.tiers.get(d.rank.current);
+        const s = sessionOf(d.matches);
+        await invoke("obs_push", { data: { rank: t ? { name: t.name, icon: t.icon, color: t.color, rr: d.rank.current > 0 ? d.rank.rr : null } : null, session: s ? { games: s.games, wins: s.wins, losses: s.losses, rr: s.rr } : null } });
+      } catch { /* sonraki turda */ }
+    };
+    push();
+    const t = window.setInterval(push, 120_000);
+    return () => { stop = true; window.clearInterval(t); };
+  }, [theme.obs, assets, snap.phase === "ingame"]); // maç bitince (ingame → değil) yeniden
   const ackTilt = () => { if (!tilt) return; setTiltAck(tilt.key); try { localStorage.setItem("overlay-tilt-ack", tilt.key); } catch { /* depolama kapalı */ } };
 
   // Maç bitince (oyundan menüye ya da kapanışa geçince) rapor kendiliğinden açılır.
@@ -461,16 +484,7 @@ export function App() {
       {!collapsed && !guide && sess && sess.games > 0 && theme.tilt.on && view === "roster" && (
         <p className="mode sess">Bu seans · {sess.wins}G {sess.losses}M · <span className={sess.rr < 0 ? "neg" : sess.rr > 0 ? "pos" : ""}>{fmtRr(sess.rr)}</span> · {fmtDur(sess.minutes)}</p>
       )}
-      {!collapsed && !guide && notices.length > 0 && (
-        <div className="notice" role="status">
-          <span className="ni" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3.5 8.5 3 3 6-7" /></svg></span>
-          <span className="nt">
-            <b>{notices.some((n) => n.kind === "hata") && notices.some((n) => n.kind === "oneri") ? "Bildirimlerin ele alındı" : notices[0].kind === "hata" ? "Bildirdiğin hata ele alındı" : "Önerin ele alındı"}</b>
-            <small>Celeste ekibi gönderdiğin {notices.length > 1 ? `${notices.length} bildirimi` : "bildirimi"} inceledi. Teşekkürler!</small>
-          </span>
-          <button className="x" type="button" onClick={clearNotices}>Tamam</button>
-        </div>
-      )}
+      {!collapsed && !guide && notices.length > 0 && <NoticeCard list={notices} onClose={clearNotices} />}
       {!collapsed && !guide && view === "roster" && !active && <WhatsNew version={updater.version} />}
       {!collapsed && guide && <Guide onDone={closeGuide} />}
 

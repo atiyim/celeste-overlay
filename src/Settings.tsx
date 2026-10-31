@@ -26,6 +26,7 @@ const SECS: { id: Sec; label: string; icon: ReactNode }[] = [
 ];
 const SEC_KEY = "overlay-settings-sec";
 const inTauri = "__TAURI_INTERNALS__" in window;
+const OBS_URL = "http://127.0.0.1:7317/";
 
 interface Props { onGuide: () => void; onOpen: (url: string) => void; updater: ReturnType<typeof useUpdater>; zoom: number; onZoom: (z: number) => void; zooms: number[]; theme: Theme; onChange: (t: Theme) => void; onToast: (t: string) => void; onClose: () => void; onFeedback: () => void }
 
@@ -146,6 +147,19 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
                       ? "Başka bir program F2'yi kullanıyor. O program kapanınca kendiliğinden çalışır; bu arada sistem tepsisindeki simgeye tıklayarak açıp kapatabilirsin."
                       : "Oyunun içindeyken de çalışır. Sistem tepsisindeki simgeye tıklamak da aynı işi yapar."}
                   />
+                </div>
+              </section>
+              <section>
+                <h3 className="h2">Yayın</h3>
+                <div className="box">
+                  <Row title="OBS kaynağı" desc="Yayında rankın, RR'ın ve bu seansın (galibiyet, mağlubiyet, RR) görünsün. OBS'te Kaynak ekle › Tarayıcı'yı seç, adresi yapıştır; genişlik 420, yükseklik 100. Sayfa yalnızca bu bilgisayardan açılır.">
+                    <Toggle on={theme.obs} label="OBS kaynağı" onChange={(v) => set({ obs: v })} />
+                  </Row>
+                  {theme.obs && (
+                    <Row title={<code className="obsurl">{OBS_URL}</code>} desc="Rank ve seans 2 dakikada bir ve her maçtan sonra yenilenir.">
+                      <button className="x" type="button" onClick={() => { navigator.clipboard.writeText(OBS_URL).then(() => onToast("Adres kopyalandı"), () => onToast("Kopyalanamadı")); }}>Adresi kopyala</button>
+                    </Row>
+                  )}
                 </div>
               </section>
               <section>

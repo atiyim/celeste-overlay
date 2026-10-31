@@ -66,6 +66,14 @@ Ajan seçiminde ve maç sırasında herkes tek tabloda:
 - **Geçmiş sekmesi.** Oyuncunun bu haritadaki ve bu ajandaki rekabet performansı (maç, galibiyet, K/D), en çok oynadığı roller ve ajanlar (son 25 maçın içinden, rekabet maçları), tek ajan oyuncusu etiketi, liderlik tablosu sırası ve açılıp kapanan **Geçmiş actler** listesi (her actte act sonu rank'ı, en yüksek rank, galibiyet). "Kayıtlı ilk rekabet acti" Riot'un kayıtlarındaki en eski rekabet actidir, hesabın açılış tarihi değildir. Riot oyun süresi, toplam saat ya da tracker skoru vermez, bunlar gösterilmez. Oyuncuya etiket ve not eklenebilir.
 - **İsim kopyalama.** İsme tıkla, adı kopyalanır. Tracker düğmesi oyuncuyu tarayıcıda açar.
 
+### İstatistik › Round analizi ve Haritalar
+
+Kendi maçların (rekabet, derecesiz, Premier) round round: saldırı ve savunmada round kazanma oranı, tarafa göre ilk kan / ilk ölüm, ölümlerinin 5 saniye içinde takaslanma oranı ve aldığın intikamlar, clutch (1vX), KAST, 3+ öldürmeli round'lar, spike kurma/çözme ve alım türüne göre (tabanca, eko, yarım, tam) round kazanma. Haritalar sekmesinde harita başına galibiyet, saldırı/savunma round oranı ve K/D.
+
+### OBS kaynağı
+
+Ayarlar › Overlay › Yayın › **OBS kaynağı**'nı aç, adresi (`http://127.0.0.1:7317/`) OBS'te Tarayıcı kaynağı olarak ekle (420×100). Rankın, RR'ın ve bu seansın galibiyet/mağlubiyet/RR'ı görünür. Sayfa yalnızca bu bilgisayardan açılır.
+
 ### Son maç
 
 Biten maçın raporu kendiliğinden açılır: skor, oyuncu tablosu (K/D/A, ACS, kafa isabeti, hasar, ilk kan) ve kimin kimi kaç kez öldürdüğü. Bir oyuncuya tıklayınca etiket koyabilir (İyi, Toksik, Şüpheli) ve tracker.gg profilini tarayıcıda açabilirsin. İsmi gizli oyuncuya etiket konur ama profil bağlantısı yoktur.

@@ -9,15 +9,15 @@ const inTauri = "__TAURI_INTERNALS__" in window;
 /* Sıkça sorulanlar: her cevap tek bir şey söyler, birbirini tekrar etmez. */
 const TOS = "https://www.riotgames.com/tr/terms-of-service-TR";
 const FAQ: { q: string; a: string; tos?: boolean }[] = [
-  { q: "Neden güvenmeliyim?", a: "Kaynak kodu açık. Üstelik uygulamanın attığı her istek aşağıda canlı akar; söylenenle yapılanı kendi gözünle karşılaştırabilirsin." },
+  { q: "Neden güvenmeliyim?", a: "Kaynak kodu açık. Üstelik uygulamanın attığı her istek Canlı kayıt sekmesinde anında görünür; söylenenle yapılanı kendi gözünle karşılaştırabilirsin." },
   { q: "Hesabım banlanır mı?", a: "Riot hiçbir üçüncü taraf uygulamayı onaylamıyor ve Vanguard'ın bir uygulamayı şimdi ya da ileride işaretlemeyeceğini garanti etmiyor. Biz de garanti veremeyiz; yalnızca ne yaptığımızı gösteririz.", tos: true },
   { q: "Şifremi istiyor mu?", a: "Hayır, giriş ekranı yok. Açık Riot Client oturumunu kullanır ve oturum bilgisi yalnızca Riot sunucularına gider." },
   { q: "Oyuna dokunuyor mu?", a: "Hayır. Yalnızca okur: oyun belleğine girmez, tuş ya da tıklama göndermez, dosyaları değiştirmez." },
   { q: "Hile sayılır mı?", a: "Rakibin konumu ya da görüşü gibi anlık oyun bilgisi göstermez; yalnızca rank, maç geçmişi ve kaplama gibi sonradan da öğrenilebilen bilgiler." },
   { q: "Partiyi nasıl biliyor?", a: "Arkadaşların için Riot Client'tan, kesin olarak. Diğer oyuncular için önceki maç kayıtlarından: bir önceki maçlarını ya da son maçlarını aynı partide oynayıp şimdi aynı takımdalarsa aynı parti gösterilir. Harfin üstüne gelince hangisi olduğu yazar." },
   { q: "Gizli isimleri açar mı?", a: "Hayır. İsmini gizleyen oyuncunun adı sorgulanmaz, saklanmaz, gösterilmez." },
-  { q: "Verilerim nereye gidiyor?", a: "Etiketler, notlar ve ayarlar bu bilgisayarda kalır. Uygulama kaç kişinin kullandığını saymak için yalnızca rastgele bir kimlik ve sürüm numarası gönderir. Öneri / Hata formunu gönderirsen yazdığınla birlikte Riot ID'n de gider. Şifren, oturum bilgilerin, lobideki oyuncular ve maç bilgisi hiç gönderilmez. Hepsi aşağıdaki canlı kayıtta görünür." },
-  { q: "Virüs var mı? Nasıl kontrol ederim?", a: "Kurulum dosyasını GitHub kendi sunucularında, depodaki açık koddan derler ve mühürler. Aşağıdaki Bu kurulumu doğrula düğmesi senin dosyanı GitHub'dakiyle karşılaştırır. Windows ve bazı antivirüsler imzasız yeni dosyalara uyarı verebilir; bu tek başına virüs anlamına gelmez." },
+  { q: "Verilerim nereye gidiyor?", a: "Etiketler, notlar ve ayarlar bu bilgisayarda kalır. Uygulama kaç kişinin kullandığını saymak için yalnızca rastgele bir kimlik ve sürüm numarası gönderir. Öneri / Hata formunu gönderirsen yazdığınla birlikte Riot ID'n de gider. Şifren, oturum bilgilerin, lobideki oyuncular ve maç bilgisi hiç gönderilmez. Hepsi Canlı kayıt sekmesinde görünür." },
+  { q: "Virüs var mı? Nasıl kontrol ederim?", a: "Kurulum dosyasını GitHub kendi sunucularında, depodaki açık koddan derler ve mühürler. Yukarıdaki Bu kurulumu doğrula düğmesi senin dosyanı GitHub'dakiyle karşılaştırır. Windows ve bazı antivirüsler imzasız yeni dosyalara uyarı verebilir; bu tek başına virüs anlamına gelmez." },
 ];
 
 const TARGET: Record<NetEntry["target"], string> = {
@@ -29,6 +29,7 @@ const TARGET: Record<NetEntry["target"], string> = {
   other: "Beklenmeyen adres",
 };
 
+type Tab = "faq" | "live" | "data";
 const hhmmss = (t: number) => new Date(t).toLocaleTimeString("tr-TR", { hour12: false });
 
 /* Bu bilgisayarda saklanan yerel veriler (yalnızca overlay'in kendi anahtarları). */
@@ -79,6 +80,9 @@ export function TrustPanel({ onClose, onToast, onOpen }: { onClose: () => void; 
   const [paused, setPaused] = useState(false);
   const [open, setOpen] = useState<number | null>(null);
   const [confirm, setConfirm] = useState(false);
+  const [tab, setTabState] = useState<Tab>(() => { try { const v = localStorage.getItem("overlay-trust-tab") as Tab | null; return v === "live" || v === "data" ? v : "faq"; } catch { return "faq"; } });
+  const setTab = (t: Tab) => { setTabState(t); try { localStorage.setItem("overlay-trust-tab", t); } catch { /* depolama kapalı */ } };
+  const [q, setQ] = useState<number | null>(0);
   const tick = useRef(0);
 
   const load = useCallback(async () => {
@@ -110,83 +114,110 @@ export function TrustPanel({ onClose, onToast, onOpen }: { onClose: () => void; 
     window.setTimeout(() => window.location.reload(), 600);
   };
 
+  const TABS: [Tab, string][] = [["faq", "S.S.S"], ["live", "Canlı kayıt"], ["data", "Bu bilgisayar"]];
+
   return (
     <div className="panel trust" role="dialog" aria-label="S.S.S & Panel">
-      <PanelHead title="S.S.S & Panel" sub="Bu uygulama ne yapar, ne yapmaz? Önce kısa cevaplar, altında bunları doğrulayan canlı kayıt." onClose={onClose} />
-
-      <div className="faq">
-        {FAQ.map((f, i) => (
-          <div key={f.q} className="fq" style={{ "--i": i } as React.CSSProperties}>
-            <h3>{f.q}</h3>
-            <p>{f.a}{f.tos && <> <button className="lnk" type="button" onClick={() => onOpen(TOS)}>Riot hizmet şartları</button></>}</p>
-          </div>
-        ))}
-      </div>
-
-      <Verify />
-
-      <div className="live">
-        <h2 className="h lh">
-          <span><i className={paused ? "dot off" : "dot"} />Canlı kayıt</span>
-          <span className="lhr">
-            <button className="x" type="button" onClick={() => setPaused((p) => !p)}>{paused ? "Devam et" : "Duraklat"}</button>
-            <button className="x" type="button" onClick={copyFeed}>Kopyala</button>
+      <PanelHead
+        title="S.S.S & Panel"
+        sub="Bu uygulama ne yapar, ne yapmaz? Kısa cevaplar ve onları doğrulayan canlı kayıt."
+        actions={
+          <span className="tabs" role="tablist">
+            {TABS.map(([id, label]) => (
+              <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? "on" : ""} onClick={() => setTab(id)}>
+                {label}{id === "live" && <i className={paused ? "tdot off" : "tdot"} aria-hidden="true" />}
+              </button>
+            ))}
           </span>
-        </h2>
+        }
+        onClose={onClose}
+      />
 
-        <div className="nstats">
-          <div><b>{rep?.total ?? 0}</b><small>istek</small></div>
-          <div><b>{rep?.lastMinute ?? 0}</b><small>son dakikada</small></div>
-          <div><b>{rep?.reads ?? 0}</b><small>okuma</small></div>
-          <div><b>{rep?.queries ?? 0}</b><small title="İsim ve mağaza sorguları: veri ister, bir şey değiştirmez">sorgu</small></div>
-          <div className={rep && rep.writes > 0 ? "bad" : "good"}><b>{rep?.writes ?? 0}</b><small title="Riot'ta bir şeyi değiştiren istek">yazma</small></div>
-          <div className={rep && rep.errors > 0 ? "warn" : ""}><b>{rep?.errors ?? 0}</b><small>hata</small></div>
-        </div>
-
-        <div className="ngrid">
-          <div>
-            <h2 className="h">Nereye bağlanıyor</h2>
-            <ul className="hosts box">
-              {(rep?.hosts ?? []).map((h) => (
-                <li key={h.host} className={h.target === "other" ? "odd" : ""}>
-                  <span><b>{TARGET[h.target]}</b><small>{h.host}</small></span>
-                  <em>{h.count}</em>
-                </li>
-              ))}
-              {!rep?.hosts.length && <li className="none">Henüz istek yok.</li>}
-            </ul>
-            <p className="m small">Görseller doğrudan valorant-api.com'dan yüklenir ve tek tek listelenmez. Başka adres yoktur; olsaydı burada kırmızı görünürdü.</p>
-
-            <h2 className="h">Gizli isimler</h2>
-            <p className="m"><b className="big">{rep?.hiddenSkipped ?? 0}</b> oyuncu ismini gizliyor, adları sorgulanmadı.</p>
-
-            <h2 className="h">Bu bilgisayardaki verilerin</h2>
-            <ul className="hosts plain box">
-              {data.map((d) => <li key={d.label}><span>{d.label}</span><em>{d.n}</em></li>)}
-            </ul>
-            <p className="m small">Uygulama ayarları da burada saklanır. Anonim sayımın rastgele kimliği dışında hiçbiri bilgisayarından çıkmaz.</p>
-            <button className={confirm ? "x warn" : "x"} type="button" onClick={wipe}>{confirm ? "Emin misin? Tekrar tıkla" : "Verilerimi sil"}</button>
-          </div>
-
-          <div>
-            <h2 className="h">Son istekler</h2>
-            <ul className="feed box" aria-live="off">
-              {feed.map((e, i) => (
-                <li key={`${e.t}-${i}`} className={`${e.kind} ${open === i ? "open" : ""}`} onClick={() => setOpen(open === i ? null : i)}>
-                  <span className="ft">{hhmmss(e.t)}</span>
-                  <span className={`fk ${e.kind}`}>{e.kind}</span>
-                  <span className="fw">{e.what}</span>
-                  <span className={e.status === 0 || e.status >= 400 ? "fs bad" : "fs"}>{e.status || "hata"}</span>
-                  <span className="fm">{e.ms} ms</span>
-                  {open === i && <span className="fd">{e.method} {e.host}{e.path}</span>}
-                </li>
-              ))}
-              {!feed.length && <li className="none">Riot Client ve Valorant açılınca istekler burada görünür.</li>}
-            </ul>
-            <p className="m small">Kayıt yalnızca bellekte tutulur. Token, çerez ve oyuncu kimlikleri gösterilmez ya da maskelenir.</p>
+      {tab === "faq" && (
+        <div className="tbody fade">
+          <Verify />
+          <div className="faq2">
+            {FAQ.map((f, i) => {
+              const on = q === i;
+              return (
+                <div key={f.q} className={on ? "fq2 on" : "fq2"}>
+                  <button type="button" aria-expanded={on} onClick={() => setQ(on ? null : i)}>
+                    <span>{f.q}</span><i className="chev" aria-hidden="true" />
+                  </button>
+                  {on && <p className="fade">{f.a}{f.tos && <> <button className="lnk" type="button" onClick={() => onOpen(TOS)}>Riot hizmet şartları</button></>}</p>}
+                </div>
+              );
+            })}
           </div>
         </div>
-      </div>
+      )}
+
+      {tab === "live" && (
+        <div className="tbody fade">
+          <div className="lhead">
+            <span className="m"><i className={paused ? "dot off" : "dot"} />{paused ? "Duraklatıldı" : "Uygulamanın attığı her istek, anında"}</span>
+            <span className="lhr">
+              <button className="x" type="button" onClick={() => setPaused((p) => !p)}>{paused ? "Devam et" : "Duraklat"}</button>
+              <button className="x" type="button" onClick={copyFeed}>Kopyala</button>
+            </span>
+          </div>
+          <div className="nstats">
+            <div><b>{rep?.total ?? 0}</b><small>istek</small></div>
+            <div><b>{rep?.lastMinute ?? 0}</b><small>son dakikada</small></div>
+            <div><b>{rep?.reads ?? 0}</b><small>okuma</small></div>
+            <div><b>{rep?.queries ?? 0}</b><small title="İsim ve mağaza sorguları: veri ister, bir şey değiştirmez">sorgu</small></div>
+            <div className={rep && rep.writes > 0 ? "bad" : "good"}><b>{rep?.writes ?? 0}</b><small title="Riot'ta bir şeyi değiştiren istek">yazma</small></div>
+            <div className={rep && rep.errors > 0 ? "warn" : ""}><b>{rep?.errors ?? 0}</b><small title="Yanıt vermeyen ya da hata dönen istek (Riot Client kapalıyken olağan)">hata</small></div>
+          </div>
+          <div className="ngrid">
+            <div>
+              <h3 className="h2">Nereye bağlanıyor</h3>
+              <ul className="hosts box">
+                {(rep?.hosts ?? []).map((h) => (
+                  <li key={h.host} className={h.target === "other" ? "odd" : ""}>
+                    <span><b>{TARGET[h.target]}</b><small>{h.host}</small></span>
+                    <em>{h.count}</em>
+                  </li>
+                ))}
+                {!rep?.hosts.length && <li className="none">Henüz istek yok.</li>}
+              </ul>
+              <p className="m small">Görseller doğrudan valorant-api.com'dan yüklenir ve tek tek listelenmez. Başka adres yoktur; olsaydı burada kırmızı görünürdü.</p>
+            </div>
+            <div>
+              <h3 className="h2">Son istekler<span className="hv">Satıra tıkla: adres</span></h3>
+              <ul className="feed box" aria-live="off">
+                {feed.map((e, i) => (
+                  <li key={`${e.t}-${i}`} className={`${e.kind} ${open === i ? "open" : ""}`} onClick={() => setOpen(open === i ? null : i)}>
+                    <span className="ft">{hhmmss(e.t)}</span>
+                    <span className={`fk ${e.kind}`}>{e.kind}</span>
+                    <span className="fw">{e.what}</span>
+                    <span className={e.status === 0 || e.status >= 400 ? "fs bad" : "fs"}>{e.status || "hata"}</span>
+                    <span className="fm">{e.ms} ms</span>
+                    {open === i && <span className="fd">{e.method} {e.host}{e.path}</span>}
+                  </li>
+                ))}
+                {!feed.length && <li className="none">Riot Client ve Valorant açılınca istekler burada görünür.</li>}
+              </ul>
+              <p className="m small">Kayıt yalnızca bellekte tutulur. Token, çerez ve oyuncu kimlikleri gösterilmez ya da maskelenir.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === "data" && (
+        <div className="tbody fade">
+          <div className="box">
+            <Row title="Gizli isimler" desc="İsmini gizleyen oyuncuların adı sorgulanmadı, saklanmadı, gösterilmedi.">
+              <b className="big">{rep?.hiddenSkipped ?? 0}</b>
+            </Row>
+            {data.map((d) => <Row key={d.label} title={d.label} desc={d.label.startsWith("Etiket") ? "Senin koyduğun etiketler ve notlar." : "Aynı maçta olduğun oyuncuların karşılaşma geçmişi."}><b className="big">{d.n}</b></Row>)}
+            <Row title="Verilerimi sil" desc="Etiketler, notlar, karşılaşma geçmişi ve ayarlar bu bilgisayardan silinir. Geri alınamaz.">
+              <button className={confirm ? "x warn" : "x"} type="button" onClick={wipe}>{confirm ? "Emin misin? Tekrar tıkla" : "Verilerimi sil"}</button>
+            </Row>
+          </div>
+          <p className="m small">Bunların hiçbiri bilgisayarından çıkmaz. Yalnızca kullanım sayımı için rastgele bir kimlik ve sürüm, öneri formunu gönderirsen de yazdığın ve Riot ID'n gider.</p>
+        </div>
+      )}
     </div>
   );
 }
