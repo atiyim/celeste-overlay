@@ -4,6 +4,7 @@ import type { Assets } from "./assets";
 import { lookup } from "./assets";
 import type { MyStats } from "./types";
 import { Empty, PanelHead } from "./ui";
+import { MMR_GAP, derankRisk, nextRank, rrStats } from "./insights";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -69,6 +70,22 @@ export function StatsPanel({ assets, onClose }: { assets: Assets; onClose: () =>
               <div><b>{sum.acs}</b><small>Ort. ACS</small></div>
               <div><b className={sum.rr >= 0 ? "pos" : "neg"}>{sum.rr > 0 ? "+" : ""}{sum.rr}</b><small>Rekabetçi RR</small></div>
             </div>
+            {(() => {
+              const s = rrStats(data.matches.filter((m) => m.queue === "competitive" && m.rrDelta != null).map((m) => m.rrDelta as number));
+              if (!s) return null;
+              const nx = nextRank(data.rank.current, data.rank.rr, s);
+              const up = s.diff >= MMR_GAP, down = s.diff <= -MMR_GAP;
+              return (
+                <div className="mmr box">
+                  <span className={up ? "bd pos" : down ? "bd neg" : "bd gray"}>{up ? "MMR ↑" : down ? "MMR ↓" : "MMR dengede"}</span>
+                  <span className="m">
+                    Kazanınca ort. <b className="pos">+{Math.round(s.gain)}</b>, kaybedince ort. <b className="neg">−{Math.round(s.loss)}</b> RR
+                    {nx && assets.tiers.get(nx.tier) ? <> · {assets.tiers.get(nx.tier)!.name} için ≈{nx.wins} galibiyet</> : null}
+                    {derankRisk(data.rank.current, data.rank.rr, s) ? <> · <span className="neg">bir mağlubiyette düşebilirsin</span></> : null}
+                  </span>
+                </div>
+              );
+            })()}
             <h3 className="h2">Ajanlar</h3>
             <div className="box pad">
             <div className="ag hd2"><span /><span>Ajan</span><span className="num">Maç</span><span className="num">Galibiyet</span><span className="num">K/D</span></div>

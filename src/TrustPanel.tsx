@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { NetEntry, NetReport } from "./net";
 import { mockNet } from "./mock";
-import { PanelHead } from "./ui";
+import { PanelHead, Row } from "./ui";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -17,7 +17,7 @@ const FAQ: { q: string; a: string; tos?: boolean }[] = [
   { q: "Partiyi nasıl biliyor?", a: "Arkadaşların için Riot Client'tan, kesin olarak. Diğer oyuncular için önceki maç kayıtlarından: bir önceki maçlarını ya da son maçlarını aynı partide oynayıp şimdi aynı takımdalarsa aynı parti gösterilir. Harfin üstüne gelince hangisi olduğu yazar." },
   { q: "Gizli isimleri açar mı?", a: "Hayır. İsmini gizleyen oyuncunun adı sorgulanmaz, saklanmaz, gösterilmez." },
   { q: "Verilerim nereye gidiyor?", a: "Etiketler, notlar ve ayarlar bu bilgisayarda kalır. Uygulama kaç kişinin kullandığını saymak için yalnızca rastgele bir kimlik ve sürüm numarası gönderir. Öneri / Hata formunu gönderirsen yazdığınla birlikte Riot ID'n de gider. Şifren, oturum bilgilerin, lobideki oyuncular ve maç bilgisi hiç gönderilmez. Hepsi aşağıdaki canlı kayıtta görünür." },
-  { q: "Windows neden uyarı veriyor?", a: "Kurulum dosyası ücretli bir kod imzasıyla imzalanmadı. Windows yeni ve imzasız her dosyada uyarır; virüs anlamına gelmez." },
+  { q: "Virüs var mı? Nasıl kontrol ederim?", a: "Kurulum dosyasını GitHub kendi sunucularında, depodaki açık koddan derler ve mühürler. Aşağıdaki Bu kurulumu doğrula düğmesi senin dosyanı GitHub'dakiyle karşılaştırır. Windows ve bazı antivirüsler imzasız yeni dosyalara uyarı verebilir; bu tek başına virüs anlamına gelmez." },
 ];
 
 const TARGET: Record<NetEntry["target"], string> = {
@@ -41,6 +41,37 @@ function localData(): { label: string; n: number }[] {
     { label: "Karşılaştığın oyuncular", n: count("overlay-seen") },
     { label: "Etiket ve notlar", n: seen.filter((e) => e.label || e.tag || e.note).length },
   ];
+}
+
+interface InstallCheck { status: "ok" | "mismatch" | "unavailable"; own: string; matched?: string | null; url: string }
+
+/* "Bu kurulumu doğrula": çalışan dosyanın parmak izi GitHub'ın bu sürüm için yayınladığı listeyle karşılaştırılır. */
+function Verify() {
+  const [st, setSt] = useState<{ kind: "idle" } | { kind: "busy" } | { kind: "done"; r: InstallCheck } | { kind: "error"; msg: string }>({ kind: "idle" });
+  const run = async () => {
+    if (!inTauri) { setSt({ kind: "error", msg: "Doğrulama yalnızca masaüstü uygulamasında çalışır." }); return; }
+    setSt({ kind: "busy" });
+    try { setSt({ kind: "done", r: await invoke<InstallCheck>("verify_install") }); }
+    catch (e) { setSt({ kind: "error", msg: String(e) }); }
+  };
+  const r = st.kind === "done" ? st.r : null;
+  return (
+    <div className={`box verify${r?.status === "ok" ? " ok" : r?.status === "mismatch" ? " bad" : ""}`}>
+      <Row
+        title={r?.status === "ok" ? "Bu kurulum doğrulandı" : r?.status === "mismatch" ? "Bu kurulum GitHub'daki dosyayla eşleşmedi" : "Bu kurulumu doğrula"}
+        desc={
+          r?.status === "ok" ? "Bilgisayarındaki uygulama dosyası, GitHub'ın açık koddan derleyip yayınladığı dosyayla birebir aynı."
+          : r?.status === "mismatch" ? "Kendin derlediysen ya da başka bir yerden indirdiysen bu normaldir. Emin değilsen uygulamayı GitHub'daki sürüm sayfasından yeniden kur."
+          : r?.status === "unavailable" ? "Bu sürüm, parmak izi yayınlanmaya başlamadan önce çıktı. Bir sonraki güncellemeden sonra doğrulayabilirsin."
+          : st.kind === "error" ? <span className="err">{st.msg}</span>
+          : "Uygulama kendi dosyasının parmak izini (SHA256) hesaplar ve GitHub'ın bu sürüm için yayınladığı parmak iziyle karşılaştırır."
+        }
+      >
+        <button className={r?.status === "ok" ? "x" : "x go"} type="button" disabled={st.kind === "busy"} onClick={run}>{st.kind === "busy" ? "Kontrol ediliyor…" : r ? "Tekrar kontrol et" : "Doğrula"}</button>
+      </Row>
+      {r && r.status !== "unavailable" && <p className="vhash"><span>Bu dosya</span><code>{r.own}</code></p>}
+    </div>
+  );
 }
 
 export function TrustPanel({ onClose, onToast, onOpen }: { onClose: () => void; onToast: (t: string) => void; onOpen: (url: string) => void }) {
@@ -91,6 +122,8 @@ export function TrustPanel({ onClose, onToast, onOpen }: { onClose: () => void; 
           </div>
         ))}
       </div>
+
+      <Verify />
 
       <div className="live">
         <h2 className="h lh">

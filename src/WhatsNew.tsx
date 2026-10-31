@@ -7,6 +7,8 @@ const NOTES: Record<string, string[]> = {
     "Parti bilgisi artık maç sırasında da görünüyor: arkadaş olmayan oyuncular için önceki maç kayıtlarından çıkarılıyor.",
     "Rekabet, derecesiz, tam gaz, ölüm maçı: bütün modlardaki partiler sayılıyor.",
     "Parti harfinin üstüne gelince nereden bilindiği yazıyor.",
+    "MMR göstergesi: kazanınca ve kaybedince alınan RR'dan MMR ↑ / ↓ ve sonraki ranka kaç galibiyet kaldığı.",
+    "S.S.S & Panel › Bu kurulumu doğrula: dosyanın GitHub'daki açık koddan derlenenle aynı olduğunu tek tıkla gör.",
   ],
   "0.7.0": [
     "Yeni görünüm: bütün menüler aynı sade düzende, Ayarlar yan menülü.",

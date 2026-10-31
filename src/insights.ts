@@ -79,3 +79,41 @@ export function teamSummary(list: Player[], mapId?: string | null): string[] {
   for (const n of [...parties.values()].filter((n) => n >= 2).sort((a, b) => b - a)) out.push(`${n} kişilik parti`);
   return out;
 }
+
+/* ---------- MMR göstergesi: son rekabet maçlarındaki RR kazanç ve kayıpları ----------
+   Gizli MMR'ı Riot vermez. Ama kazanınca alınan RR kaybedince verilenden belirgin fazlaysa
+   MMR rankın üstündedir (yükseliyor); azsa altındadır. Tahmin değil, ölçülen RR'dan hesaplanır. */
+export const MMR_MIN = 3;   // en az bu kadar galibiyet ve bu kadar mağlubiyet
+export const MMR_GAP = 5;   // ortalama kazanç ile kayıp arasındaki fark (RR)
+
+export interface RrStats { wins: number; losses: number; gain: number; loss: number; diff: number }
+
+export function rrStats(deltas: number[]): RrStats | null {
+  const g = deltas.filter((x) => x > 0), l = deltas.filter((x) => x < 0);
+  if (g.length < MMR_MIN || l.length < MMR_MIN) return null;
+  const gain = g.reduce((a, b) => a + b, 0) / g.length;
+  const loss = -l.reduce((a, b) => a + b, 0) / l.length;
+  return { wins: g.length, losses: l.length, gain, loss, diff: gain - loss };
+}
+
+/** Sonraki rank için kabaca kaç galibiyet; Ölümsüzlük ve üstünde RR sınırı farklı olduğu için hesaplanmaz. */
+export function nextRank(tier: number, rr: number, s: RrStats | null): { wins: number; tier: number } | null {
+  if (!s || tier < 3 || tier >= 24 || s.gain <= 0) return null;
+  return { wins: Math.max(1, Math.ceil((100 - rr) / s.gain)), tier: tier + 1 };
+}
+
+/** Bir mağlubiyette düşebilir mi (Demir 1'de düşülmez, Ölümsüzlük ve üstünde hesaplanmaz). */
+export const derankRisk = (tier: number, rr: number, s: RrStats | null) => !!s && tier > 3 && tier < 24 && rr < s.loss;
+
+export function mmrBadge(p: Player, tierName?: (t: number) => string | undefined): Badge | null {
+  const s = rrStats((p.rrMaps ?? []).map((m) => m.rr));
+  if (!s || Math.abs(s.diff) < MMR_GAP) return null;
+  const nx = nextRank(p.rank.current, p.rank.rr, s);
+  const tip = [
+    `Son ${s.wins + s.losses} rekabet maçında kazanınca ort. +${Math.round(s.gain)} RR, kaybedince ort. −${Math.round(s.loss)} RR.`,
+    s.diff > 0 ? "Kazanılan RR kaybedilenden fazla: gizli MMR rankının üstünde, yükseliyor." : "Kaybedilen RR kazanılandan fazla: gizli MMR rankının altında.",
+    nx && tierName?.(nx.tier) ? `${tierName(nx.tier)} için yaklaşık ${nx.wins} galibiyet.` : "",
+    derankRisk(p.rank.current, p.rank.rr, s) ? "Bir mağlubiyette düşebilir." : "",
+  ].filter(Boolean).join(" ");
+  return s.diff > 0 ? { text: "MMR ↑", tone: "pos", tip } : { text: "MMR ↓", tone: "neg", tip };
+}

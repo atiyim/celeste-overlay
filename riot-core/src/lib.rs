@@ -4,6 +4,7 @@ mod engine;
 mod model;
 pub mod netlog;
 mod session;
+pub mod verify;
 
 pub use engine::Engine;
 pub use model::*;

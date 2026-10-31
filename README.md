@@ -11,6 +11,7 @@ Valorant lobisinde herkesin rankını, son maçlarını ve kaplamalarını tek b
 - **Veriler sende kalır.** Etiketler, notlar ve ayarlar yalnızca bu bilgisayarda saklanır. Uygulama yalnızca kaç kişinin kullandığını saymak için rastgele bir kimlik ve sürüm numarası gönderir (oyuncu adları ve maç bilgisi gönderilmez). **Öneri / Hata bildir** formunu gönderirsen yazdığın metin, Riot ID'n, yazdıysan Discord adın ve istersen tanı bilgisi Celeste yetkililerine gider. Bu istekler de S.S.S & Panel'deki canlı kayıtta görünür.
 - **Gizli isimler gizli kalır.** İsmini gizleyen oyuncunun adı sorgulanmaz, saklanmaz, gösterilmez.
 - **Kanıtı uygulamanın içinde.** **S.S.S & Panel** sekmesi, uygulamanın attığı her isteği canlı listeler.
+- **Dosya doğrulanabilir.** Kurulum dosyasını GitHub kendi sunucularında bu depodaki açık koddan derler ve mühürler; her sürümde parmak izi (SHA256) yayınlanır. Aşağıdaki [Dosyayı doğrula](#dosyayı-doğrula) bölümüne ve uygulamadaki **S.S.S & Panel › Bu kurulumu doğrula** düğmesine bak.
 - Kaynak kodu bu depoda açıktır.
 
 Celeste Overlay, Riot Games ile bağlantılı değildir ve Riot Games tarafından onaylanmamıştır. Riot Games, üçüncü taraf uygulamaları onaylamaz ve Vanguard'ın bir uygulamayı şimdi ya da ileride işaretlemeyeceğini garanti etmez ([hizmet şartları](https://www.riotgames.com/tr/terms-of-service-TR)). Bu uygulama için de garanti verilemez; yapılabilecek tek şey ne yaptığını açıkça göstermektir.
@@ -34,6 +35,15 @@ Celeste Overlay, Riot Games ile bağlantılı değildir ve Riot Games tarafında
 
 ![SmartScreen adımları](docs/smartscreen.png)
 
+### Dosyayı doğrula
+
+Her sürüm sayfasının sonundaki **Doğrulama** bölümünde kurulum dosyasının parmak izi (SHA256) yazar; aynı liste `SHA256SUMS.txt` olarak da yüklenir.
+
+- **Parmak izi:** İndirdiğin dosyanın olduğu klasörde PowerShell'de `Get-FileHash .\Celeste.Overlay_<sürüm>_x64-setup.exe` çalıştır. Çıkan değer sürüm sayfasındakiyle aynıysa dosya birebir aynıdır.
+- **GitHub mührü:** [GitHub CLI](https://cli.github.com) ile `gh attestation verify <dosya> -R atiyim/celeste-overlay`. "Verified" çıkarsa dosya bu depodaki koddan, bu deponun iş akışıyla derlenmiştir.
+- **Uygulamanın içinden:** S.S.S & Panel › **Bu kurulumu doğrula**. Uygulama kendi dosyasının parmak izini GitHub'daki listeyle karşılaştırır.
+- **Hiç indirmeden:** Aşağıdaki [Geliştirme](#geliştirme) bölümündeki komutlarla kendin derleyebilirsin.
+
 Uyarı yalnızca ilk kurulumda çıkar. Uygulama içi güncellemelerde çıkmaz. Kurulum dosyasını yalnızca bu deponun [Releases](../../releases) sayfasından indir.
 
 ## Özellikler
@@ -46,8 +56,10 @@ Ajan seçiminde ve maç sırasında herkes tek tabloda:
 - **Kazanma oranı** ve maç sayısı.
 - **Son maçlar.** Son 5 maçın W/L işareti. Rekabet düz, diğer modlar kesikli çerçeveyle görünür. Üstüne gelince mod, harita, ajan ve K/D/A çıkar.
 - **Kaplamalar.** Silah başına kaplama görselleri. Görselin altındaki renkli çizgi kaplamanın nadirliğini gösterir (Select, Deluxe, Premium, Ultra, Exclusive); en nadir üçü ayrıca hafifçe parlar.
-- **Parti.** Aynı partideki oyuncular aynı harfi alır (A, B…). Kesin bilinmeyenler soluk harfle gösterilir.
-- **Rozetler.** Yalnızca son rekabet maçlarında ölçülen değerlere göre: Kafa avcısı, Yüksek hasar, Öncü, İlk ölen, Düşük HS, Formda, Düşüşte.
+- **Lobi özeti.** Tablonun üstünde tek satır: rakipte ve takımında kaç Operator'cu, Sheriff'çi, haritada usta/zayıf oyuncu ve kaç kişilik parti olduğu.
+- **Parti.** Aynı partideki oyuncular aynı harfi alır (A, B…). Arkadaşların için Riot Client'tan (kesin); diğer oyuncular için önceki maç kayıtlarından: bir önceki maçlarını ya da son maçlarını aynı partide oynayıp şimdi aynı takımdalarsa (bütün modlar: rekabet, derecesiz, tam gaz, ölüm maçı...). Harfin üstüne gelince kaynağı yazar.
+- **Rozetler.** Yalnızca ölçülen değerlere göre: Operator'cu / Sheriff'çi (satın aldığı silahlar), Haritada usta / zayıf (bu haritadaki RR), MMR ↑ / ↓ (kazanınca ve kaybedince alınan ortalama RR), Kafa avcısı, Yüksek hasar, Öncü, İlk ölen, Düşük HS, Formda, Düşüşte. Üstüne gelince hesap ve maç sayısı yazar.
+- **MMR göstergesi.** Gizli MMR'ı Riot vermez; uygulama son 20 rekabet maçında kazanınca ve kaybedince ortalama kaç RR alındığını gösterir. Kazanılan belirgin fazlaysa MMR rankın üstündedir. Oyuncu ayrıntısında ve İstatistik'te sonraki ranka yaklaşık kaç galibiyet kaldığı ve bir mağlubiyette düşme ihtimali de yazar.
 - **Takım karşılaştırması.** Her takımın ortalama ranki ve K/D'si.
 - **Tekrar karşılaşma.** Daha önce aynı maçta olduğun oyuncular "3. kez" etiketiyle öne çıkar ve geçen sefer takım mı rakip mi olduğu yazılır. İsimleri yalnızca lobide zaten görünüyorsa saklanır.
 - **Oyuncu ayrıntısı.** Satıra tıklayınca: maç geçmişi (mod filtresiyle: rekabet, derecesiz, tam gaz, diğer; her maçta tarih, saat ve kaç dakika önce oynandığı), oynayış istatistikleri, kullandığı kaplamalar.

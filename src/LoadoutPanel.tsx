@@ -8,7 +8,7 @@ import { TAGS, type Entry, type TagId } from "./seen";
 import { actRows, agentBuckets, compOnly, firstAct, kdOf, oneTrick, pool, roleBuckets, tally, winPct, type Bucket, type Tally } from "./profile";
 import type { Player, PremierTeam } from "./types";
 import { CloseButton, NameLine } from "./ui";
-import { gunBadge, mapBadge, mapForm } from "./insights";
+import { derankRisk, gunBadge, mapBadge, mapForm, mmrBadge, nextRank, rrStats } from "./insights";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -197,7 +197,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
             <button className="namebtn" type="button" title="Kullanıcı adını kopyala" onClick={() => onCopy(anonymous ? entry?.label ?? null : p.name ?? null)}>
               <NameLine name={(anonymous ? entry?.label ?? "Oyuncu (isim gizli)" : p.name) ?? "…"} />
             </button>
-            {[gunBadge(p), mapBadge(p, mapId, mapName), sb, fb].filter((b): b is NonNullable<typeof b> => !!b).map((b) => <span key={b.text} className={`bd ${b.tone}`} title={b.tip}>{b.text}</span>)}
+            {[gunBadge(p), mapBadge(p, mapId, mapName), mmrBadge(p, (t) => assets.tiers.get(t)?.name), sb, fb].filter((b): b is NonNullable<typeof b> => !!b).map((b) => <span key={b.text} className={`bd ${b.tone}`} title={b.tip}>{b.text}</span>)}
           </h2>
           <p className="m">
             <b className="ag-n">{agent?.name}</b>
@@ -314,6 +314,18 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
                 <div className="pills">
                   {p.rrTrend.map((r, i) => <span key={i} className={r >= 0 ? "pill pos" : "pill neg"}>{sign(r)}</span>)}
                 </div>
+                {(() => {
+                  const s = rrStats((p.rrMaps ?? []).map((m) => m.rr));
+                  if (!s) return null;
+                  const nx = nextRank(p.rank.current, p.rank.rr, s);
+                  return (
+                    <p className="m cap">
+                      Kazanınca ort. <b className="pos">+{Math.round(s.gain)}</b>, kaybedince ort. <b className="neg">−{Math.round(s.loss)}</b> RR
+                      {nx && assets.tiers.get(nx.tier) ? <> · {assets.tiers.get(nx.tier)!.name} için ≈{nx.wins} galibiyet</> : null}
+                      {derankRisk(p.rank.current, p.rank.rr, s) ? <> · <span className="neg">bir mağlubiyette düşebilir</span></> : null}
+                    </p>
+                  );
+                })()}
               </>
             )}
           </div>

@@ -63,6 +63,13 @@ jobs:
             h=$(sha256sum "$f" | cut -d' ' -f1 | tr 'a-f' 'A-F')
             echo "$h  ${f// /.}" >> "$GITHUB_WORKSPACE/SHA256SUMS.txt"
           done
+          # Kurulumdan sonra bilgisayarda çalışan uygulama dosyası (uygulamadaki "Bu kurulumu doğrula" bununla karşılaştırır).
+          for f in ../../*.exe; do
+            [ -f "$f" ] || continue
+            h=$(sha256sum "$f" | cut -d' ' -f1 | tr 'a-f' 'A-F')
+            n=$(basename "$f")
+            echo "$h  uygulama/${n// /.}" >> "$GITHUB_WORKSPACE/SHA256SUMS.txt"
+          done
           cat "$GITHUB_WORKSPACE/SHA256SUMS.txt"
           {
             echo "### Parmak izi (SHA256)"

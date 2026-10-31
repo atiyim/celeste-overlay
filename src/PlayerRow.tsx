@@ -7,7 +7,7 @@ import { tierColor } from "./LoadoutPanel";
 import { activityBadge, analyze, formBadge, isComp, modeName, styleBadge } from "./playstyle";
 import type { Player } from "./types";
 import { NameLine } from "./ui";
-import { gunBadge, mapBadge } from "./insights";
+import { gunBadge, mapBadge, mmrBadge } from "./insights";
 import { partyInfo } from "./party";
 
 interface Props {
@@ -80,7 +80,7 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
 
   const play = analyze(p);
   // Satır sade kalsın: en önemli iki rozet. Önce maç içinde işe yarayanlar (silah alışkanlığı, bu harita).
-  const badges = [gunBadge(p), mapBadge(p, mapId, mapName), formBadge(p), styleBadge(play, th), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 2);
+  const badges = [gunBadge(p), mapBadge(p, mapId, mapName), mmrBadge(p, (t) => assets.tiers.get(t)?.name), formBadge(p), styleBadge(play, th), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 2);
 
   const stop = (fn: () => void) => (e: MouseEvent) => { e.stopPropagation(); fn(); };
   const key = (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };

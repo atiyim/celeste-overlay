@@ -70,6 +70,13 @@ fn get_net_report() -> NetReport {
     netlog::report()
 }
 
+/// "Bu kurulumu doğrula": çalışan dosyanın parmak izini GitHub'daki bu sürümün listesiyle karşılaştırır.
+#[tauri::command]
+async fn verify_install(app: AppHandle) -> Result<riot_core::verify::InstallCheck, String> {
+    let version = app.package_info().version.to_string();
+    riot_core::verify::check_install("atiyim/celeste-overlay", &version).await
+}
+
 /// F2 kısayolu şu an bu uygulamaya kayıtlı mı? (Başka bir program tutuyorsa false.)
 #[tauri::command]
 fn hotkey_ok(app: AppHandle) -> bool {
@@ -143,7 +150,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState { engine: Arc::new(Engine::new()) })
-        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note, hotkey_ok, get_riot_id])
+        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note, hotkey_ok, get_riot_id, verify_install])
         .setup(move |app| {
             // F2 başka bir uygulamada kayıtlıysa uygulama yine açılır, tepsi simgesi çalışmaya devam eder.
             if let Err(e) = app.global_shortcut().register(f2) {
