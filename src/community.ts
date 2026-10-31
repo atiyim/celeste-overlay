@@ -43,7 +43,8 @@ export function useUsagePing(version: string) {
   }, [version]);
 }
 
-/* "Ele alındı" haberleri: yalnızca bu cihazdan son 30 günde bildirim gönderildiyse, 5 dakikada bir sorulur.
+/* "Ele alındı" haberleri: yalnızca bu cihazdan son 30 günde bildirim gönderildiyse sorulur
+   (overlay açıkken dakikada bir, gizliyken 5 dakikada bir).
    İstek yalnızca cihazın rastgele kimliğini taşır; gelen haber bir kez gösterilir ve sunucudan silinir. */
 export const SENT_KEY = "overlay-feedback-sent";
 export const markFeedbackSent = () => { try { localStorage.setItem(SENT_KEY, String(Date.now())); } catch { /* depolama kapalı */ } };
@@ -66,9 +67,20 @@ export function useNotices(): [Notice[], () => void] {
         if (Array.isArray(got) && got.length) setList((l) => [...l, ...got.filter((n) => n.kind === "oneri" || n.kind === "hata").map((n) => ({ ...n, message: typeof n.message === "string" ? n.message.slice(0, 300) : "" }))]);
       } catch { /* sonraki turda */ }
     };
-    const t0 = window.setTimeout(ask, 20_000);
-    const t = window.setInterval(ask, 5 * 60_000);
-    return () => { window.clearTimeout(t0); window.clearInterval(t); };
+    // Overlay açıkken dakikada bir; gizliyken 5 dakikada bir. F2 ile açılınca hemen sorulur.
+    let last = 0;
+    const tick = () => {
+      const gap = document.hidden ? 5 * 60_000 : 60_000;
+      if (Date.now() - last < gap - 1_000) return;
+      last = Date.now();
+      void ask();
+    };
+    const onShow = () => { if (!document.hidden && Date.now() - last > 10_000) { last = Date.now(); void ask(); } };
+    const t0 = window.setTimeout(() => { last = Date.now(); void ask(); }, 5_000);
+    const t = window.setInterval(tick, 15_000);
+    document.addEventListener("visibilitychange", onShow);
+    window.addEventListener("focus", onShow);
+    return () => { window.clearTimeout(t0); window.clearInterval(t); document.removeEventListener("visibilitychange", onShow); window.removeEventListener("focus", onShow); };
   }, []);
   return [list, () => setList([])];
 }
