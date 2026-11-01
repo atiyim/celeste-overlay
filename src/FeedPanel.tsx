@@ -25,7 +25,7 @@ const Admin = createContext<AdminCtx>({ on: false, roles: [], reload: () => unde
 /** İsme ya da etikete tıklayınca profil açılır. */
 const OpenProfile = createContext<(riot: string) => void>(() => undefined);
 
-const MENTION_RE = /@([^\s#@]{1,16}#[0-9A-Za-zÇĞİÖŞÜçğıöşü]{2,5})/gu;
+const MENTION_RE = /@([^\s#@](?:[^#@\n]{0,14}[^\s#@])?#[0-9A-Za-zÇĞİÖŞÜçğıöşü]{2,5})/gu;
 
 /** Yazı + tıklanabilir @isim#etiket. */
 function RichText({ text, className }: { text: string; className?: string }) {
