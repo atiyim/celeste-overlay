@@ -23,10 +23,10 @@ export interface FeedCard {
   /** Skor tablosu (isimsiz): a = ajan, as = asist. */
   board?: { a: string; k: number; d: number; as: number; acs: number; me: boolean; ally: boolean }[];
 }
-export interface Post { id: number; riot: string; text: string; card: FeedCard | null; created: number; likes: number; comments: number; liked: boolean; mine: boolean; roles: Role[]; reports?: number; hidden?: boolean }
+export interface Post { id: number; riot: string; text: string; card: FeedCard | null; created: number; likes: number; comments: number; liked: boolean; mine: boolean; pinned?: boolean; roles: Role[]; reports?: number; hidden?: boolean }
 export interface Comment { id: number; riot: string; text: string; created: number; mine: boolean; roles: Role[] }
 export interface RoleDef { id: number; name: string; color: string; members: { puuid: string; riot: string }[] }
-export interface AdminList { posts: Post[]; comments: (Comment & { post: number; reports: number; hidden: boolean })[]; bans: { riot: string; at: number }[]; roles: RoleDef[] }
+export interface AdminList { posts: Post[]; comments: (Comment & { post: number; reports: number; hidden: boolean })[]; bans: { riot: string; at: number }[]; roles: RoleDef[]; adminColor?: string }
 export interface Me { session: string; riot: string; puuid: string; verifiedName: boolean; admin: boolean; banned: boolean; roles: Role[] }
 
 export function cardOf(m: MyMatch, assets?: Assets): FeedCard {

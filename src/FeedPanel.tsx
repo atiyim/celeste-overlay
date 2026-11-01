@@ -22,12 +22,20 @@ interface AdminCtx { on: boolean; roles: RoleDef[]; reload: () => void }
 const Admin = createContext<AdminCtx>({ on: false, roles: [], reload: () => undefined });
 
 /* ---------- İsim + roller ---------- */
+/** Zemin rengine göre okunur yazı rengi. */
+function ink(hex: string): string {
+  const n = parseInt(hex.slice(1), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? "#140d00" : "#ffffff";
+}
+const adminOf = (roles: Role[]) => roles.find((r) => r.admin);
+
 function Roles({ roles }: { roles: Role[] }) {
   if (!roles.length) return null;
   return (
     <span className="froles">
       {roles.map((r) => (
-        <span key={r.name} className={r.admin ? "frole adm" : "frole"} style={{ "--rc": r.color } as React.CSSProperties} title={r.admin ? "Celeste Overlay yöneticisi" : `Rol: ${r.name}`}>{r.name}</span>
+        <span key={r.name} className={r.admin ? "frole adm" : "frole"} style={{ "--rc": r.color, "--rt": ink(r.color) } as React.CSSProperties} title={r.admin ? "Celeste Overlay yöneticisi" : `Rol: ${r.name}`}>{r.name}</span>
       ))}
     </span>
   );
@@ -89,7 +97,7 @@ export function FeedCardView({ c, assets }: { c: FeedCard; assets: Assets }) {
 }
 
 /* ---------- Yönetici düğmeleri: sil, banla (onaylı), rol ver ---------- */
-function AdminButtons({ target, riot, onToast, onDone }: { target: string; riot: string; onToast: Toast; onDone: () => void }) {
+function AdminButtons({ target, riot, onToast, onDone, pinned, mine }: { target: string; riot: string; onToast: Toast; onDone: () => void; pinned?: boolean; mine?: boolean }) {
   const adm = useContext(Admin);
   const [ask, setAsk] = useState<"ban" | "del" | null>(null);
   const run = async (action: "ban" | "delete") => {
@@ -101,6 +109,11 @@ function AdminButtons({ target, riot, onToast, onDone }: { target: string; riot:
     try { await feedAdmin("role_give", { role, target }); onToast(`Rol verildi: ${riot}`); adm.reload(); onDone(); }
     catch (e) { onToast((e as Error).message); }
   };
+  const pin = async () => {
+    try { await feedAdmin(pinned ? "unpin" : "pin", { target }); onToast(pinned ? "Sabitleme kaldırıldı" : "Paylaşım en üste sabitlendi"); onDone(); }
+    catch (e) { onToast((e as Error).message); }
+  };
+  const isPost = target.startsWith("p:");
   if (ask) return (
     <span className="fadm ask">
       <small>{ask === "ban" ? `${riot} kalıcı banlansın mı?` : "Silinsin mi?"}</small>
@@ -116,8 +129,9 @@ function AdminButtons({ target, riot, onToast, onDone }: { target: string; riot:
           {adm.roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
         </select>
       )}
-      <button className="lnk" type="button" onClick={() => setAsk("del")}>Sil</button>
-      <button className="lnk neg" type="button" onClick={() => setAsk("ban")}>Banla</button>
+      {isPost && <button className="lnk" type="button" onClick={pin}>{pinned ? "Sabitlemeyi kaldır" : "Sabitle"}</button>}
+      {!mine && <button className="lnk" type="button" onClick={() => setAsk("del")}>Sil</button>}
+      {!mine && <button className="lnk neg" type="button" onClick={() => setAsk("ban")}>Banla</button>}
     </span>
   );
 }
@@ -152,12 +166,12 @@ function Comments({ post, canWrite, onToast, onCount }: { post: Post; canWrite: 
     <div className="fcom">
       {err && <small className="neg">{err}</small>}
       {list?.map((c) => (
-        <div className={c.roles.some((r) => r.admin) ? "fcm1 adm" : "fcm1"} key={c.id}>
+        <div className={adminOf(c.roles) ? "fcm1 adm" : "fcm1"} key={c.id} style={adminOf(c.roles) ? ({ "--adm": adminOf(c.roles)!.color } as React.CSSProperties) : undefined}>
           <div className="fcmh"><NameLine name={c.riot} /><Roles roles={c.roles} /><small className="d">{ago(c.created)}</small>
             <span className="sp" />
             {c.mine && <button className="lnk" type="button" onClick={() => act(() => feedDelete(`c:${c.id}`), "Yorum silindi")}>Sil</button>}
             {!c.mine && !adm.on && canWrite && <button className="lnk" type="button" onClick={() => act(() => feedReport(`c:${c.id}`), "Bildirildi, teşekkürler")}>Bildir</button>}
-            {adm.on && !c.mine && <AdminButtons target={`c:${c.id}`} riot={c.riot} onToast={onToast} onDone={load} />}
+            {adm.on && <AdminButtons target={`c:${c.id}`} riot={c.riot} mine={c.mine} onToast={onToast} onDone={load} />}
           </div>
           <p>{c.text}</p>
         </div>
@@ -193,7 +207,10 @@ function PostView({ p, assets, canWrite, onToast, onChanged }: { p: Post; assets
   };
 
   return (
-    <article className={p.roles.some((r) => r.admin) ? "fpost adm" : "fpost"}>
+    <article className={`fpost${adminOf(p.roles) ? " adm" : ""}${p.pinned ? " pinned" : ""}`} style={adminOf(p.roles) ? ({ "--adm": adminOf(p.roles)!.color } as React.CSSProperties) : undefined}>
+      {p.pinned && (
+        <div className="fpin"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M10.5 1.5 14.5 5.5 12 6.5 9.5 9l.5 3.5-1 1L6 10.5 2.5 14l-.5-.5L5.5 10 2.5 7l1-1L7 6.5 9.5 4z" /></svg>Sabitlenmiş paylaşım</div>
+      )}
       <header className="fph">
         <NameLine name={p.riot} />
         <Roles roles={p.roles} />
@@ -202,7 +219,7 @@ function PostView({ p, assets, canWrite, onToast, onChanged }: { p: Post; assets
         <span className="sp" />
         {p.mine && <button className="lnk" type="button" onClick={() => act(() => feedDelete(`p:${p.id}`), "Paylaşım silindi")}>Sil</button>}
         {!p.mine && !adm.on && canWrite && <button className="lnk" type="button" onClick={() => act(() => feedReport(`p:${p.id}`), "Bildirildi, teşekkürler")}>Bildir</button>}
-        {adm.on && !p.mine && <AdminButtons target={`p:${p.id}`} riot={p.riot} onToast={onToast} onDone={onChanged} />}
+        {adm.on && <AdminButtons target={`p:${p.id}`} riot={p.riot} pinned={p.pinned} mine={p.mine} onToast={onToast} onDone={onChanged} />}
       </header>
       {p.text && <p className="fpt">{p.text}</p>}
       {p.card && <FeedCardView c={p.card} assets={assets} />}
@@ -216,7 +233,7 @@ function PostView({ p, assets, canWrite, onToast, onChanged }: { p: Post; assets
 }
 
 /* ---------- Yönetim sekmesi ---------- */
-function AdminView({ assets, data, err, onToast, reload }: { assets: Assets; data: AdminList | null; err: string | null; onToast: Toast; reload: () => void }) {
+function AdminView({ assets, data, err, me, onToast, reload, onColor }: { assets: Assets; data: AdminList | null; err: string | null; me: Me | null; onToast: Toast; reload: () => void; onColor: (c: string) => void }) {
   const [riot, setRiot] = useState("");
   const [name, setName] = useState("");
   const [color, setColor] = useState(ROLE_COLORS[0]);
@@ -226,6 +243,16 @@ function AdminView({ assets, data, err, onToast, reload }: { assets: Assets; dat
   return (
     <div className="fadmv">
       {err && <Empty tone="err" title="Yönetim açılamadı" text={err} onRetry={reload} />}
+
+      <h3 className="h2">ADMIN rozeti</h3>
+      <div className="box pad fadmcol">
+        <span className="froles"><span className="frole adm" style={{ "--rc": data?.adminColor ?? "#f5c451", "--rt": ink(data?.adminColor ?? "#f5c451") } as React.CSSProperties}>ADMIN</span></span>
+        <span className="fsw">{["#f5c451", "#ec4899", "#38bdf8", "#a78bfa", "#34d399", "#f87171", "#ffffff"].map((c) => (
+          <button key={c} type="button" className={c === data?.adminColor ? "on" : ""} style={{ background: c }} aria-label={`ADMIN rengi ${c}`} onClick={() => { act("admin_color", { color: c }, "ADMIN rengi değişti"); onColor(c); }} />
+        ))}</span>
+        <label className="fcolor">Özel renk <input type="color" value={data?.adminColor ?? "#f5c451"} onChange={(e) => { act("admin_color", { color: e.target.value }, "ADMIN rengi değişti"); onColor(e.target.value); }} /></label>
+        <small className="d">Adının yanındaki rozet, paylaşımlarının çerçevesi ve Discord kartının rengi.</small>
+      </div>
 
       <h3 className="h2">Roller</h3>
       <div className="box pad froleadm">
@@ -243,6 +270,7 @@ function AdminView({ assets, data, err, onToast, reload }: { assets: Assets; dat
                 <span key={m.puuid} className="frmem">{m.riot}<button type="button" aria-label={`${m.riot} kişisinden rolü al`} onClick={() => act("role_take", { role: r.id, puuid: m.puuid }, "Rol alındı")}>×</button></span>
               ))}
             </span>
+            {me && !r.members.some((m) => m.puuid === me.puuid) && <button className="lnk" type="button" onClick={() => act("role_give", { role: r.id, puuid: me.puuid }, `${r.name} rolü sende`)}>Kendime ver</button>}
             <button className="lnk neg" type="button" onClick={() => act("role_delete", { role: r.id }, "Rol silindi")}>Rolü sil</button>
           </div>
         ))}
@@ -398,7 +426,7 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
         </div>
 
         {tab === "admin" ? (
-          <AdminView assets={assets} data={adm} err={admErr} onToast={onToast} reload={loadAdmin} />
+          <AdminView assets={assets} data={adm} err={admErr} me={me} onToast={onToast} reload={() => { loadAdmin(); load(tab === "admin" ? "new" : tab); }} onColor={(c) => setMe((m) => (m ? { ...m, roles: m.roles.map((r) => (r.admin ? { ...r, color: c } : r)) } : m))} />
         ) : (
           <div className="flist">
             {err && <Empty tone="err" title="Akış yüklenemedi" text={err} onRetry={() => load()} />}
