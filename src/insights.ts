@@ -121,21 +121,32 @@ export function mmrBadge(p: Player, tierName?: (t: number) => string | undefined
 /* ---------- Ajan havuzu ---------- */
 
 /** Havuz için gereken en az maç (ajanı bilinen). */
-export const POOL_MIN = 3;
+export const POOL_MIN = 2;
 /** "Main" / "Alışık değil" etiketi için gereken en az maç. */
 export const POOL_TAG_MIN = 5;
 
 export interface Pool { n: number; top: { agentId: string; count: number }[]; counts: Map<string, number> }
 
-/** Son maçlarında oynadığı ajanlar (bütün modlar). Ayrıntı açıldıysa daha uzun geçmiş kullanılır. */
+/** Ajanın rastgele verildiği ya da seçimin anlamsız olduğu modlar havuza sayılmaz. */
+const POOL_SKIP = new Set(["deathmatch", "ggteam", "snowball"]);
+/** Son hesaplanan havuz: veri yeniden yüklenirken sütun boşalıp gelmesin diye. */
+const poolCache = new Map<string, Pool>();
+
+/** Son maçlarında oynadığı ajanlar (ölüm maçı, tırmanış ve kartopu hariç). Ayrıntı açıldıysa daha uzun geçmiş kullanılır. */
 export function agentPool(p: Player): Pool | null {
   const src = p.deep && p.deep.length > p.form.length ? p.deep : p.form;
-  const list = src.filter((f) => !!f.agentId);
-  if (list.length < POOL_MIN) return null;
+  const list = src.filter((f) => !!f.agentId && !POOL_SKIP.has(f.queue ?? ""));
+  if (list.length < POOL_MIN) {
+    const old = poolCache.get(p.puuid);
+    return old && (p.formLoading || list.length < old.n) ? old : null;
+  }
   const counts = new Map<string, number>();
   for (const f of list) { const id = (f.agentId as string).toLowerCase(); counts.set(id, (counts.get(id) ?? 0) + 1); }
   const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([agentId, count]) => ({ agentId, count }));
-  return { n: list.length, top, counts };
+  const pool = { n: list.length, top, counts };
+  if (poolCache.size > 200) poolCache.clear();
+  poolCache.set(p.puuid, pool);
+  return pool;
 }
 
 /** Şu anki ajanı mainiyse ya da hiç oynamadığı bir ajansa etiket. */

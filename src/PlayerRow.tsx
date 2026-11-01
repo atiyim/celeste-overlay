@@ -164,7 +164,7 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
         </div>
       )}
       {cols.pool && (
-        <div className="pool" title={pool ? `Son ${pool.n} maçında oynadığı ajanlar (bütün modlar)` : undefined}>
+        <div className="pool" title={pool ? `Son ${pool.n} maçında oynadığı ajanlar (ölüm maçı hariç)` : undefined}>
           {pool ? pool.top.map((a) => {
             const ag = assets.agents.get(lookup(a.agentId));
             const now = !!p.agentId && lookup(p.agentId) === lookup(a.agentId);

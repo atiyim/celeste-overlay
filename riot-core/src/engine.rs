@@ -724,12 +724,16 @@ impl Engine {
                     }
                 }
             }
-            for p in players.iter() {
-                if let Some((_, h)) = st.history.get(&p.puuid) {
-                    // Önce herkesin son 5+5 maçı; ayrıntısı açılan oyuncunun derin geçmişi bunlardan sonra gelir.
-                    for (id, _) in recent_ids(h) {
-                        if !st.details.contains_key(&id) && !want.contains(&id) {
-                            want.push(id);
+            // Sonra herkesin son 5+5 maçı, sırayla: önce herkesin 2. maçı, sonra 3.'sü... Böylece ajan havuzu ve form
+            // listenin sonundaki oyuncular için de erken dolar. Ayrıntısı açılan oyuncunun derin geçmişi en son gelir.
+            let lists: Vec<Vec<(String, String)>> =
+                players.iter().map(|p| st.history.get(&p.puuid).map(|(_, h)| recent_ids(h)).unwrap_or_default()).collect();
+            let longest = lists.iter().map(Vec::len).max().unwrap_or(0);
+            for i in 0..longest {
+                for l in &lists {
+                    if let Some((id, _)) = l.get(i) {
+                        if !st.details.contains_key(id) && !want.contains(id) {
+                            want.push(id.clone());
                         }
                     }
                 }
