@@ -9,6 +9,7 @@ import { MMR_GAP, derankRisk, nextRank, rrStats } from "./insights";
 import { Goal } from "./Goal";
 import { MatchCard } from "./MatchCard";
 import type { MyMatch } from "./types";
+import { cardOf, type FeedCard } from "./feed";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
@@ -21,7 +22,7 @@ function ago(ms: number): string {
   return `${Math.floor(m / 1440)}g`;
 }
 
-export function StatsPanel({ assets, onClose, onToast }: { assets: Assets; onClose: () => void; onToast: (t: string) => void }) {
+export function StatsPanel({ assets, onClose, onToast, onShare }: { assets: Assets; onClose: () => void; onToast: (t: string) => void; onShare: (c: FeedCard) => void }) {
   const [data, setData] = useState<MyStats | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -144,7 +145,7 @@ export function StatsPanel({ assets, onClose, onToast }: { assets: Assets; onClo
           </div>
         </div>
       )}
-      {card && <MatchCard m={card} assets={assets} onToast={onToast} onClose={() => setCard(null)} />}
+      {card && <MatchCard m={card} assets={assets} onToast={onToast} onShare={() => { onShare(cardOf(card)); setCard(null); }} onClose={() => setCard(null)} />}
     </div>
   );
 }

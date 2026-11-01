@@ -1082,6 +1082,16 @@ impl Engine {
             .ok_or_else(|| "Riot ID alınamadı. Riot Client'ta oturumunun açık olduğundan emin ol.".to_string())
     }
 
+    /// Kendi Riot hesap kimliğin (puuid). Akışta banın hesaba bağlı kalması için gönderilir.
+    pub async fn my_puuid(&self) -> Result<String, String> {
+        let mut st = self.state.lock().await;
+        let s = self.session(&mut st).await.map_err(|e| {
+            st.session = None;
+            friendly(&e)
+        })?;
+        Ok(s.puuid.to_lowercase())
+    }
+
     pub async fn account(&self) -> Result<Account, String> {
         let r = self.account_inner().await;
         let mut st = self.state.lock().await;

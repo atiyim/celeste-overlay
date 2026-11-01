@@ -14,6 +14,7 @@ const NOTES: Record<string, string[]> = {
     "Ajanlar sütunu: herkesin son maçlarda oynadığı 3 ajan; Main / Alışık değil rozeti.",
     "İstatistik › Act hedefi: hedef ranka kalan RR ve tahmini galibiyet.",
     "Maç kartı: maçını Discord'a ya da hikâyeye atmak için görsel (Kopyala / Kaydet).",
+    "Akış: maçlarını ve düşüncelerini paylaş, GG ver, yorum yap.",
   ],
 
   "0.7.0": [

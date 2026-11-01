@@ -934,3 +934,66 @@ html:has(body.web) { overflow-y: auto; }
 .mcview { position: relative; flex: 1; min-height: 240px; display: flex; align-items: center; justify-content: center; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; overflow: hidden; }
 .mcview canvas { position: absolute; inset: 10px; width: calc(100% - 20px); height: calc(100% - 20px); object-fit: contain; }
 .mcard > small { font-size: 11.5px; }
+
+/* ---------- 0.7.1: Akış ---------- */
+.x.pri { color: #000; background: var(--accent); border-color: var(--accent); font-weight: 600; }
+.x.pri:disabled { opacity: .45; }
+.sp { flex: 1; }
+.inp { box-sizing: border-box; width: 100%; font: inherit; font-size: 13px; color: var(--fg); background: var(--s1); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; outline: none; resize: vertical; }
+.inp:focus { border-color: var(--accent); }
+.akis .lnk { color: var(--fg-2); text-decoration: none; font-size: 12px; }
+.akis .lnk:hover { color: var(--fg); text-decoration: underline; }
+.akis .lnk.neg { color: var(--loss); }
+.fcomp { display: flex; flex-direction: column; gap: 8px; }
+.fcbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.fcbar small { font-size: 11.5px; }
+.fdraft { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.fdraft .fcard { width: 100%; }
+.flist { display: flex; flex-direction: column; gap: 10px; max-height: 560px; overflow-y: auto; padding-right: 4px; }
+.flist .more { align-self: center; }
+.fpost { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; background: var(--s1); border: 1px solid var(--line); border-radius: 12px; }
+.fph, .fcmh { display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 13px; }
+.fph .nm, .fcmh .nm { font-weight: 600; }
+.fph small, .fcmh small { font-size: 11.5px; white-space: nowrap; }
+.fpt { margin: 0; font-size: 13.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fpf { display: flex; gap: 6px; }
+.fgg { display: inline-flex; gap: 6px; align-items: center; font: inherit; font-size: 12px; color: var(--fg-2); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px; cursor: pointer; }
+.fgg b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+.fgg:hover:not(:disabled) { border-color: #3a3a3a; color: var(--fg); }
+.fgg.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.fgg.on b { color: var(--accent); }
+.fgg.on2 { color: var(--fg); border-color: #3a3a3a; }
+.fgg:disabled { opacity: .5; cursor: default; }
+.fcom { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line-soft); }
+.fcm1 p { margin: 2px 0 0; font-size: 13px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fcin { display: flex; gap: 8px; align-items: center; }
+.fadm { display: inline-flex; gap: 10px; align-items: baseline; }
+.fadm.ask small { color: var(--fg); }
+.fadmv { display: flex; flex-direction: column; gap: 8px; max-height: 620px; overflow-y: auto; padding-right: 4px; }
+.fadmrow { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.fadmrow .fpost { width: 100%; box-sizing: border-box; }
+.fban { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; font-size: 13px; border-bottom: 1px solid var(--line-soft); }
+.fban:last-child { border-bottom: 0; }
+.fkey { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+.fkey .inp { max-width: 220px; }
+.fkey .lnk.d { font-size: 11px; color: var(--fg-3); }
+
+/* akış maç kartı */
+.fcard { position: relative; display: flex; gap: 14px; min-height: 120px; padding: 14px 16px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(90deg, rgba(5,5,5,.94) 35%, rgba(5,5,5,.55)), var(--art, none) center / cover, var(--bg); }
+.fcard::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--win); }
+.fcard.loss::before { background: var(--loss); }
+.fca { position: absolute; right: -10px; bottom: -18px; height: 150px; width: auto; opacity: .9; pointer-events: none; }
+.fcb { position: relative; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.fcm { font-size: 11.5px; color: var(--fg-2); }
+.fcr { display: flex; align-items: baseline; gap: 12px; }
+.fcw { font-size: 14px; font-weight: 700; color: var(--win); }
+.fcard.loss .fcw { color: var(--loss); }
+.fcs { font-size: 30px; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
+.fck { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+.fck span { display: flex; flex-direction: column; }
+.fck b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fck small { font-size: 10.5px; color: var(--fg-3); }
+.fct { flex-direction: row !important; align-items: center; gap: 6px; }
+.fct img { width: 22px; height: 22px; }
+.fch { display: flex; gap: 6px; flex-wrap: wrap; }
+.fch i { font-style: normal; font-size: 11px; padding: 1px 8px; border: 1px solid rgba(255,255,255,.18); border-radius: 6px; background: rgba(255,255,255,.05); }

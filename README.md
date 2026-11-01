@@ -8,7 +8,7 @@ Valorant lobisinde herkesin rankını, son maçlarını ve kaplamalarını tek b
 
 - **Giriş yok.** Riot hesabına giriş yapmazsın. Uygulama, açık Riot Client oturumunu okur.
 - **Yalnızca okur.** Oyuna tuş göndermez, oyun belleğine girmez, oyun dosyalarını değiştirmez. Hile değildir.
-- **Veriler sende kalır.** Etiketler, notlar ve ayarlar yalnızca bu bilgisayarda saklanır. Uygulama yalnızca kaç kişinin kullandığını saymak için rastgele bir kimlik ve sürüm numarası gönderir (oyuncu adları ve maç bilgisi gönderilmez). **Öneri / Hata bildir** formunu gönderirsen yazdığın metin, Riot ID'n, yazdıysan Discord adın ve istersen tanı bilgisi Celeste yetkililerine gider. Bu istekler de S.S.S & Panel'deki canlı kayıtta görünür.
+- **Veriler sende kalır.** Etiketler, notlar ve ayarlar yalnızca bu bilgisayarda saklanır. Uygulama yalnızca kaç kişinin kullandığını saymak için rastgele bir kimlik ve sürüm numarası gönderir (oyuncu adları ve maç bilgisi gönderilmez). **Öneri / Hata bildir** formunu gönderirsen yazdığın metin, Riot ID'n, yazdıysan Discord adın ve istersen tanı bilgisi Celeste yetkililerine gider. **Akış**'ta paylaşım yaparsan yazın, maç kartı verisi, Riot ID'n ve Riot hesap kimliğin gider ve herkese açık görünür. Bu istekler de S.S.S & Panel'deki canlı kayıtta görünür.
 - **Gizli isimler gizli kalır.** İsmini gizleyen oyuncunun adı sorgulanmaz, saklanmaz, gösterilmez.
 - **Kanıtı uygulamanın içinde.** **S.S.S & Panel** sekmesi, uygulamanın attığı her isteği canlı listeler.
 - **Dosya doğrulanabilir.** Kurulum dosyasını GitHub kendi sunucularında bu depodaki açık koddan derler ve mühürler; her sürümde parmak izi (SHA256) yayınlanır. Aşağıdaki [Dosyayı doğrula](#dosyayı-doğrula) bölümüne ve uygulamadaki **S.S.S & Panel › Bu kurulumu doğrula** düğmesine bak.
@@ -75,7 +75,15 @@ Kendi maçların (rekabet, derecesiz, Premier) round round: saldırı ve savunma
 
 **Act hedefi:** hedef rankı seç (Ölümsüzlük 1'e kadar); kalan RR, hedefi seçtiğinden beri ilerleme çubuğu ve son rekabet maçlarındaki ortalama RR'ına göre yaklaşık kaç galibiyet / maç gerektiği görünür. Tahmindir.
 
-**Maç kartı:** Son maçlar listesinden bir maçın kartını oluştur: harita, ajan, skor, K/D/A, ACS, RR, rank ve öne çıkanlar (clutch, ilk kan, KAST). Yatay (Discord) ya da Hikâye (Instagram) biçimi; **Kopyala** panoya resim olarak koyar, **Kaydet** Resimler › Celeste Overlay klasörüne PNG kaydeder. Riot ID'nin görünmesi kapatılabilir. Kart yalnızca bu bilgisayarda oluşturulur, hiçbir yere gönderilmez.
+**Maç kartı:** Son maçlar listesinden bir maçın kartını oluştur: harita, ajan, skor, K/D/A, ACS, RR, rank ve öne çıkanlar (clutch, ilk kan, KAST). Yatay (Discord) ya da Hikâye (Instagram) biçimi; **Kopyala** panoya resim olarak koyar, **Kaydet** Resimler › Celeste Overlay klasörüne PNG kaydeder. Riot ID'nin görünmesi kapatılabilir. Kart bu bilgisayarda oluşturulur; **Akışta paylaş** dersen kartın verisi akışa gönderilir.
+
+### Akış
+
+Uygulamanın içindeki paylaşım alanı. Yazı (en fazla 280 karakter) ya da maç kartı paylaşılır, paylaşımlara **GG** verilir ve yorum yapılır. Sekmeler: Yeni, Haftanın en iyileri (son 7 günde en çok GG alan), Paylaşımlarım. Paylaşımlar Riot ID ile herkese açık görünür; kendi paylaşımını ve yorumunu silebilirsin.
+
+Kurallar: küfür ve hakaret içeren yazılar gönderilmez; saatte en fazla 5 paylaşım ve 30 yorum. 3 farklı kişinin bildirdiği içerik gizlenir. Yönetici bir kişiyi banlayınca kurulumu, Riot hesabı ve Riot ID'si birlikte kapatılır; uygulamanın hangi sürümünü kullanırsa kullansın paylaşım, yorum ve GG yapamaz. Bir Riot ID akışta ilk kullanıldığı kurulumla eşleşir, başka bir kurulum o adla yazamaz.
+
+Gönderilenler: yazı, maç kartı verisi (harita, ajan, skor, K/D/A, ACS, RR, rank), Riot ID, Riot hesap kimliği (puuid) ve kurulumun rastgele kimliği. IP saklanmaz.
 
 ### OBS kaynağı
 

@@ -24,6 +24,8 @@ import { ReportPanel } from "./ReportPanel";
 import { TrustPanel } from "./TrustPanel";
 import { teamSummary } from "./insights";
 import { FeedbackPanel } from "./FeedbackPanel";
+import { FeedPanel } from "./FeedPanel";
+import type { FeedCard } from "./feed";
 import { alertOf, fmtDur, fmtRr, sessionOf, type Session } from "./tilt";
 import { useUpdater } from "./updater";
 import { Empty } from "./ui";
@@ -38,7 +40,7 @@ const SIDE_QUEUES = ["competitive", "unrated", "swiftplay", "spikerush", "premie
 export const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
 const NAV = [
-  ["roster", "Oyuncular"], ["report", "Son maç"], ["store", "Mağaza"], ["account", "Hesabım"], ["stats", "İstatistik"], ["chat", "Sohbet"], ["cross", "Nişangah"], ["trust", "S.S.S & Panel"], ["settings", "Ayarlar"],
+  ["roster", "Oyuncular"], ["report", "Son maç"], ["store", "Mağaza"], ["account", "Hesabım"], ["stats", "İstatistik"], ["feed", "Akış"], ["chat", "Sohbet"], ["cross", "Nişangah"], ["trust", "S.S.S & Panel"], ["settings", "Ayarlar"],
 ] as const;
 type View = (typeof NAV)[number][0] | "feedback";
 
@@ -56,6 +58,7 @@ export function App() {
   const [collapsed, setCollapsed] = useState<boolean>(() => localStorage.getItem("overlay-collapsed") === "1");
   const [toast, setToast] = useState<string | null>(null);
   const [view, setView] = useState<View>("roster");
+  const [feedDraft, setFeedDraft] = useState<FeedCard | null>(null);
   const [theme, setTheme] = useState(loadTheme);
   const [seen, setSeen] = useState<Seen>({});
   const [guide, setGuide] = useState<boolean>(() => { try { return localStorage.getItem("overlay-guide") !== "1"; } catch { return false; } });
@@ -491,6 +494,8 @@ export function App() {
       {!collapsed && !guide && (
         view === "settings" ? (
           <Settings updater={updater} onOpen={openTracker} onFeedback={() => setView("feedback")} theme={theme} onChange={setTheme} onGuide={() => { setGuide(true); setView("roster"); }} zoom={zoom} onZoom={setZoom} zooms={ZOOMS} onToast={showToast} onClose={() => setView("roster")} />
+        ) : view === "feed" ? (
+          assets ? <FeedPanel assets={assets} draft={feedDraft} onDraftUsed={() => setFeedDraft(null)} onToast={showToast} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "feedback" ? (
           <FeedbackPanel version={updater.version} onOpen={openTracker} onClose={() => setView("roster")} />
         ) : view === "report" ? (
@@ -500,7 +505,7 @@ export function App() {
         ) : view === "account" ? (
           assets ? <AccountPanel assets={assets} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "stats" ? (
-          assets ? <StatsPanel assets={assets} onToast={showToast} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
+          assets ? <StatsPanel assets={assets} onToast={showToast} onShare={(c) => { setFeedDraft(c); setView("feed"); }} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
         ) : view === "cross" ? (
           <Crosshairs onCopy={copyName} onClose={() => setView("roster")} />
         ) : view === "trust" ? (

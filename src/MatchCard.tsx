@@ -31,14 +31,14 @@ function loadImg(src?: string): Promise<HTMLImageElement | undefined> {
   });
 }
 
-function score(m: MyMatch): [number, number] | null {
+export function score(m: MyMatch): [number, number] | null {
   const r = m.rounds;
   if (!r || r.atkRounds + r.defRounds === 0) return null;
   const won = r.atkWon + r.defWon, total = r.atkRounds + r.defRounds;
   return [won, total - won];
 }
 
-function highlights(m: MyMatch): string[] {
+export function highlights(m: MyMatch): string[] {
   const r = m.rounds, out: string[] = [];
   if (r) {
     if (r.clutchWon > 0) out.push(`${r.clutchWon} clutch`);
@@ -197,7 +197,7 @@ function toPng(cv: HTMLCanvasElement): Promise<Uint8Array> {
   });
 }
 
-export function MatchCard({ m, assets, onClose, onToast }: { m: MyMatch; assets: Assets; onClose: () => void; onToast: (t: string) => void }) {
+export function MatchCard({ m, assets, onClose, onToast, onShare }: { m: MyMatch; assets: Assets; onClose: () => void; onToast: (t: string) => void; onShare?: () => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [fmt, setFmt] = useState<Format>(() => { try { return localStorage.getItem("overlay-card-fmt") === "story" ? "story" : "wide"; } catch { return "wide"; } });
   const [showName, setShowName] = useState(true);
@@ -264,6 +264,7 @@ export function MatchCard({ m, assets, onClose, onToast }: { m: MyMatch; assets:
         <span className="sp" />
         <button className="x" type="button" onClick={copy} disabled={busy || !imgs}>Kopyala</button>
         <button className="x" type="button" onClick={save} disabled={busy || !imgs}>Kaydet</button>
+        {onShare && <button className="x pri" type="button" onClick={onShare}>Akışta paylaş</button>}
         <button className="x" type="button" onClick={onClose}>Kapat</button>
       </div>
       <div className={fmt === "story" ? "mcview story" : "mcview"}>
