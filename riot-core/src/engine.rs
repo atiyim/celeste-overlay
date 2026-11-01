@@ -1092,6 +1092,16 @@ impl Engine {
         Ok(s.puuid.to_lowercase())
     }
 
+    /// Akış girişi için Riot'un imzaladığı kimlik belirteci.
+    pub async fn my_id_token(&self) -> Result<String, String> {
+        let mut st = self.state.lock().await;
+        let s = self.session(&mut st).await.map_err(|e| {
+            st.session = None;
+            friendly(&e)
+        })?;
+        s.local_id_token().await.ok_or_else(|| "Riot kimliği doğrulanamadı: Riot Client kimlik belirteci vermedi. Riot Client'ı yeniden başlatıp tekrar dene.".to_string())
+    }
+
     pub async fn account(&self) -> Result<Account, String> {
         let r = self.account_inner().await;
         let mut st = self.state.lock().await;

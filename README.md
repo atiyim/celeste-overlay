@@ -79,11 +79,13 @@ Kendi maçların (rekabet, derecesiz, Premier) round round: saldırı ve savunma
 
 ### Akış
 
-Uygulamanın içindeki paylaşım alanı. Yazı (en fazla 280 karakter) ya da maç kartı paylaşılır, paylaşımlara **GG** verilir ve yorum yapılır. Sekmeler: Yeni, Haftanın en iyileri (son 7 günde en çok GG alan), Paylaşımlarım. Paylaşımlar Riot ID ile herkese açık görünür; kendi paylaşımını ve yorumunu silebilirsin.
+Uygulamanın içindeki paylaşım alanı. Yazı (en fazla 280 karakter) ya da maç kartı paylaşılır, paylaşımlara **GG** verilir ve yorum yapılır. Sekmeler: Yeni, Haftanın en iyileri (son 7 günde en çok GG alan), Paylaşımlarım. Paylaşımlar Riot ID ile herkese açık görünür ve Celeste Discord sunucusundaki Akış kanalına da düşer; kendi paylaşımını ve yorumunu silebilirsin.
 
-Kurallar: küfür ve hakaret içeren yazılar gönderilmez; saatte en fazla 5 paylaşım ve 30 yorum. 3 farklı kişinin bildirdiği içerik gizlenir. Yönetici bir kişiyi banlayınca kurulumu, Riot hesabı ve Riot ID'si birlikte kapatılır; uygulamanın hangi sürümünü kullanırsa kullansın paylaşım, yorum ve GG yapamaz. Bir Riot ID akışta ilk kullanıldığı kurulumla eşleşir, başka bir kurulum o adla yazamaz.
+**Kimlik taklit edilemez.** Akış'a girerken uygulama, Riot Client'ın verdiği ve Riot'un imzaladığı kimlik belirtecini (id_token) siteye bir kez gönderir. Site imzayı Riot'un açık anahtarlarıyla doğrular, hesabı ve Riot ID'yi belirteçten okur, belirteci saklamaz. Bu belirteç yalnızca "bu hesap benim" kanıtıdır; Riot hesabına erişmeye ya da Riot'a istek atmaya yaramaz. Paylaşımın kimin adına görüneceği istekte yazan addan değil, bu doğrulamadan gelir.
 
-Gönderilenler: yazı, maç kartı verisi (harita, ajan, skor, K/D/A, ACS, RR, rank), Riot ID, Riot hesap kimliği (puuid) ve kurulumun rastgele kimliği. IP saklanmaz.
+Kurallar: küfür ve hakaret içeren yazılar gönderilmez; saatte en fazla 5 paylaşım ve 30 yorum. 3 farklı hesabın bildirdiği içerik gizlenir. Yönetici bir kişiyi banlayınca Riot hesabı, Riot ID'si ve cihazı birlikte kapatılır; uygulamanın hangi sürümünü kullanırsa kullansın paylaşım, yorum ve GG yapamaz. Yönetici isimlerin yanında görünen roller açıp verebilir (ör. ADMIN, Öneri Ustası).
+
+Gönderilenler: yazı, maç kartı verisi (harita, ajan, skor, K/D/A, ACS, RR, rank), Riot kimlik belirteci (yalnızca girişte, saklanmaz), Riot ID, Riot hesap kimliği (puuid) ve kurulumun rastgele kimliği. IP saklanmaz.
 
 ### OBS kaynağı
 

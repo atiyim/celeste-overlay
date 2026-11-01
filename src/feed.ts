@@ -1,42 +1,59 @@
 import { invoke } from "@tauri-apps/api/core";
+import type { Assets } from "./assets";
+import { lookup } from "./assets";
 import { SITE, installId } from "./community";
 import { tfetch } from "./net";
 import { highlights, score } from "./MatchCard";
 import type { MyMatch } from "./types";
 
-/* Akış: sitedeki /api/feed uçlarıyla konuşur. Gönderilen: yazı, maç kartı verisi, Riot ID, puuid ve kurulum kimliği. */
+/* Akış: sitedeki /api/feed uçlarıyla konuşur.
+   Giriş: Riot Client'ın verdiği, Riot'un imzaladığı kimlik belirteci siteye bir kez gider; site imzayı doğrular,
+   belirteci saklamaz ve kendi oturumunu verir. Sonraki isteklerde yalnızca bu oturum gider. */
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 const API = `${SITE}/api/feed`;
-export const ADMIN_KEY = "overlay-feed-admin";
+const SESSION_KEY = "overlay-feed-session";
 
+export interface Role { id?: number; name: string; color: string; admin?: boolean }
 export interface FeedCard {
   mapId: string; agentId: string; queue: string; won: boolean; k: number; d: number; a: number; acs: number;
   score: [number, number] | null; hl: string[]; rr: number | null; tier: number | null; started: number | null;
+  mapName?: string; agentName?: string; tierName?: string;
 }
-export interface Post { id: number; riot: string; text: string; card: FeedCard | null; created: number; likes: number; comments: number; liked: boolean; mine: boolean; reports?: number; hidden?: boolean }
-export interface Comment { id: number; riot: string; text: string; created: number; mine: boolean }
-export interface AdminList { posts: Post[]; comments: (Comment & { post: number; reports: number; hidden: boolean })[]; bans: { riot: string; at: number }[] }
+export interface Post { id: number; riot: string; text: string; card: FeedCard | null; created: number; likes: number; comments: number; liked: boolean; mine: boolean; roles: Role[]; reports?: number; hidden?: boolean }
+export interface Comment { id: number; riot: string; text: string; created: number; mine: boolean; roles: Role[] }
+export interface RoleDef { id: number; name: string; color: string; members: { puuid: string; riot: string }[] }
+export interface AdminList { posts: Post[]; comments: (Comment & { post: number; reports: number; hidden: boolean })[]; bans: { riot: string; at: number }[]; roles: RoleDef[] }
+export interface Me { session: string; riot: string; puuid: string; verifiedName: boolean; admin: boolean; banned: boolean; roles: Role[] }
 
-export function cardOf(m: MyMatch): FeedCard {
+export function cardOf(m: MyMatch, assets?: Assets): FeedCard {
+  const tier = m.tierAfter ? assets?.tiers.get(m.tierAfter) : undefined;
   return {
     mapId: m.mapId, agentId: m.agentId, queue: m.queue, won: m.won, k: m.kills, d: m.deaths, a: m.assists, acs: m.acs,
     score: score(m), hl: highlights(m), rr: m.rrDelta ?? null, tier: m.tierAfter ?? null, started: m.started,
+    mapName: assets?.maps.get(lookup(m.mapId)), agentName: assets?.agents.get(lookup(m.agentId))?.name, tierName: tier?.name,
   };
 }
 
-let ident: Promise<{ riot: string; puuid: string }> | null = null;
-/** Riot ID ve puuid; Riot Client kapalıysa hata verir (bir sonraki denemede yeniden sorulur). */
-export function identity(): Promise<{ riot: string; puuid: string }> {
-  if (!inTauri) return Promise.resolve({ riot: "Deneme#TR1", puuid: "" });
-  ident ??= Promise.all([invoke<string>("get_riot_id"), invoke<string>("get_my_puuid").catch(() => "")])
-    .then(([riot, puuid]) => ({ riot, puuid }))
-    .catch((e) => { ident = null; throw e; });
-  return ident;
+let me: Me | null = (() => { try { return JSON.parse(localStorage.getItem(SESSION_KEY) ?? "null") as Me | null; } catch { return null; } })();
+export const currentMe = () => me;
+
+/** Riot ile doğrulayıp akış oturumu açar (her açılışta yenilenir: ban, rol ve yönetici durumu güncel gelir). */
+export async function login(): Promise<Me> {
+  if (!inTauri) throw new Error("Akış'ta paylaşım yalnızca masaüstü uygulamasında yapılır.");
+  const [token, riot] = await Promise.all([invoke<string>("get_id_token"), invoke<string>("get_riot_id").catch(() => "")]);
+  const r = await tfetch(`${API}/login`, { method: "POST", headers: { "content-type": "text/plain" }, body: JSON.stringify({ id: installId(), token, riot }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error((j as { error?: string }).error ?? (r.status === 404 ? "Akış servisi şu an kapalı." : `Giriş yapılamadı (${r.status})`));
+  me = j as Me;
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(me)); } catch { /* depolama kapalı */ }
+  return me;
 }
 
-async function send<T>(path: string, body: object): Promise<T> {
-  const r = await tfetch(`${API}/${path}`, { method: "POST", headers: { "content-type": "text/plain" }, body: JSON.stringify(body) });
+async function send<T>(path: string, body: object, retry = true): Promise<T> {
+  if (!me) await login();
+  const r = await tfetch(`${API}/${path}`, { method: "POST", headers: { "content-type": "text/plain" }, body: JSON.stringify({ session: me!.session, ...body }) });
+  if (r.status === 401 && retry) { me = null; await login(); return send<T>(path, body, false); }
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error((j as { error?: string }).error ?? (r.status === 404 ? "Akış servisi şu an kapalı." : `Hata (${r.status})`));
   return j as T;
@@ -52,24 +69,15 @@ async function getJson<T>(url: string): Promise<T> {
 
 export type Tab = "new" | "top" | "mine";
 export const feedList = (tab: Tab, before?: number) =>
-  getJson<{ posts: Post[]; banned?: boolean }>(`${API}?tab=${tab}&id=${installId()}${before ? `&before=${before}` : ""}`);
-export const feedComments = (post: number) => getJson<{ comments: Comment[] }>(`${API}/comments?post=${post}&id=${installId()}`);
+  getJson<{ posts: Post[] }>(`${API}?tab=${tab}&p=${me?.puuid ?? ""}${before ? `&before=${before}` : ""}`);
+export const feedComments = (post: number) => getJson<{ comments: Comment[] }>(`${API}/comments?post=${post}&p=${me?.puuid ?? ""}`);
 
-export async function feedPost(text: string, card: FeedCard | null) {
-  const me = await identity();
-  return send<{ id: number }>("post", { id: installId(), ...me, text, card });
-}
-export async function feedComment(post: number, text: string) {
-  const me = await identity();
-  return send<{ id: number }>("comment", { id: installId(), ...me, post, text });
-}
-export const feedLike = (post: number) => send<{ liked: boolean; likes: number }>("like", { id: installId(), post });
-export const feedReport = (target: string) => send<{ ok: true }>("report", { id: installId(), target });
-export const feedDelete = (target: string) => send<{ ok: true }>("delete", { id: installId(), target });
-
-export function adminKey(): string { try { return localStorage.getItem(ADMIN_KEY) ?? ""; } catch { return ""; } }
-export function setAdminKey(k: string) { try { if (k) localStorage.setItem(ADMIN_KEY, k); else localStorage.removeItem(ADMIN_KEY); } catch { /* depolama kapalı */ } }
-export const feedAdmin = <T = { ok: true }>(action: string, extra: object = {}) => send<T>("admin", { key: adminKey(), action, ...extra });
+export const feedPost = (text: string, card: FeedCard | null) => send<{ id: number }>("post", { text, card });
+export const feedComment = (post: number, text: string) => send<{ id: number }>("comment", { post, text });
+export const feedLike = (post: number) => send<{ liked: boolean; likes: number }>("like", { post });
+export const feedReport = (target: string) => send<{ ok: true }>("report", { target });
+export const feedDelete = (target: string) => send<{ ok: true }>("delete", { target });
+export const feedAdmin = <T = { ok: true }>(action: string, extra: object = {}) => send<T>("admin", { action, ...extra });
 
 export function ago(ms: number): string {
   const m = Math.max(0, Math.floor((Date.now() - ms) / 60000));

@@ -109,7 +109,11 @@ fn mask_path(path: &str) -> String {
 
 /// Bu istek ne için? Sıra önemli: özel olan önce.
 fn describe(path: &str) -> &'static str {
-    let rules: [(&str, &str); 24] = [
+    let rules: [(&str, &str); 28] = [
+        ("/api/feed/login", "Akış girişi (Riot kimliği doğrulanır, belirteç saklanmaz)"),
+        ("/api/feed", "Akış (paylaşımlar, GG, yorumlar)"),
+        ("/rso-auth/", "Riot kimlik belirteci (yalnızca Akış'a girerken, siteye bir kez gider)"),
+        ("/chat/v1/session", "Kendi Riot ID'n"),
         ("/api/overlay/ping", "Anonim kullanım sayımı (rastgele kimlik ve sürüm)"),
         ("/api/overlay/feedback", "Öneri / Hata formu (yalnızca Gönder'e basınca)"),
         ("/entitlements/v1/token", "Oturum bilgisi (açık Riot Client'tan, giriş yapılmaz)"),

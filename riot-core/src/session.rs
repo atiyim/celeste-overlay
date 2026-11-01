@@ -294,6 +294,31 @@ impl Session {
         None
     }
 
+    /// Riot'un imzaladığı kimlik belirteci (id_token), Riot Client'ın yerel API'sinden. Akış'ta hesabın sana ait
+    /// olduğunu kanıtlamak için siteye bir kez gönderilir. Kimlik belirteci API çağrısı yapmaya yaramaz
+    /// (erişim belirteci değildir); site imzayı Riot'un açık anahtarıyla doğrular ve saklamaz.
+    pub async fn local_id_token(&self) -> Option<String> {
+        for path in ["/rso-auth/v1/authorization/id-token", "/rso-auth/v1/authorization"] {
+            let Ok(r) = netlog::exec(
+                &self.local,
+                self.local.get(format!("https://127.0.0.1:{}{path}", self.port)).basic_auth("riot", Some(&self.password)),
+            )
+            .await
+            else {
+                continue;
+            };
+            if !r.status().is_success() {
+                continue;
+            }
+            let Ok(v) = r.json::<Value>().await else { continue };
+            let t = v["token"].as_str().or_else(|| v["idToken"]["token"].as_str()).unwrap_or("");
+            if t.split('.').count() == 3 {
+                return Some(t.to_string());
+            }
+        }
+        None
+    }
+
     pub fn headers(&self) -> HeaderMap {
         let platform = STANDARD.encode(
             r#"{"platformType":"PC","platformOS":"Windows","platformOSVersion":"10.0.19042.1.256.64bit","platformChipset":"Unknown"}"#,
