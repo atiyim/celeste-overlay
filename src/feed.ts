@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { Assets } from "./assets";
 import { lookup } from "./assets";
@@ -19,6 +20,8 @@ export interface FeedCard {
   mapId: string; agentId: string; queue: string; won: boolean; k: number; d: number; a: number; acs: number;
   score: [number, number] | null; hl: string[]; rr: number | null; tier: number | null; started: number | null;
   mapName?: string; agentName?: string; tierName?: string;
+  /** Skor tablosu (isimsiz): a = ajan, as = asist. */
+  board?: { a: string; k: number; d: number; as: number; acs: number; me: boolean; ally: boolean }[];
 }
 export interface Post { id: number; riot: string; text: string; card: FeedCard | null; created: number; likes: number; comments: number; liked: boolean; mine: boolean; roles: Role[]; reports?: number; hidden?: boolean }
 export interface Comment { id: number; riot: string; text: string; created: number; mine: boolean; roles: Role[] }
@@ -32,6 +35,7 @@ export function cardOf(m: MyMatch, assets?: Assets): FeedCard {
     mapId: m.mapId, agentId: m.agentId, queue: m.queue, won: m.won, k: m.kills, d: m.deaths, a: m.assists, acs: m.acs,
     score: score(m), hl: highlights(m), rr: m.rrDelta ?? null, tier: m.tierAfter ?? null, started: m.started,
     mapName: assets?.maps.get(lookup(m.mapId)), agentName: assets?.agents.get(lookup(m.agentId))?.name, tierName: tier?.name,
+    board: (m.board ?? []).map((r) => ({ a: r.agentId, k: r.kills, d: r.deaths, as: r.assists, acs: r.acs, me: r.me, ally: r.ally })),
   };
 }
 
@@ -86,4 +90,35 @@ export function ago(ms: number): string {
   if (m < 1440) return `${Math.floor(m / 60)} sa`;
   if (m < 7 * 1440) return `${Math.floor(m / 1440)} g`;
   return new Date(ms).toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
+}
+
+/* Akış düğmesindeki "N yeni" sayacı: son görülen paylaşımdan sonra gelenler (2 dakikada bir, overlay açıkken). */
+const SEEN_KEY = "overlay-feed-seen";
+export function useFeedBadge(open: boolean): [number, () => void] {
+  const [n, setN] = useState(0);
+  const [top, setTop] = useState(0);
+  const seen = () => { try { return Number(localStorage.getItem(SEEN_KEY)) || 0; } catch { return 0; } };
+  const mark = useCallback(() => {
+    try { if (top) localStorage.setItem(SEEN_KEY, String(top)); } catch { /* depolama kapalı */ }
+    setN(0);
+  }, [top]);
+  useEffect(() => {
+    const ask = async () => {
+      if (document.hidden) return;
+      try {
+        const r = await getJson<{ posts: Post[] }>(`${API}?tab=new`);
+        const ids = r.posts.map((p) => p.id);
+        const max = ids.length ? Math.max(...ids) : 0;
+        setTop(max);
+        const s = seen();
+        if (!s && max) { try { localStorage.setItem(SEEN_KEY, String(max - Math.min(ids.length, 3))); } catch { /* */ } }
+        setN(ids.filter((id) => id > (seen() || max)).length);
+      } catch { /* sessiz */ }
+    };
+    const t0 = window.setTimeout(ask, 3_000);
+    const t = window.setInterval(ask, 120_000);
+    return () => { window.clearTimeout(t0); window.clearInterval(t); };
+  }, []);
+  useEffect(() => { if (open) mark(); }, [open, top]); // eslint-disable-line react-hooks/exhaustive-deps
+  return [n, mark];
 }

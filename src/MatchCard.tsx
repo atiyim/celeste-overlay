@@ -32,6 +32,7 @@ function loadImg(src?: string): Promise<HTMLImageElement | undefined> {
 }
 
 export function score(m: MyMatch): [number, number] | null {
+  if (m.score && m.score[0] + m.score[1] > 0) return m.score;
   const r = m.rounds;
   if (!r || r.atkRounds + r.defRounds === 0) return null;
   const won = r.atkWon + r.defWon, total = r.atkRounds + r.defRounds;

@@ -334,6 +334,22 @@ pub struct MyMatch {
     pub started: u64,
     /// Round analizi (yalnızca rekabet, derecesiz ve Premier).
     pub rounds: Option<RoundAgg>,
+    /// Takım skoru [senin takımın, rakip] (round sayısı).
+    pub score: Option<[u32; 2]>,
+    /// Skor tablosu (isimsiz: ajan ve sayılar).
+    pub board: Vec<BoardRow>,
+}
+
+#[derive(Serialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct BoardRow {
+    pub agent_id: String,
+    pub ally: bool,
+    pub me: bool,
+    pub kills: u32,
+    pub deaths: u32,
+    pub assists: u32,
+    pub acs: u32,
 }
 
 #[derive(Serialize, Clone, Debug, Default)]

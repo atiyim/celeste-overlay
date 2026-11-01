@@ -264,6 +264,8 @@ struct Detail {
     started: u64,
     players: Vec<Pd>,
     won: HashMap<String, bool>,
+    /// Takım başına kazanılan round (skor tablosu için).
+    rounds_won: HashMap<String, u32>,
 }
 
 impl Detail {
@@ -323,6 +325,12 @@ fn parse_detail(v: &Value) -> Detail {
             .into_iter()
             .flatten()
             .filter_map(|t| Some((t["teamId"].as_str()?.to_string(), t["won"].as_bool().unwrap_or(false))))
+            .collect(),
+        rounds_won: v["teams"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|t| Some((t["teamId"].as_str()?.to_string(), t["roundsWon"].as_u64().unwrap_or(0) as u32)))
             .collect(),
     }
 }
@@ -1253,10 +1261,40 @@ impl Engine {
                 tier_after: rr.get(id).map(|x| x.1),
                 started: d.started,
                 rounds: ROUND_QUEUES.contains(&q.as_str()).then(|| p.round.clone()).filter(|r| r.rounds > 0),
+                score: {
+                    let mine = d.rounds_won.get(&p.team).copied();
+                    let theirs = d.rounds_won.iter().find(|(t, _)| **t != p.team).map(|(_, n)| *n);
+                    match (mine, theirs) {
+                        (Some(a), Some(b)) if a + b > 0 => Some([a, b]),
+                        _ => None,
+                    }
+                },
+                board: board_of(d, &p.team, &s.puuid),
             });
         }
         Ok(MyStats { matches, rank })
     }
+}
+
+/// Maçın skor tablosu (isimsiz): önce kendi takımın, sonra rakip; takım içinde ACS'ye göre.
+fn board_of(d: &Detail, my_team: &str, me: &str) -> Vec<BoardRow> {
+    let mut rows: Vec<BoardRow> = d
+        .players
+        .iter()
+        .filter(|p| !p.agent.is_empty())
+        .map(|p| BoardRow {
+            agent_id: p.agent.clone(),
+            ally: p.team == my_team,
+            me: p.puuid == me,
+            kills: p.kills,
+            deaths: p.deaths,
+            assists: p.assists,
+            acs: if p.rounds > 0 { p.score / p.rounds } else { 0 },
+        })
+        .collect();
+    rows.sort_by(|a, b| b.ally.cmp(&a.ally).then(b.acs.cmp(&a.acs)));
+    rows.truncate(12);
+    rows
 }
 
 const VP: &str = "85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741";

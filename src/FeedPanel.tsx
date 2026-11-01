@@ -34,14 +34,35 @@ function Roles({ roles }: { roles: Role[] }) {
 }
 
 /* ---------- Maç kartı (akış içinde, HTML) ---------- */
+function Board({ rows, title, assets, ally }: { rows: NonNullable<FeedCard["board"]>; title: string; assets: Assets; ally: boolean }) {
+  if (!rows.length) return null;
+  return (
+    <div className={ally ? "sbp ally" : "sbp enemy"}>
+      <small className="sbt">{title}</small>
+      {rows.map((r, i) => {
+        const ag = assets.agents.get(lookup(r.a));
+        return (
+          <div key={i} className={r.me ? "sbr me" : "sbr"}>
+            {ag ? <img src={ag.icon} alt={ag.name} title={ag.name} /> : <i />}
+            <span className="sbk">{r.k}/{r.d}/{r.as}</span>
+            <span className="sba">{r.acs}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function FeedCardView({ c, assets }: { c: FeedCard; assets: Assets }) {
   const ag = assets.agents.get(lookup(c.agentId));
   const art = assets.mapArt.get(lookup(c.mapId));
   const tier = c.tier ? assets.tiers.get(c.tier) : undefined;
   const kd = c.d ? c.k / c.d : c.k;
+  const board = c.board ?? [];
+  const allies = board.filter((r) => r.ally), enemies = board.filter((r) => !r.ally);
   return (
-    <div className={c.won ? "fcard win" : "fcard loss"} style={art ? ({ "--art": `url("${art}")` } as React.CSSProperties) : undefined}>
-      {ag && <img className="fca" src={ag.portrait ?? ag.icon} alt="" loading="lazy" />}
+    <div className={`${c.won ? "fcard win" : "fcard loss"}${board.length ? " hasb" : ""}`} style={art ? ({ "--art": `url("${art}")` } as React.CSSProperties) : undefined}>
+      {ag && !board.length && <img className="fca" src={ag.portrait ?? ag.icon} alt="" loading="lazy" />}
       <div className="fcb">
         <small className="fcm">{[QUEUE[c.queue] ?? (c.queue || "Maç"), assets.maps.get(lookup(c.mapId)) ?? c.mapName, ag?.name ?? c.agentName].filter(Boolean).join(" · ")}</small>
         <div className="fcr">
@@ -57,6 +78,12 @@ export function FeedCardView({ c, assets }: { c: FeedCard; assets: Assets }) {
         </div>
         {c.hl.length > 0 && <div className="fch">{c.hl.map((h) => <i key={h}>{h}</i>)}</div>}
       </div>
+      {board.length > 0 && (
+        <div className="sbx">
+          <Board rows={allies} title={`Takımın${c.score ? ` · ${c.score[0]}` : ""}`} assets={assets} ally />
+          <Board rows={enemies} title={`Rakip${c.score ? ` · ${c.score[1]}` : ""}`} assets={assets} ally={false} />
+        </div>
+      )}
     </div>
   );
 }
@@ -125,7 +152,7 @@ function Comments({ post, canWrite, onToast, onCount }: { post: Post; canWrite: 
     <div className="fcom">
       {err && <small className="neg">{err}</small>}
       {list?.map((c) => (
-        <div className="fcm1" key={c.id}>
+        <div className={c.roles.some((r) => r.admin) ? "fcm1 adm" : "fcm1"} key={c.id}>
           <div className="fcmh"><NameLine name={c.riot} /><Roles roles={c.roles} /><small className="d">{ago(c.created)}</small>
             <span className="sp" />
             {c.mine && <button className="lnk" type="button" onClick={() => act(() => feedDelete(`c:${c.id}`), "Yorum silindi")}>Sil</button>}

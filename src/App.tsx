@@ -25,7 +25,7 @@ import { TrustPanel } from "./TrustPanel";
 import { teamSummary } from "./insights";
 import { FeedbackPanel } from "./FeedbackPanel";
 import { FeedPanel } from "./FeedPanel";
-import type { FeedCard } from "./feed";
+import { useFeedBadge, type FeedCard } from "./feed";
 import { alertOf, fmtDur, fmtRr, sessionOf, type Session } from "./tilt";
 import { useUpdater } from "./updater";
 import { Empty } from "./ui";
@@ -40,9 +40,9 @@ const SIDE_QUEUES = ["competitive", "unrated", "swiftplay", "spikerush", "premie
 export const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
 const NAV = [
-  ["roster", "Oyuncular"], ["report", "Son maç"], ["store", "Mağaza"], ["account", "Hesabım"], ["stats", "İstatistik"], ["feed", "Akış"], ["chat", "Sohbet"], ["cross", "Nişangah"], ["trust", "S.S.S & Panel"], ["settings", "Ayarlar"],
+  ["roster", "Oyuncular"], ["report", "Son maç"], ["store", "Mağaza"], ["account", "Hesabım"], ["stats", "İstatistik"], ["chat", "Sohbet"], ["cross", "Nişangah"], ["trust", "S.S.S & Panel"], ["settings", "Ayarlar"],
 ] as const;
-type View = (typeof NAV)[number][0] | "feedback";
+type View = (typeof NAV)[number][0] | "feedback" | "feed";
 
 const PHASE_TEXT: Record<string, string> = {
   offline: "Valorant bekleniyor",
@@ -59,6 +59,7 @@ export function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [view, setView] = useState<View>("roster");
   const [feedDraft, setFeedDraft] = useState<FeedCard | null>(null);
+  const [feedNew, feedSeen] = useFeedBadge(view === "feed");
   const [theme, setTheme] = useState(loadTheme);
   const [seen, setSeen] = useState<Seen>({});
   const [guide, setGuide] = useState<boolean>(() => { try { return localStorage.getItem("overlay-guide") !== "1"; } catch { return false; } });
@@ -475,13 +476,20 @@ export function App() {
       )}
 
       {!collapsed && !guide && (
-        <nav className="nav" aria-label="Bölümler">
-          {NAV.map(([id, label]) => (
-            <button key={id} type="button" className={`${view === id ? "on" : ""}${id === "trust" ? " spot" : ""}`.trim()} onClick={() => { setSelected(null); setView(id); }}>
-              {label}
-            </button>
-          ))}
-        </nav>
+        <div className="navrow">
+          <nav className="nav" aria-label="Bölümler">
+            {NAV.map(([id, label]) => (
+              <button key={id} type="button" className={`${view === id ? "on" : ""}${id === "trust" ? " spot" : ""}`.trim()} onClick={() => { setSelected(null); setView(id); }}>
+                {label}
+              </button>
+            ))}
+          </nav>
+          <button type="button" className={view === "feed" ? "feedbtn on" : "feedbtn"} onClick={() => { setSelected(null); setView("feed"); feedSeen(); }} aria-label={feedNew ? `Akış, ${feedNew} yeni paylaşım` : "Akış"}>
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" /></svg>
+            <span>Akış</span>
+            {feedNew > 0 ? <b className="fnew">{feedNew > 9 ? "9+" : feedNew} yeni</b> : <i className="flive" aria-hidden="true" />}
+          </button>
+        </div>
       )}
 
       {!collapsed && !guide && sess && sess.games > 0 && theme.tilt.on && view === "roster" && (

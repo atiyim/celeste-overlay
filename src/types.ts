@@ -84,7 +84,12 @@ export interface MyMatch {
   kills: number; deaths: number; assists: number; acs: number;
   rrDelta?: number | null; tierAfter?: number | null; started: number;
   rounds?: RoundAgg | null;
+  /** Takım skoru [senin takımın, rakip]. */
+  score?: [number, number] | null;
+  /** Skor tablosu (isimsiz). Eski çekirdekte gelmeyebilir. */
+  board?: BoardRow[];
 }
+export interface BoardRow { agentId: string; ally: boolean; me: boolean; kills: number; deaths: number; assists: number; acs: number }
 export interface RoundAgg {
   atkRounds: number; atkWon: number; defRounds: number; defWon: number;
   fkAtk: number; fdAtk: number; fkDef: number; fdDef: number;

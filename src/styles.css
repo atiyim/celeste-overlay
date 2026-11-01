@@ -1013,3 +1013,45 @@ html:has(body.web) { overflow-y: auto; }
 .frmem button { all: unset; cursor: pointer; color: var(--fg-3); padding: 0 4px; }
 .frmem button:hover { color: var(--loss); }
 .akis .ph .m b { color: var(--fg); font-weight: 600; }
+
+/* ---------- 0.7.1: Akış düğmesi (bölümlerden ayrı) ---------- */
+.navrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.feedbtn { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px 0 12px; font: inherit; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; border-radius: 10px; border: 1px solid transparent;
+  background: linear-gradient(#0b0b0f, #0b0b0f) padding-box, linear-gradient(120deg, #ec4899, var(--accent), #a78bfa) border-box; box-shadow: 0 0 18px -6px color-mix(in srgb, var(--accent) 70%, transparent); transition: transform .15s, box-shadow .15s; }
+.feedbtn:hover { transform: translateY(-1px); box-shadow: 0 0 24px -4px color-mix(in srgb, var(--accent) 80%, transparent); }
+.feedbtn.on { background: linear-gradient(color-mix(in srgb, var(--accent) 18%, #0b0b0f), color-mix(in srgb, var(--accent) 18%, #0b0b0f)) padding-box, linear-gradient(120deg, #ec4899, var(--accent), #a78bfa) border-box; }
+.feedbtn svg { color: var(--accent); }
+.feedbtn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.fnew { font-size: 10.5px; font-weight: 700; color: #000; background: #ec4899; padding: 1px 7px; border-radius: 999px; }
+.flive { width: 7px; height: 7px; border-radius: 50%; background: #ec4899; box-shadow: 0 0 0 0 rgba(236, 72, 153, .55); animation: spotdot 2.6s ease-out infinite; }
+.fps .feedbtn, .fps .feedbtn:hover { transform: none; transition: none; }
+
+/* ---------- akış kartı: taşma düzeltmesi ve skor tablosu ---------- */
+.fcard { box-sizing: border-box; width: 100%; max-width: 100%; }
+.fcard.hasb { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: center; }
+.sbx { position: relative; display: grid; grid-template-columns: repeat(2, minmax(150px, auto)); gap: 14px; }
+.sbp { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; background: rgba(5, 5, 5, .62); border: 1px solid rgba(255,255,255,.07); border-radius: 8px; backdrop-filter: blur(3px); }
+.sbt { font-size: 10.5px; font-weight: 600; color: var(--fg-2); margin-bottom: 2px; }
+.sbp.ally .sbt { color: var(--win); }
+.sbp.enemy .sbt { color: var(--loss); }
+.sbr { display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: center; font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--fg-2); padding: 1px 4px; border-radius: 4px; }
+.sbr img, .sbr i { width: 18px; height: 18px; border-radius: 4px; display: block; background: rgba(255,255,255,.06); }
+.sbr .sbk { color: var(--fg); }
+.sbr .sba { color: var(--fg-3); min-width: 26px; text-align: right; }
+.sbr.me { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.sbr.me .sbk { color: var(--accent); font-weight: 700; }
+@media (max-width: 760px) { .fcard.hasb { grid-template-columns: 1fr; } }
+
+/* ---------- ADMIN ---------- */
+.frole.adm { position: relative; display: inline-flex; align-items: center; gap: 4px; padding: 0 7px 0 5px; color: #1a1200; border: 0; overflow: hidden;
+  background: linear-gradient(135deg, #fde68a, #f5c451 45%, #f59e0b); box-shadow: 0 0 10px -2px rgba(245, 196, 81, .7); }
+.frole.adm::before { content: ""; width: 10px; height: 10px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 12h12l1-7-4 3-3-5-3 5-4-3z'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 12h12l1-7-4 3-3-5-3 5-4-3z'/%3E%3C/svg%3E") center/contain no-repeat; }
+.frole.adm::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.65) 50%, transparent 70%); transform: translateX(-120%); animation: admsheen 3.2s ease-in-out infinite; }
+@keyframes admsheen { 0%, 55% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
+.fps .frole.adm::after { animation: none; display: none; }
+@media (prefers-reduced-motion: reduce) { .frole.adm::after, .flive { animation: none; } }
+.fpost.adm { border-color: rgba(245, 196, 81, .45); background: linear-gradient(180deg, rgba(245, 196, 81, .07), transparent 60%), var(--s1); box-shadow: 0 0 0 1px rgba(245, 196, 81, .08), 0 8px 30px -18px rgba(245, 196, 81, .6); }
+.fpost.adm .fph .nm, .fcm1.adm .fcmh .nm { background: linear-gradient(90deg, #fde68a, #f5c451 50%, #f59e0b); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; }
+.fcm1.adm { padding: 6px 8px; margin: 0 -8px; border-radius: 8px; background: rgba(245, 196, 81, .06); }
