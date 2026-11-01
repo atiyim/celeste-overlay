@@ -29,11 +29,13 @@ export interface RoleDef { id: number; name: string; color: string; members: { p
 export interface AdminList { posts: Post[]; comments: (Comment & { post: number; reports: number; hidden: boolean })[]; bans: { riot: string; at: number }[]; roles: RoleDef[]; adminColor?: string }
 export interface Me { session: string; riot: string; puuid: string; verifiedName: boolean; admin: boolean; banned: boolean; roles: Role[] }
 
-export function cardOf(m: MyMatch, assets?: Assets): FeedCard {
-  const tier = m.tierAfter ? assets?.tiers.get(m.tierAfter) : undefined;
+/** `rank`: şu anki rankın; maçın kendi rank bilgisi yoksa (derecesiz, tam gaz…) o gösterilir. */
+export function cardOf(m: MyMatch, assets?: Assets, rank?: number): FeedCard {
+  const t = m.tierAfter || (rank && rank > 2 ? rank : 0) || null;
+  const tier = t ? assets?.tiers.get(t) : undefined;
   return {
     mapId: m.mapId, agentId: m.agentId, queue: m.queue, won: m.won, k: m.kills, d: m.deaths, a: m.assists, acs: m.acs,
-    score: score(m), hl: highlights(m), rr: m.rrDelta ?? null, tier: m.tierAfter ?? null, started: m.started,
+    score: score(m), hl: highlights(m), rr: m.rrDelta ?? null, tier: t, started: m.started,
     mapName: assets?.maps.get(lookup(m.mapId)), agentName: assets?.agents.get(lookup(m.agentId))?.name, tierName: tier?.name,
     board: (m.board ?? []).map((r) => ({ a: r.agentId, k: r.kills, d: r.deaths, as: r.assists, acs: r.acs, me: r.me, ally: r.ally })),
   };

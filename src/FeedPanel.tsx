@@ -76,13 +76,13 @@ export function FeedCardView({ c, assets }: { c: FeedCard; assets: Assets }) {
         <div className="fcr">
           <b className="fcw">{c.won ? "Galibiyet" : "Mağlubiyet"}</b>
           {c.score && <b className="fcs">{c.score[0]}–{c.score[1]}</b>}
+          {tier && <span className="fcrank"><img src={tier.icon} alt="" /><b style={{ color: tierColor(tier.color) }}>{tier.name}</b></span>}
         </div>
         <div className="fck">
           <span><b>{c.k}/{c.d}/{c.a}</b><small>K/D/A</small></span>
           <span><b>{kd.toFixed(2)}</b><small>K/D</small></span>
           <span><b>{c.acs}</b><small>ACS</small></span>
           {c.rr != null && <span><b className={c.rr >= 0 ? "pos" : "neg"}>{c.rr > 0 ? "+" : ""}{c.rr}</b><small>RR</small></span>}
-          {tier && <span className="fct"><img src={tier.icon} alt="" /><small style={{ color: tierColor(tier.color) }}>{tier.name}</small></span>}
         </div>
         {c.hl.length > 0 && <div className="fch">{c.hl.map((h) => <i key={h}>{h}</i>)}</div>}
       </div>
@@ -367,7 +367,7 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
     try {
       const s = await invoke<MyStats>("get_my_stats");
       if (!s.matches.length) { onToast("Eklenecek maç bulunamadı."); return; }
-      setCard(cardOf(s.matches[0], assets));
+      setCard(cardOf(s.matches[0], assets, s.rank.current));
     } catch (e) { onToast(String(e).slice(0, 120)); }
   };
 

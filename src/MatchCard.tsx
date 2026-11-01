@@ -198,7 +198,7 @@ function toPng(cv: HTMLCanvasElement): Promise<Uint8Array> {
   });
 }
 
-export function MatchCard({ m, assets, onClose, onToast, onShare }: { m: MyMatch; assets: Assets; onClose: () => void; onToast: (t: string) => void; onShare?: () => void }) {
+export function MatchCard({ m, assets, rank, onClose, onToast, onShare }: { m: MyMatch; assets: Assets; rank?: number; onClose: () => void; onToast: (t: string) => void; onShare?: () => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [fmt, setFmt] = useState<Format>(() => { try { return localStorage.getItem("overlay-card-fmt") === "story" ? "story" : "wide"; } catch { return "wide"; } });
   const [showName, setShowName] = useState(true);
@@ -208,7 +208,7 @@ export function MatchCard({ m, assets, onClose, onToast, onShare }: { m: MyMatch
   const [busy, setBusy] = useState(false);
 
   const agent = assets.agents.get(lookup(m.agentId));
-  const tierNo = m.tierAfter ?? 0;
+  const tierNo = m.tierAfter || (rank && rank > 2 ? rank : 0);
   const tier = tierNo > 0 ? assets.tiers.get(tierNo) : undefined;
 
   useEffect(() => {

@@ -1060,3 +1060,6 @@ html:has(body.web) { overflow-y: auto; }
 .fadmcol { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .fcolor { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-2); cursor: pointer; }
 .fcolor input { width: 26px; height: 20px; padding: 0; border: 1px solid var(--line); border-radius: 5px; background: none; cursor: pointer; }
+.fcrank { display: inline-flex; align-items: center; gap: 7px; margin-left: 6px; padding: 3px 10px 3px 4px; background: rgba(5,5,5,.55); border: 1px solid rgba(255,255,255,.1); border-radius: 999px; align-self: center; }
+.fcrank img { width: 26px; height: 26px; }
+.fcrank b { font-size: 13px; font-weight: 700; }

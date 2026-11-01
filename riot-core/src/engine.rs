@@ -1229,13 +1229,13 @@ impl Engine {
         // Rekabet RR değişimi
         let mut rr: HashMap<String, (i32, u32)> = HashMap::new();
         if let Ok(Some(v)) = self
-            .get(&s, &s.pd, &format!("/mmr/v1/players/{}/competitiveupdates?startIndex=0&endIndex=25&queue=competitive", s.puuid))
+            .get(&s, &s.pd, &format!("/mmr/v1/players/{}/competitiveupdates?startIndex=0&endIndex=20&queue=competitive", s.puuid))
             .await
         {
             for m in v["Matches"].as_array().into_iter().flatten() {
                 if let Some(id) = m["MatchID"].as_str() {
                     rr.insert(
-                        id.to_string(),
+                        id.to_lowercase(),
                         (m["RankedRatingEarned"].as_i64().unwrap_or(0) as i32, m["TierAfterUpdate"].as_u64().unwrap_or(0) as u32),
                     );
                 }
@@ -1257,8 +1257,8 @@ impl Engine {
                 deaths: p.deaths,
                 assists: p.assists,
                 acs: if p.rounds > 0 { p.score / p.rounds } else { 0 },
-                rr_delta: rr.get(id).map(|x| x.0),
-                tier_after: rr.get(id).map(|x| x.1),
+                rr_delta: rr.get(&id.to_lowercase()).map(|x| x.0),
+                tier_after: rr.get(&id.to_lowercase()).map(|x| x.1).filter(|t| *t > 0),
                 started: d.started,
                 rounds: ROUND_QUEUES.contains(&q.as_str()).then(|| p.round.clone()).filter(|r| r.rounds > 0),
                 score: {

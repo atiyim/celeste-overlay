@@ -145,7 +145,7 @@ export function StatsPanel({ assets, onClose, onToast, onShare }: { assets: Asse
           </div>
         </div>
       )}
-      {card && <MatchCard m={card} assets={assets} onToast={onToast} onShare={() => { onShare(cardOf(card, assets)); setCard(null); }} onClose={() => setCard(null)} />}
+      {card && <MatchCard m={card} assets={assets} rank={data?.rank.current} onToast={onToast} onShare={() => { onShare(cardOf(card, assets, data?.rank.current)); setCard(null); }} onClose={() => setCard(null)} />}
     </div>
   );
 }
