@@ -163,6 +163,8 @@ Rekabet verileri (son 5 maç, kafa isabeti, K/D, rozetler) yalnızca **rekabet**
 
 ## Sorun giderme
 
+- **Maç başlayınca overlay kayboldu:** kapanmadı, otomatik gizlendi. **F2** ile geri gelir. Gizlenmeden önce üstte geri sayım çıkar ("Bu maç açık kalsın" / "Şimdi gizle"); otomatik gizleme Ayarlar › Overlay'den kapatılır. Uygulama zaten açıkken tekrar açılırsa yeni kopya başlamaz, açık olan öne gelir. Tamamen kapatmak için üstteki **Kapat** ya da tepsi simgesi › **Çıkış**.
+
 **Overlay oyunda görünmüyor:** Valorant'ın Ekran Modu Pencereli Tam Ekran olmalı. Tam ekranda overlay oyunun arkasında kalır.
 
 Alt köşedeki noktalara tıklayınca neyin çalışmadığını görürsün. Sorun bildirirken Ayarlar → Hakkında → **Tanı bilgisini kopyala** çıktısını ekle. Kişisel kimlikler bu çıktıdan temizlenir. S.S.S & Panel sekmesindeki **Kopyala** düğmesi ağ kaydını da aynı şekilde paylaşılabilir hâle getirir.

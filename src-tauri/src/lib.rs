@@ -194,6 +194,14 @@ pub fn run() {
     let f2_id = f2.id();
 
     tauri::Builder::default()
+        // Tek kopya: uygulama zaten açıkken tekrar açılırsa yeni kopya başlamaz, açık olan öne gelir.
+        // (Overlay maçta gizlendiğinde "kapandı" sanılıp defalarca açılmasın.)
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(w) = app.get_webview_window("main") {
+                show_interactive(&w);
+                let _ = w.emit("second-instance", ());
+            }
+        }))
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |app, shortcut, event| {

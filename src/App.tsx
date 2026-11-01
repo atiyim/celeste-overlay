@@ -5,6 +5,7 @@ import { LogicalSize, PhysicalPosition } from "@tauri-apps/api/dpi";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { availableMonitors, cursorPosition, getCurrentWindow, primaryMonitor } from "@tauri-apps/api/window";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { exit } from "@tauri-apps/plugin-process";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { loadAssets, lookup, type Assets } from "./assets";
 import { mockSnapshot } from "./mock";
@@ -69,6 +70,8 @@ export function App() {
   const [blur, setBlur] = useState<boolean>(() => { try { return localStorage.getItem("overlay-blur") === "1"; } catch { return false; } });
   useEffect(() => { try { localStorage.setItem("overlay-blur", blur ? "1" : "0"); } catch { /* depolama kapalı */ } }, [blur]);
   const [autoHidden, setAutoHidden] = useState(false);
+  const [hideAt, setHideAt] = useState<number | null>(null);
+  const [askQuit, setAskQuit] = useState(false);
   const [assetsFailed, setAssetsFailed] = useState(false);
   const updater = useUpdater();
   useUsagePing(updater.version);
@@ -201,13 +204,18 @@ export function App() {
   useEffect(() => {
     if (!inTauri) return;
     let un: (() => void) | undefined;
+    let un2: (() => void) | undefined;
     listen("overlay-activated", () => {
       manualKeep.current = true;
       setAutoHidden(false);
+      setHideAt(null);
       setCollapsed(false);
       getCurrentWindow().setIgnoreCursorEvents(false).catch(() => undefined);
     }).then((f) => { un = f; }).catch(() => undefined);
-    return () => un?.();
+    // Uygulama zaten açıkken tekrar açılmaya çalışıldı: yeni kopya başlamadı, bu pencere öne geldi.
+    listen("second-instance", () => showToast("Celeste Overlay zaten açık. Gizliyken F2 ile açılır, tepsideki simgeden kapatılır."))
+      .then((f) => { un2 = f; }).catch(() => undefined);
+    return () => { un?.(); un2?.(); };
   }, []);
 
   // Fare otomatik: imleç overlay'in üstündeyken tıklamalar overlay'e, dışındayken oyuna gider.
@@ -305,13 +313,23 @@ export function App() {
       ingameSince.current = null;
       manualKeep.current = false;
       setAutoHidden(false);
+      setHideAt(null);
       return;
     }
     if (ingameSince.current === null) ingameSince.current = Date.now();
     const wait = Math.max(0, hide.after * 1000 - (Date.now() - ingameSince.current));
-    const t = window.setTimeout(() => { if (!manualKeep.current) setAutoHidden(true); }, wait);
+    if (!manualKeep.current) setHideAt(Date.now() + wait);
+    const t = window.setTimeout(() => { if (!manualKeep.current) setAutoHidden(true); setHideAt(null); }, wait);
     return () => window.clearTimeout(t);
   }, [snap.phase, hide.on, hide.after]);
+
+  // Gizlenmeden önce geri sayım (saniye): kullanıcı overlay'in kapanmadığını, gizlendiğini bilsin.
+  const [, tick] = useState(0);
+  useEffect(() => {
+    if (!hideAt) return;
+    const t = window.setInterval(() => tick((n) => n + 1), 500);
+    return () => window.clearInterval(t);
+  }, [hideAt]);
 
   // Gizliyken pencere minik ve tıklamayı geçiren bir noktaya iner; görününce boyut yeniden hesaplanır.
   // (Bu efekt, boyutlandırma efektinden önce tanımlı olmalı: sıfırlama önce çalışsın.)
@@ -451,12 +469,37 @@ export function App() {
                 {blur ? "İsimler bulanık" : "Bulanıklaştır"}
               </button>
             )}
-            <button type="button" onClick={() => setCollapsed((c) => !c)} aria-expanded={!collapsed}>
+            <button type="button" onClick={() => setCollapsed((c) => !c)} aria-expanded={!collapsed} title="Overlay küçülür; tamamen gizlemek ve geri getirmek için F2">
               {collapsed ? "Göster" : "Gizle"}
             </button>
+            {inTauri && (askQuit ? (
+              <span className="quitask">
+                <small>Uygulama kapansın mı?</small>
+                <button type="button" className="danger" onClick={() => { exit(0).catch(() => undefined); }}>Evet, kapat</button>
+                <button type="button" onClick={() => setAskQuit(false)}>Vazgeç</button>
+              </span>
+            ) : (
+              <button type="button" className="quit" onClick={() => setAskQuit(true)} title="Celeste Overlay'i tamamen kapat" aria-label="Uygulamayı kapat">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M8 1.5v6" /><path d="M4.2 4a5.5 5.5 0 1 0 7.6 0" /></svg>
+                Kapat
+              </button>
+            ))}
           </span>
         </span>
       </header>
+
+      {hideAt && !autoHidden && !manualKeep.current && (
+        <div className="hidebar" role="status">
+          <span className="hbt">
+            <b>Maç başladı.</b> Overlay {Math.max(0, Math.ceil((hideAt - Date.now()) / 1000))} saniye sonra gizlenecek; uygulama kapanmıyor. Geri getirmek için <kbd>F2</kbd>.
+          </span>
+          <span className="hba">
+            <button type="button" onClick={() => { manualKeep.current = true; setHideAt(null); showToast("Bu maç boyunca açık kalacak"); }}>Bu maç açık kalsın</button>
+            <button type="button" onClick={() => { setAutoHidden(true); setHideAt(null); }}>Şimdi gizle</button>
+          </span>
+          <small className="hbs">Otomatik gizlemeyi Ayarlar › Overlay'den kapatabilirsin.</small>
+        </div>
+      )}
 
       {updater.state.kind === "available" && !collapsed && (
         <div className="upd" role="status">
