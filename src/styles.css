@@ -1088,3 +1088,56 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 .quitask { display: inline-flex; align-items: center; gap: 6px; }
 .quitask small { font-size: 12px; color: var(--fg); }
 .quitask .danger { color: #fff !important; background: var(--loss) !important; border-color: var(--loss) !important; }
+
+/* ---------- Akış: etiket, profil, klip, tepkiler, bildirimler ---------- */
+.fwho { all: unset; cursor: pointer; display: inline-flex; min-width: 0; border-radius: 4px; }
+.fwho:hover .nm { text-decoration: underline; text-underline-offset: 2px; }
+.fwho:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.fmention { all: unset; cursor: pointer; color: var(--accent); font-weight: 600; }
+.fmention:hover { text-decoration: underline; }
+.fpt q, .fnote q { quotes: none; color: var(--fg-2); margin-left: 6px; }
+.fpt q::before { content: "“"; } .fpt q::after { content: "”"; }
+.fnote q::before { content: "· "; }
+
+.fclip { position: relative; display: block; width: min(360px, 100%); aspect-ratio: 16 / 9; padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; cursor: pointer; background: #000; text-align: left; }
+.fclip img, .fclipbg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.fclip.tiktok .fclipbg { background: radial-gradient(circle at 30% 30%, #25f4ee55, transparent 60%), radial-gradient(circle at 70% 70%, #fe2c5555, transparent 60%), #0b0b0f; }
+.fclip.medal .fclipbg { background: linear-gradient(135deg, #f5c45133, #0b0b0f 60%); }
+.fclip.twitch .fclipbg { background: linear-gradient(135deg, #9146ff55, #0b0b0f 65%); }
+.fplay { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: rgba(0,0,0,.65); color: #fff; border: 1px solid rgba(255,255,255,.3); transition: transform .15s; }
+.fclip:hover .fplay { transform: translate(-50%, -50%) scale(1.08); }
+.fclipl { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; padding: 18px 12px 9px; background: linear-gradient(transparent, rgba(0,0,0,.85)); }
+.fclipl b { font-size: 12.5px; color: #fff; } .fclipl small { font-size: 11px; color: rgba(255,255,255,.7); }
+
+.freacts { display: inline-flex; gap: 4px; }
+.frx { display: inline-flex; align-items: center; gap: 4px; font: inherit; font-size: 12px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--fg-2); cursor: pointer; line-height: 18px; }
+.frx b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+.frx:hover:not(:disabled) { border-color: #3a3a3a; }
+.frx.on { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.frx:disabled { opacity: .5; cursor: default; }
+
+.fbell { display: inline-flex; align-items: center; gap: 6px; }
+.fbell.on { border-color: var(--accent) !important; color: var(--fg); }
+.fnew.note { background: var(--accent); }
+.fnotes { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; max-height: 300px; overflow-y: auto; }
+.fnh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 13px; }
+.fnote { display: flex; justify-content: space-between; gap: 10px; padding: 6px 4px; font-size: 12.5px; border-top: 1px solid var(--line-soft); }
+.fnote.new { background: color-mix(in srgb, var(--accent) 7%, transparent); border-radius: 6px; }
+
+.fprof { display: flex; flex-direction: column; gap: 10px; }
+.fprof > .lnk { align-self: flex-start; }
+.fprofh { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+.fproft { width: 54px; height: 54px; }
+.fprofn { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fprofname { font-size: 18px; font-weight: 700; }
+.fprofname.adm .nm { background: linear-gradient(90deg, color-mix(in srgb, var(--adm) 55%, #fff), var(--adm) 50%, color-mix(in srgb, var(--adm) 80%, #000)); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; }
+.fprofn small { font-size: 11.5px; }
+.fprofs { display: flex; gap: 18px; }
+.fprofs span { display: flex; flex-direction: column; align-items: flex-end; }
+.fprofs b { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fprofs small { font-size: 11px; color: var(--fg-3); }
+.fprofa { grid-column: 1 / -1; display: flex; gap: 10px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--line-soft); }
+.fprofa span { display: inline-flex; align-items: center; gap: 6px; }
+.fprofa img { width: 22px; height: 22px; border-radius: 5px; }
+.fprofa small { font-size: 12px; color: var(--fg-2); }
+.fpf { align-items: center; flex-wrap: wrap; }

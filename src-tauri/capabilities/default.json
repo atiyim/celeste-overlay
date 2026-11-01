@@ -52,6 +52,24 @@
         },
         {
           "url": "https://www.tiktok.com/@bneceleste"
+        },
+        {
+          "url": "https://www.youtube.com/watch?v=*"
+        },
+        {
+          "url": "https://www.youtube.com/shorts/*"
+        },
+        {
+          "url": "https://www.tiktok.com/@*/video/*"
+        },
+        {
+          "url": "https://medal.tv/*"
+        },
+        {
+          "url": "https://clips.twitch.tv/*"
+        },
+        {
+          "url": "https://www.twitch.tv/*/clip/*"
         }
       ]
     },

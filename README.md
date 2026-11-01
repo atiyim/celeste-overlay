@@ -83,6 +83,8 @@ Uygulamanın içindeki paylaşım alanı. Yazı (en fazla 280 karakter) ya da ma
 
 **Kimlik taklit edilemez.** Akış'a girerken uygulama, Riot Client'ın verdiği ve Riot'un imzaladığı kimlik belirtecini (id_token) siteye bir kez gönderir. Site imzayı Riot'un açık anahtarlarıyla doğrular, hesabı ve Riot ID'yi belirteçten okur, belirteci saklamaz. Bu belirteç yalnızca "bu hesap benim" kanıtıdır; Riot hesabına erişmeye ya da Riot'a istek atmaya yaramaz. Paylaşımın kimin adına görüneceği istekte yazan addan değil, bu doğrulamadan gelir.
 
+Tepkiler (🔥 💀 😂 👏), `@isim#etiket` ile etiketleme, isme tıklayınca profil (yalnızca Akış'ta paylaştıkları: paylaşımlar, aldığı GG, paylaştığı maçlardan en çok oynadığı ajanlar ve son rankı), YouTube / TikTok / Medal / Twitch klip bağlantıları ve **Bildirimler** (paylaşımına gelen GG, tepki, yorum, etiket). Her Pazar 20:00'de son 7 günün en çok GG ve tepki alan paylaşımı Discord'da "Haftanın Paylaşımı" olarak duyurulur ve sahibine bildirim gider.
+
 Kurallar: küfür ve hakaret içeren yazılar gönderilmez; saatte en fazla 5 paylaşım ve 30 yorum. 3 farklı hesabın bildirdiği içerik gizlenir. Yönetici bir kişiyi banlayınca Riot hesabı, Riot ID'si ve cihazı birlikte kapatılır; uygulamanın hangi sürümünü kullanırsa kullansın paylaşım, yorum ve GG yapamaz. Yönetici isimlerin yanında görünen roller açıp verebilir (ör. ADMIN, Öneri Ustası).
 
 Gönderilenler: yazı, maç kartı verisi (harita, ajan, skor, K/D/A, ACS, RR, rank), Riot kimlik belirteci (yalnızca girişte, saklanmaz), Riot ID, Riot hesap kimliği (puuid) ve kurulumun rastgele kimliği. IP saklanmaz.

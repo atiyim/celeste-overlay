@@ -60,7 +60,7 @@ export function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [view, setView] = useState<View>("roster");
   const [feedDraft, setFeedDraft] = useState<FeedCard | null>(null);
-  const [feedNew, feedSeen] = useFeedBadge(view === "feed");
+  const [feedNew, feedSeen, feedNotes] = useFeedBadge(view === "feed");
   const [theme, setTheme] = useState(loadTheme);
   const [seen, setSeen] = useState<Seen>({});
   const [guide, setGuide] = useState<boolean>(() => { try { return localStorage.getItem("overlay-guide") !== "1"; } catch { return false; } });
@@ -527,10 +527,10 @@ export function App() {
               </button>
             ))}
           </nav>
-          <button type="button" className={view === "feed" ? "feedbtn on" : "feedbtn"} onClick={() => { setSelected(null); setView("feed"); feedSeen(); }} aria-label={feedNew ? `Akış, ${feedNew} yeni paylaşım` : "Akış"}>
+          <button type="button" className={view === "feed" ? "feedbtn on" : "feedbtn"} onClick={() => { setSelected(null); setView("feed"); feedSeen(); }} aria-label={feedNotes ? `Akış, ${feedNotes} yeni bildirim` : feedNew ? `Akış, ${feedNew} yeni paylaşım` : "Akış"}>
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" /></svg>
             <span>Akış</span>
-            {feedNew > 0 ? <b className="fnew">{feedNew > 9 ? "9+" : feedNew} yeni</b> : <i className="flive" aria-hidden="true" />}
+            {feedNotes > 0 ? <b className="fnew note">{feedNotes > 9 ? "9+" : feedNotes} bildirim</b> : feedNew > 0 ? <b className="fnew">{feedNew > 9 ? "9+" : feedNew} yeni</b> : <i className="flive" aria-hidden="true" />}
           </button>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import type { Assets } from "./assets";
 import { lookup } from "./assets";
 import { tierColor } from "./LoadoutPanel";
@@ -7,8 +8,8 @@ import type { MyStats } from "./types";
 import { Empty, NameLine, PanelHead } from "./ui";
 import { ROLE_ICON_NAMES, ROLE_ICON_PATHS, RoleIcon } from "./roleIcons";
 import {
-  ago, cardOf, currentMe, feedAdmin, feedComment, feedComments, feedDelete, feedLike, feedList, feedPost, feedReport, login,
-  type AdminList, type Comment, type FeedCard, type Me, type Post, type Role, type RoleDef, type Tab,
+  ago, cardOf, currentMe, feedAdmin, feedComment, feedComments, feedDelete, feedLike, feedList, feedNotes, feedPost, feedProfile, feedReact, feedReport, login,
+  REACTS, type AdminList, type Clip, type Comment, type FeedCard, type Me, type Note, type Post, type Profile, type Role, type RoleDef, type Tab,
 } from "./feed";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
@@ -21,6 +22,144 @@ type Toast = (t: string) => void;
 /** Yönetici bağlamı: rol listesi (rol verme menüsü için) ve yenileme. */
 interface AdminCtx { on: boolean; roles: RoleDef[]; reload: () => void }
 const Admin = createContext<AdminCtx>({ on: false, roles: [], reload: () => undefined });
+/** İsme ya da etikete tıklayınca profil açılır. */
+const OpenProfile = createContext<(riot: string) => void>(() => undefined);
+
+const MENTION_RE = /@([^\s#@]{1,16}#[0-9A-Za-zÇĞİÖŞÜçğıöşü]{2,5})/gu;
+
+/** Yazı + tıklanabilir @isim#etiket. */
+function RichText({ text, className }: { text: string; className?: string }) {
+  const open = useContext(OpenProfile);
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  for (const m of text.matchAll(MENTION_RE)) {
+    const i = m.index ?? 0;
+    if (i > last) parts.push(text.slice(last, i));
+    parts.push(<button key={i} type="button" className="fmention" onClick={() => open(m[1])}>@{m[1]}</button>);
+    last = i + m[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return <p className={className}>{parts}</p>;
+}
+
+/** Tıklanabilir isim (profili açar). */
+function Who({ riot }: { riot: string }) {
+  const open = useContext(OpenProfile);
+  return <button type="button" className="fwho" onClick={() => open(riot)} title="Profili aç"><NameLine name={riot} /></button>;
+}
+
+const CLIP_NAME: Record<Clip["kind"], string> = { youtube: "YouTube", tiktok: "TikTok", medal: "Medal", twitch: "Twitch" };
+function ClipView({ clip }: { clip: Clip }) {
+  const go = () => { if (inTauri) openUrl(clip.url).catch(() => undefined); else window.open(clip.url, "_blank"); };
+  return (
+    <button type="button" className={`fclip ${clip.kind}`} onClick={go} title="Klibi tarayıcıda aç">
+      {clip.kind === "youtube"
+        ? <img src={`https://i.ytimg.com/vi/${clip.id}/hqdefault.jpg`} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+        : <span className="fclipbg" aria-hidden="true" />}
+      <span className="fplay" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.5v9l7.5-4.5z" /></svg></span>
+      <span className="fclipl"><b>{CLIP_NAME[clip.kind]} klibi</b><small>Tarayıcıda açılır</small></span>
+    </button>
+  );
+}
+
+/** 🔥 💀 😂 👏 tepkileri. */
+function Reacts({ p, canWrite, onToast }: { p: Post; canWrite: boolean; onToast: Toast }) {
+  const [counts, setCounts] = useState<Record<string, number>>(p.reacts ?? {});
+  const [mine, setMine] = useState<string[]>(p.myReacts ?? []);
+  useEffect(() => { setCounts(p.reacts ?? {}); setMine(p.myReacts ?? []); }, [p.reacts, p.myReacts]);
+  const toggle = async (k: string) => {
+    if (!canWrite) return;
+    const on = !mine.includes(k);
+    setMine(on ? [...mine, k] : mine.filter((x) => x !== k));
+    setCounts({ ...counts, [k]: Math.max(0, (counts[k] ?? 0) + (on ? 1 : -1)) });
+    try { const r = await feedReact(p.id, k); setCounts((c) => ({ ...c, [k]: r.count })); }
+    catch (e) { setMine(mine); setCounts(counts); onToast((e as Error).message); }
+  };
+  return (
+    <span className="freacts">
+      {REACTS.map(([k, e]) => (
+        <button key={k} type="button" className={mine.includes(k) ? "frx on" : "frx"} onClick={() => toggle(k)} disabled={!canWrite} aria-pressed={mine.includes(k)} title="Tepki ver">
+          <span aria-hidden="true">{e}</span>{(counts[k] ?? 0) > 0 && <b>{counts[k]}</b>}
+        </button>
+      ))}
+    </span>
+  );
+}
+
+const NOTE_TEXT: Record<Note["kind"], string> = { gg: "paylaşımına GG verdi", react: "paylaşımına tepki verdi", comment: "paylaşımına yorum yaptı", mention: "seni etiketledi", weekly: "Paylaşımın haftanın paylaşımı seçildi" };
+const REACT_OF: Record<string, string> = Object.fromEntries(REACTS);
+
+/** Bildirimler: paylaşımlarına gelen GG, tepki, yorum ve etiketler. */
+function NotesMenu({ onClose }: { onClose: () => void }) {
+  const open = useContext(OpenProfile);
+  const [list, setList] = useState<Note[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    feedNotes(true).then((r) => { setList(r.notes); window.dispatchEvent(new Event("feed-notes-seen")); }).catch((e) => setErr((e as Error).message));
+  }, []);
+  return (
+    <div className="fnotes box" role="dialog" aria-label="Bildirimler">
+      <div className="fnh"><b>Bildirimler</b><button className="lnk" type="button" onClick={onClose}>Kapat</button></div>
+      {err && <small className="neg">{err}</small>}
+      {!err && !list && <small className="d">Yükleniyor…</small>}
+      {list && list.length === 0 && <small className="d">Henüz bildirim yok. Paylaşımlarına GG, tepki ya da yorum gelince burada görünür.</small>}
+      {list?.map((n) => (
+        <div key={n.id} className={n.seen ? "fnote" : "fnote new"}>
+          {n.kind === "weekly"
+            ? <span><b>🏆 {NOTE_TEXT.weekly}!</b></span>
+            : <span><button type="button" className="fmention" onClick={() => { open(n.by); onClose(); }}>{n.by}</button> {NOTE_TEXT[n.kind]}{n.kind === "react" && REACT_OF[n.text] ? ` ${REACT_OF[n.text]}` : ""}{(n.kind === "comment" || n.kind === "mention") && n.text ? <q>{n.text}</q> : null}</span>}
+          <small className="d">{ago(n.at)}</small>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Profil: Akış'ta paylaştıklarından oluşan özet. */
+function ProfileView({ riot, assets, canWrite, onBack, onToast }: { riot: string; assets: Assets; canWrite: boolean; onBack: () => void; onToast: Toast }) {
+  const [p, setP] = useState<Profile | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const load = useCallback(() => { feedProfile(riot).then((x) => { setP(x); setErr(null); }).catch((e) => setErr((e as Error).message)); }, [riot]);
+  useEffect(() => { setP(null); load(); }, [load]);
+  const tier = p?.tier ? assets.tiers.get(p.tier.tier) : undefined;
+  return (
+    <div className="fprof">
+      <button className="lnk" type="button" onClick={onBack}>← Akış'a dön</button>
+      {err && <Empty tone="err" title="Profil açılamadı" text={err} onRetry={load} />}
+      {!err && !p && <Empty text="Profil yükleniyor…" />}
+      {p && (
+        <>
+          <div className="fprofh box pad" style={adminOf(p.roles) ? ({ "--adm": adminOf(p.roles)!.color } as React.CSSProperties) : undefined}>
+            {tier && <img className="fproft" src={tier.icon} alt={tier.name} title={tier.name} />}
+            <div className="fprofn">
+              <span className={adminOf(p.roles) ? "fprofname adm" : "fprofname"}><NameLine name={p.riot} /></span>
+              <Roles roles={p.roles} />
+              {tier && <small style={{ color: tierColor(tier.color) }}>{tier.name} · son paylaştığı maçta</small>}
+            </div>
+            <div className="fprofs">
+              <span><b>{p.stats.posts}</b><small>paylaşım</small></span>
+              <span><b>{p.stats.gg}</b><small>GG aldı</small></span>
+              <span><b>{p.stats.comments}</b><small>yorum</small></span>
+            </div>
+            {p.agents.length > 0 && (
+              <div className="fprofa">
+                {p.agents.map((a) => {
+                  const ag = assets.agents.get(lookup(a.agentId));
+                  return <span key={a.agentId} title={`${ag?.name ?? a.name}: ${a.n} maç, ${a.w} galibiyet`}>{ag && <img src={ag.icon} alt="" />}<small>{ag?.name ?? a.name} · {a.n}</small></span>;
+                })}
+              </div>
+            )}
+          </div>
+          <small className="d">Profilde yalnızca Akış'ta paylaştıkları görünür.{p.stats.since ? ` İlk paylaşımı ${new Date(p.stats.since).toLocaleDateString("tr-TR", { day: "numeric", month: "long" })}.` : ""}</small>
+          <div className="flist">
+            {p.posts.length === 0 && <Empty text="Görünür paylaşımı yok." />}
+            {p.posts.map((x) => <PostView key={x.id} p={x} assets={assets} canWrite={canWrite} onToast={onToast} onChanged={load} />)}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 /* ---------- İsim + roller ---------- */
 /** Zemin rengine göre okunur yazı rengi. */
@@ -168,19 +307,19 @@ function Comments({ post, canWrite, onToast, onCount }: { post: Post; canWrite: 
       {err && <small className="neg">{err}</small>}
       {list?.map((c) => (
         <div className={adminOf(c.roles) ? "fcm1 adm" : "fcm1"} key={c.id} style={adminOf(c.roles) ? ({ "--adm": adminOf(c.roles)!.color } as React.CSSProperties) : undefined}>
-          <div className="fcmh"><NameLine name={c.riot} /><Roles roles={c.roles} /><small className="d">{ago(c.created)}</small>
+          <div className="fcmh"><Who riot={c.riot} /><Roles roles={c.roles} /><small className="d">{ago(c.created)}</small>
             <span className="sp" />
             {c.mine && <button className="lnk" type="button" onClick={() => act(() => feedDelete(`c:${c.id}`), "Yorum silindi")}>Sil</button>}
             {!c.mine && !adm.on && canWrite && <button className="lnk" type="button" onClick={() => act(() => feedReport(`c:${c.id}`), "Bildirildi, teşekkürler")}>Bildir</button>}
             {adm.on && <AdminButtons target={`c:${c.id}`} riot={c.riot} mine={c.mine} onToast={onToast} onDone={load} />}
           </div>
-          <p>{c.text}</p>
+          <RichText text={c.text} />
         </div>
       ))}
       {list && list.length === 0 && <small className="d">Henüz yorum yok.</small>}
       {canWrite && (
         <div className="fcin">
-          <input className="inp" value={text} maxLength={COMMENT_MAX} placeholder="Yorum yaz" onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
+          <input className="inp" value={text} maxLength={COMMENT_MAX} placeholder="Yorum yaz · @isim#etiket ile etiketle" onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
           <button className="x" type="button" onClick={send} disabled={busy || !text.trim()}>Gönder</button>
         </div>
       )}
@@ -213,7 +352,7 @@ function PostView({ p, assets, canWrite, onToast, onChanged }: { p: Post; assets
         <div className="fpin"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M10.5 1.5 14.5 5.5 12 6.5 9.5 9l.5 3.5-1 1L6 10.5 2.5 14l-.5-.5L5.5 10 2.5 7l1-1L7 6.5 9.5 4z" /></svg>Sabitlenmiş paylaşım</div>
       )}
       <header className="fph">
-        <NameLine name={p.riot} />
+        <Who riot={p.riot} />
         <Roles roles={p.roles} />
         <small className="d">{ago(p.created)}</small>
         {p.hidden && <span className="bd neg">Gizli · {p.reports} bildirim</span>}
@@ -222,10 +361,13 @@ function PostView({ p, assets, canWrite, onToast, onChanged }: { p: Post; assets
         {!p.mine && !adm.on && canWrite && <button className="lnk" type="button" onClick={() => act(() => feedReport(`p:${p.id}`), "Bildirildi, teşekkürler")}>Bildir</button>}
         {adm.on && <AdminButtons target={`p:${p.id}`} riot={p.riot} pinned={p.pinned} mine={p.mine} onToast={onToast} onDone={onChanged} />}
       </header>
-      {p.text && <p className="fpt">{p.text}</p>}
+      {p.text && <RichText className="fpt" text={p.text} />}
       {p.card && <FeedCardView c={p.card} assets={assets} />}
+      {p.clip && <ClipView clip={p.clip} />}
       <footer className="fpf">
         <button type="button" className={liked ? "fgg on" : "fgg"} onClick={gg} disabled={!canWrite} aria-pressed={liked} title="GG ver">GG <b>{likes}</b></button>
+        <Reacts p={p} canWrite={canWrite} onToast={onToast} />
+        <span className="sp" />
         <button type="button" className={open ? "fgg on2" : "fgg"} onClick={() => setOpen(!open)} aria-expanded={open}>Yorumlar <b>{count}</b></button>
       </footer>
       {open && <Comments post={p} canWrite={canWrite} onToast={onToast} onCount={setCount} />}
@@ -356,6 +498,11 @@ function AdminView({ assets, data, err, me, onToast, reload, onColor }: { assets
 /* ---------- Panel ---------- */
 export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { assets: Assets; draft: FeedCard | null; onDraftUsed: () => void; onToast: Toast; onClose: () => void }) {
   const [tab, setTab] = useState<Tab | "admin">("new");
+  const [profileOf, setProfileOf] = useState<string | null>(null);
+  const [showNotes, setShowNotes] = useState(false);
+  const [unseen, setUnseen] = useState(0);
+  const [clip, setClip] = useState("");
+  const [clipOpen, setClipOpen] = useState(false);
   const [posts, setPosts] = useState<Post[] | null>(null);
   const [more, setMore] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -395,6 +542,13 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
   useEffect(() => { if (draft) { setCard(draft); onDraftUsed(); area.current?.focus(); } }, [draft]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isAdmin = !!me?.admin;
+  useEffect(() => {
+    if (!me || me.banned) return;
+    const ask = () => { if (!document.hidden) feedNotes().then((r) => setUnseen(r.unseen)).catch(() => undefined); };
+    ask();
+    const t = window.setInterval(ask, 60_000);
+    return () => window.clearInterval(t);
+  }, [me?.puuid, me?.banned]); // eslint-disable-line react-hooks/exhaustive-deps
   const loadAdmin = useCallback(async () => {
     if (!isAdmin) return;
     try { setAdm(await feedAdmin<AdminList>("list")); setAdmErr(null); } catch (e) { setAdmErr((e as Error).message); }
@@ -429,8 +583,8 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
   const share = async () => {
     setBusy(true);
     try {
-      await feedPost(text.trim(), card);
-      setText(""); setCard(null); onToast("Paylaşıldı");
+      await feedPost(text.trim(), card, clip.trim());
+      setText(""); setCard(null); setClip(""); setClipOpen(false); onToast("Paylaşıldı");
       if (tab !== "new") setTab("new"); else load("new");
     } catch (e) { onToast((e as Error).message); }
     setBusy(false);
@@ -442,11 +596,20 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
 
   return (
     <Admin.Provider value={ctx}>
+    <OpenProfile.Provider value={(r) => { setShowNotes(false); setProfileOf(r); }}>
       <div className="panel akis" role="dialog" aria-label="Akış">
         <PanelHead
           title="Akış"
           sub={me ? <>Riot ile doğrulandı: <b>{me.riot}</b>{me.roles.length > 0 && <> <Roles roles={me.roles} /></>}</> : "Maçlarını ve düşüncelerini paylaş, GG ver, yorum yap"}
-          actions={<button className="x" type="button" onClick={() => load()}>Yenile</button>}
+          actions={<>
+            {me && !me.banned && (
+              <button className={showNotes ? "x fbell on" : "x fbell"} type="button" onClick={() => { setShowNotes(!showNotes); setUnseen(0); }} aria-label={unseen ? `Bildirimler, ${unseen} yeni` : "Bildirimler"}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true"><path d="M4 7a4 4 0 0 1 8 0v3l1.5 2h-11L4 10z" /><path d="M6.5 13.5a1.6 1.6 0 0 0 3 0" /></svg>
+                Bildirimler{unseen > 0 && <b className="fnew note">{unseen > 9 ? "9+" : unseen}</b>}
+              </button>
+            )}
+            <button className="x" type="button" onClick={() => load()}>Yenile</button>
+          </>}
           onClose={onClose}
         />
 
@@ -455,9 +618,15 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
         ) : !me ? (
           authErr ? <Empty tone="err" title="Riot ile doğrulanamadı" text={<>{authErr} Paylaşımları okuyabilirsin; paylaşmak için Riot Client açık olmalı.</>} onRetry={auth} />
             : <Empty text={authing ? "Riot hesabın doğrulanıyor…" : "Paylaşmak için Riot Client açık olmalı."} onRetry={authing ? undefined : auth} />
-        ) : tab !== "admin" && (
+        ) : tab !== "admin" && !profileOf && (
           <div className="fcomp box pad">
             <textarea ref={area} className="inp" rows={2} maxLength={POST_MAX} value={text} placeholder={card ? "Maçın hakkında bir şey yaz (isteğe bağlı)" : "Ne düşünüyorsun?"} onChange={(e) => setText(e.target.value)} />
+            {clipOpen && (
+              <div className="fcin">
+                <input className="inp" value={clip} placeholder="YouTube, TikTok, Medal ya da Twitch klip bağlantısı" onChange={(e) => setClip(e.target.value)} />
+                <button className="lnk" type="button" onClick={() => { setClip(""); setClipOpen(false); }}>Kaldır</button>
+              </div>
+            )}
             {card && (
               <div className="fdraft">
                 <FeedCardView c={card} assets={assets} />
@@ -466,21 +635,28 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
             )}
             <div className="fcbar">
               {!card && <button className="x" type="button" onClick={attachLast}>Son maçımı ekle</button>}
+              {!clipOpen && <button className="x" type="button" onClick={() => setClipOpen(true)}>Klip ekle</button>}
               <small className="d">Paylaşımın Riot ID'nle herkese açık görünür ve Celeste Discord sunucusuna da düşer. Küfür ve hakaret yazılamaz.</small>
               <span className="sp" />
               <small className={text.length > POST_MAX - 20 ? "neg" : "d"}>{text.length}/{POST_MAX}</small>
-              <button className="x pri" type="button" onClick={share} disabled={busy || (!text.trim() && !card)}>{busy ? "Paylaşılıyor" : "Paylaş"}</button>
+              <button className="x pri" type="button" onClick={share} disabled={busy || (!text.trim() && !card && !clip.trim())}>{busy ? "Paylaşılıyor" : "Paylaş"}</button>
             </div>
           </div>
         )}
 
+        {showNotes && <NotesMenu onClose={() => setShowNotes(false)} />}
+
+        {!profileOf && (
         <div className="tabs" role="tablist">
           {tabs.map(([id, label]) => (
             <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? "on" : ""} onClick={() => setTab(id)}>{label}</button>
           ))}
         </div>
+        )}
 
-        {tab === "admin" ? (
+        {profileOf ? (
+          <ProfileView riot={profileOf} assets={assets} canWrite={canWrite} onBack={() => setProfileOf(null)} onToast={onToast} />
+        ) : tab === "admin" ? (
           <AdminView assets={assets} data={adm} err={admErr} me={me} onToast={onToast} reload={() => { loadAdmin(); load(tab === "admin" ? "new" : tab); }} onColor={(c) => setMe((m) => (m ? { ...m, roles: m.roles.map((r) => (r.admin ? { ...r, color: c } : r)) } : m))} />
         ) : (
           <div className="flist">
@@ -498,6 +674,7 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
           </div>
         )}
       </div>
+    </OpenProfile.Provider>
     </Admin.Provider>
   );
 }

@@ -23,7 +23,12 @@ export interface FeedCard {
   /** Skor tablosu (isimsiz): a = ajan, as = asist. */
   board?: { a: string; k: number; d: number; as: number; acs: number; me: boolean; ally: boolean }[];
 }
-export interface Post { id: number; riot: string; text: string; card: FeedCard | null; created: number; likes: number; comments: number; liked: boolean; mine: boolean; pinned?: boolean; roles: Role[]; reports?: number; hidden?: boolean }
+export interface Post { id: number; riot: string; text: string; card: FeedCard | null; created: number; likes: number; comments: number; liked: boolean; mine: boolean; pinned?: boolean; roles: Role[]; reports?: number; hidden?: boolean;
+  reacts?: Record<string, number>; myReacts?: string[]; clip?: Clip | null }
+export interface Clip { url: string; kind: "youtube" | "tiktok" | "medal" | "twitch"; id: string }
+export interface Note { id: number; kind: "gg" | "react" | "comment" | "mention" | "weekly"; post: number; by: string; text: string; at: number; seen: boolean }
+export interface Profile { riot: string; puuid: string; roles: Role[]; tier: { tier: number; name: string } | null; stats: { posts: number; gg: number; comments: number; since: number | null }; agents: { agentId: string; name: string; n: number; w: number }[]; posts: Post[] }
+export const REACTS = [["fire", "🔥"], ["skull", "💀"], ["lol", "😂"], ["clap", "👏"]] as const;
 export interface Comment { id: number; riot: string; text: string; created: number; mine: boolean; roles: Role[] }
 export interface RoleDef { id: number; name: string; color: string; icon?: string; glow?: boolean; members: { puuid: string; riot: string }[] }
 export interface AdminList { posts: Post[]; comments: (Comment & { post: number; reports: number; hidden: boolean })[]; bans: { riot: string; at: number }[]; roles: RoleDef[]; adminColor?: string }
@@ -84,7 +89,10 @@ async function fresh() {
   const now = await invoke<string>("get_riot_id").catch(() => "");
   if (now && now.toLocaleLowerCase("tr-TR") !== me.riot.toLocaleLowerCase("tr-TR")) await login();
 }
-export const feedPost = async (text: string, card: FeedCard | null) => { await fresh(); return send<{ id: number }>("post", { text, card }); };
+export const feedPost = async (text: string, card: FeedCard | null, clip?: string) => { await fresh(); return send<{ id: number }>("post", { text, card, clip: clip || undefined }); };
+export const feedReact = (post: number, kind: string) => send<{ on: boolean; count: number }>("react", { post, kind });
+export const feedNotes = (seen = false) => send<{ unseen: number; notes: Note[] }>("notes", { seen });
+export const feedProfile = (riot: string) => getJson<Profile>(`${API}/profile?riot=${encodeURIComponent(riot)}&p=${me?.puuid ?? ""}`);
 export const feedComment = async (post: number, text: string) => { await fresh(); return send<{ id: number }>("comment", { post, text }); };
 export const feedLike = (post: number) => send<{ liked: boolean; likes: number }>("like", { post });
 export const feedReport = (target: string) => send<{ ok: true }>("report", { target });
@@ -102,8 +110,9 @@ export function ago(ms: number): string {
 
 /* Akış düğmesindeki "N yeni" sayacı: son görülen paylaşımdan sonra gelenler (2 dakikada bir, overlay açıkken). */
 const SEEN_KEY = "overlay-feed-seen";
-export function useFeedBadge(open: boolean): [number, () => void] {
+export function useFeedBadge(open: boolean): [number, () => void, number] {
   const [n, setN] = useState(0);
+  const [notes, setNotes] = useState(0);
   const [top, setTop] = useState(0);
   const seen = () => { try { return Number(localStorage.getItem(SEEN_KEY)) || 0; } catch { return 0; } };
   const mark = useCallback(() => {
@@ -121,6 +130,8 @@ export function useFeedBadge(open: boolean): [number, () => void] {
         const s = seen();
         if (!s && max) { try { localStorage.setItem(SEEN_KEY, String(max - Math.min(ids.length, 3))); } catch { /* */ } }
         setN(ids.filter((id) => id > (seen() || max)).length);
+        // Giriş yapılmışsa: paylaşımlarına gelen GG, tepki, yorum ve etiketler.
+        if (me && !me.banned) setNotes((await feedNotes()).unseen);
       } catch { /* sessiz */ }
     };
     const t0 = window.setTimeout(ask, 3_000);
@@ -128,5 +139,10 @@ export function useFeedBadge(open: boolean): [number, () => void] {
     return () => { window.clearTimeout(t0); window.clearInterval(t); };
   }, []);
   useEffect(() => { if (open) mark(); }, [open, top]); // eslint-disable-line react-hooks/exhaustive-deps
-  return [n, mark];
+  useEffect(() => {
+    const clear = () => setNotes(0);
+    window.addEventListener("feed-notes-seen", clear);
+    return () => window.removeEventListener("feed-notes-seen", clear);
+  }, []);
+  return [n, mark, notes];
 }

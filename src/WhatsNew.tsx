@@ -16,6 +16,7 @@ const NOTES: Record<string, string[]> = {
     "Maç kartı: maçını Discord'a ya da hikâyeye atmak için görsel (Kopyala / Kaydet).",
     "Maçta gizlenmeden önce geri sayım; uygulama ikinci kez açılmaz, açık olan öne gelir; üstte Kapat düğmesi.",
     "Akış: maçlarını ve düşüncelerini paylaş, GG ver, yorum yap. Maç kartında iki takımın skor tablosu da görünür.",
+    "Akış'ta 🔥 💀 😂 👏 tepkileri, @isim#etiket ile etiketleme, profil sayfası, klip bağlantıları ve bildirimler.",
   ],
 
   "0.7.0": [
