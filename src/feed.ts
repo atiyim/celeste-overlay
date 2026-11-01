@@ -15,7 +15,7 @@ const inTauri = "__TAURI_INTERNALS__" in window;
 const API = `${SITE}/api/feed`;
 const SESSION_KEY = "overlay-feed-session";
 
-export interface Role { id?: number; name: string; color: string; admin?: boolean }
+export interface Role { id?: number; name: string; color: string; admin?: boolean; icon?: string; glow?: boolean }
 export interface FeedCard {
   mapId: string; agentId: string; queue: string; won: boolean; k: number; d: number; a: number; acs: number;
   score: [number, number] | null; hl: string[]; rr: number | null; tier: number | null; started: number | null;
@@ -25,7 +25,7 @@ export interface FeedCard {
 }
 export interface Post { id: number; riot: string; text: string; card: FeedCard | null; created: number; likes: number; comments: number; liked: boolean; mine: boolean; pinned?: boolean; roles: Role[]; reports?: number; hidden?: boolean }
 export interface Comment { id: number; riot: string; text: string; created: number; mine: boolean; roles: Role[] }
-export interface RoleDef { id: number; name: string; color: string; members: { puuid: string; riot: string }[] }
+export interface RoleDef { id: number; name: string; color: string; icon?: string; glow?: boolean; members: { puuid: string; riot: string }[] }
 export interface AdminList { posts: Post[]; comments: (Comment & { post: number; reports: number; hidden: boolean })[]; bans: { riot: string; at: number }[]; roles: RoleDef[]; adminColor?: string }
 export interface Me { session: string; riot: string; puuid: string; verifiedName: boolean; admin: boolean; banned: boolean; roles: Role[] }
 
@@ -78,8 +78,14 @@ export const feedList = (tab: Tab, before?: number) =>
   getJson<{ posts: Post[] }>(`${API}?tab=${tab}&p=${me?.puuid ?? ""}${before ? `&before=${before}` : ""}`);
 export const feedComments = (post: number) => getJson<{ comments: Comment[] }>(`${API}/comments?post=${post}&p=${me?.puuid ?? ""}`);
 
-export const feedPost = (text: string, card: FeedCard | null) => send<{ id: number }>("post", { text, card });
-export const feedComment = (post: number, text: string) => send<{ id: number }>("comment", { post, text });
+/** Yazmadan önce: Riot Client'taki hesap değiştiyse yeniden giriş (başkasının adıyla yazılmasın). */
+async function fresh() {
+  if (!inTauri || !me) return;
+  const now = await invoke<string>("get_riot_id").catch(() => "");
+  if (now && now.toLocaleLowerCase("tr-TR") !== me.riot.toLocaleLowerCase("tr-TR")) await login();
+}
+export const feedPost = async (text: string, card: FeedCard | null) => { await fresh(); return send<{ id: number }>("post", { text, card }); };
+export const feedComment = async (post: number, text: string) => { await fresh(); return send<{ id: number }>("comment", { post, text }); };
 export const feedLike = (post: number) => send<{ liked: boolean; likes: number }>("like", { post });
 export const feedReport = (target: string) => send<{ ok: true }>("report", { target });
 export const feedDelete = (target: string) => send<{ ok: true }>("delete", { target });

@@ -5,6 +5,7 @@ import { lookup } from "./assets";
 import { tierColor } from "./LoadoutPanel";
 import type { MyStats } from "./types";
 import { Empty, NameLine, PanelHead } from "./ui";
+import { ROLE_ICON_NAMES, ROLE_ICON_PATHS, RoleIcon } from "./roleIcons";
 import {
   ago, cardOf, currentMe, feedAdmin, feedComment, feedComments, feedDelete, feedLike, feedList, feedPost, feedReport, login,
   type AdminList, type Comment, type FeedCard, type Me, type Post, type Role, type RoleDef, type Tab,
@@ -35,7 +36,7 @@ function Roles({ roles }: { roles: Role[] }) {
   return (
     <span className="froles">
       {roles.map((r) => (
-        <span key={r.name} className={r.admin ? "frole adm" : "frole"} style={{ "--rc": r.color, "--rt": ink(r.color) } as React.CSSProperties} title={r.admin ? "Celeste Overlay yöneticisi" : `Rol: ${r.name}`}>{r.name}</span>
+        <span key={r.name} className={r.admin || r.glow ? "frole adm" : "frole"} style={{ "--rc": r.color, "--rt": ink(r.color) } as React.CSSProperties} title={r.admin ? "Celeste Overlay yöneticisi" : `Rol: ${r.name}`}><RoleIcon name={r.icon ?? (r.admin ? "crown" : undefined)} />{r.name}</span>
       ))}
     </span>
   );
@@ -232,11 +233,44 @@ function PostView({ p, assets, canWrite, onToast, onChanged }: { p: Post; assets
   );
 }
 
+/* ---------- Rol düzenleyici: ad, renk, simge, parlama ---------- */
+interface RoleDraft { name: string; color: string; icon: string; glow: boolean }
+function RoleEditor({ name, color, icon, glow, onChange, onSave, action }: RoleDraft & { onChange: (v: Partial<RoleDraft>) => void; onSave: () => void; action: string }) {
+  return (
+    <div className="froled">
+      <div className="fcin">
+        <input className="inp" value={name} maxLength={16} placeholder="Rol adı (ör. Developer)" onChange={(e) => onChange({ name: e.target.value })} />
+        <span className="froles fprev"><span className={glow ? "frole adm" : "frole"} style={{ "--rc": color, "--rt": ink(color) } as React.CSSProperties}><RoleIcon name={icon} />{name.trim() || "Önizleme"}</span></span>
+        <button className="x" type="button" disabled={name.trim().length < 2} onClick={onSave}>{action}</button>
+      </div>
+      <div className="froleopts">
+        <span className="fsw">{ROLE_COLORS.map((c) => <button key={c} type="button" className={c === color ? "on" : ""} style={{ background: c }} aria-label={`Renk ${c}`} onClick={() => onChange({ color: c })} />)}</span>
+        <label className="fcolor"><input type="color" value={color} onChange={(e) => onChange({ color: e.target.value })} aria-label="Özel renk" /></label>
+        <span className="ficons" role="group" aria-label="Simge">
+          <button type="button" className={!icon ? "on" : ""} onClick={() => onChange({ icon: "" })} title="Simgesiz">–</button>
+          {Object.keys(ROLE_ICON_PATHS).map((k) => (
+            <button key={k} type="button" className={icon === k ? "on" : ""} title={ROLE_ICON_NAMES[k]} aria-label={ROLE_ICON_NAMES[k]} onClick={() => onChange({ icon: k })}><RoleIcon name={k} size={13} /></button>
+          ))}
+        </span>
+        <label className="fglow"><input type="checkbox" checked={glow} onChange={(e) => onChange({ glow: e.target.checked })} /> ADMIN gibi parlasın</label>
+      </div>
+    </div>
+  );
+}
+
+function RoleEdit({ r, onSave }: { r: RoleDef; onSave: (v: RoleDraft) => void }) {
+  const [v, setV] = useState<RoleDraft>({ name: r.name, color: r.color, icon: r.icon ?? "", glow: !!r.glow });
+  return <RoleEditor {...v} onChange={(p) => setV({ ...v, ...p })} action="Kaydet" onSave={() => onSave({ ...v, name: v.name.trim() })} />;
+}
+
 /* ---------- Yönetim sekmesi ---------- */
 function AdminView({ assets, data, err, me, onToast, reload, onColor }: { assets: Assets; data: AdminList | null; err: string | null; me: Me | null; onToast: Toast; reload: () => void; onColor: (c: string) => void }) {
   const [riot, setRiot] = useState("");
   const [name, setName] = useState("");
   const [color, setColor] = useState(ROLE_COLORS[0]);
+  const [icon, setIcon] = useState("");
+  const [glow, setGlow] = useState(false);
+  const [edit, setEdit] = useState<number | null>(null);
   const act = async (action: string, extra: object, ok: string) => {
     try { await feedAdmin(action, extra); onToast(ok); reload(); } catch (e) { onToast((e as Error).message); }
   };
@@ -246,7 +280,7 @@ function AdminView({ assets, data, err, me, onToast, reload, onColor }: { assets
 
       <h3 className="h2">ADMIN rozeti</h3>
       <div className="box pad fadmcol">
-        <span className="froles"><span className="frole adm" style={{ "--rc": data?.adminColor ?? "#f5c451", "--rt": ink(data?.adminColor ?? "#f5c451") } as React.CSSProperties}>ADMIN</span></span>
+        <span className="froles"><span className="frole adm" style={{ "--rc": data?.adminColor ?? "#f5c451", "--rt": ink(data?.adminColor ?? "#f5c451") } as React.CSSProperties}><RoleIcon name="crown" />ADMIN</span></span>
         <span className="fsw">{["#f5c451", "#ec4899", "#38bdf8", "#a78bfa", "#34d399", "#f87171", "#ffffff"].map((c) => (
           <button key={c} type="button" className={c === data?.adminColor ? "on" : ""} style={{ background: c }} aria-label={`ADMIN rengi ${c}`} onClick={() => { act("admin_color", { color: c }, "ADMIN rengi değişti"); onColor(c); }} />
         ))}</span>
@@ -256,22 +290,27 @@ function AdminView({ assets, data, err, me, onToast, reload, onColor }: { assets
 
       <h3 className="h2">Roller</h3>
       <div className="box pad froleadm">
-        <div className="fcin">
-          <input className="inp" value={name} maxLength={16} placeholder="Yeni rol adı (ör. Öneri Ustası)" onChange={(e) => setName(e.target.value)} />
-          <span className="fsw">{ROLE_COLORS.map((c) => <button key={c} type="button" className={c === color ? "on" : ""} style={{ background: c }} aria-label={`Renk ${c}`} onClick={() => setColor(c)} />)}</span>
-          <button className="x" type="button" disabled={name.trim().length < 2} onClick={() => { act("role_create", { name: name.trim(), color }, "Rol açıldı"); setName(""); }}>Rol aç</button>
-        </div>
+        <RoleEditor
+          name={name} color={color} icon={icon} glow={glow}
+          onChange={(v) => { if (v.name != null) setName(v.name); if (v.color) setColor(v.color); if (v.icon != null) setIcon(v.icon); if (v.glow != null) setGlow(v.glow); }}
+          action="Rol aç"
+          onSave={() => { act("role_create", { name: name.trim(), color, icon, glow }, "Rol açıldı"); setName(""); setIcon(""); setGlow(false); }}
+        />
         {data && data.roles.length === 0 && <small className="d">Henüz rol yok. Açtığın rolü paylaşımlardaki "Rol ver" menüsünden verirsin.</small>}
         {data?.roles.map((r) => (
-          <div key={r.id} className="frolerow">
-            <span className="frole" style={{ "--rc": r.color } as React.CSSProperties}>{r.name}</span>
+          <div key={r.id} className="frolewrap">
+          <div className="frolerow">
+            <Roles roles={[{ name: r.name, color: r.color, icon: r.icon, glow: r.glow }]} />
             <span className="frm">
               {r.members.length === 0 ? <small className="d">Kimsede yok</small> : r.members.map((m) => (
                 <span key={m.puuid} className="frmem">{m.riot}<button type="button" aria-label={`${m.riot} kişisinden rolü al`} onClick={() => act("role_take", { role: r.id, puuid: m.puuid }, "Rol alındı")}>×</button></span>
               ))}
             </span>
             {me && !r.members.some((m) => m.puuid === me.puuid) && <button className="lnk" type="button" onClick={() => act("role_give", { role: r.id, puuid: me.puuid }, `${r.name} rolü sende`)}>Kendime ver</button>}
+            <button className="lnk" type="button" onClick={() => setEdit(edit === r.id ? null : r.id)}>{edit === r.id ? "Kapat" : "Düzenle"}</button>
             <button className="lnk neg" type="button" onClick={() => act("role_delete", { role: r.id }, "Rol silindi")}>Rolü sil</button>
+          </div>
+          {edit === r.id && <RoleEdit r={r} onSave={(v) => { act("role_update", { role: r.id, ...v }, "Rol güncellendi"); setEdit(null); }} />}
           </div>
         ))}
       </div>
@@ -337,6 +376,22 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
     setAuthing(false);
   }, []);
   useEffect(() => { auth(); }, [auth]);
+  // Riot Client'ta hesap değişince akış kimliği de değişsin (overlay'i kapatıp açmaya gerek kalmadan).
+  const riotRef = useRef<string | null>(null);
+  useEffect(() => { riotRef.current = me?.riot ?? null; }, [me?.riot]);
+  useEffect(() => {
+    if (!inTauri) return;
+    const check = async () => {
+      if (document.hidden) return;
+      const now = await invoke<string>("get_riot_id").catch(() => "");
+      const cur = riotRef.current;
+      if (now && cur && now.toLocaleLowerCase("tr-TR") !== cur.toLocaleLowerCase("tr-TR")) auth();
+      if (now && !cur && !authing) auth();
+    };
+    const t = window.setInterval(check, 8_000);
+    window.addEventListener("focus", check);
+    return () => { window.clearInterval(t); window.removeEventListener("focus", check); };
+  }, [auth]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (draft) { setCard(draft); onDraftUsed(); area.current?.focus(); } }, [draft]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isAdmin = !!me?.admin;

@@ -1081,6 +1081,15 @@ impl Engine {
         if let Some(id) = s.local_riot_id().await {
             return Ok(id);
         }
+        // Hesap değişince Riot Client yeniden başlar (yeni port/parola): oturumu yenileyip bir kez daha dene.
+        st.session = None;
+        let s = self.session(&mut st).await.map_err(|e| {
+            st.session = None;
+            friendly(&e)
+        })?;
+        if let Some(id) = s.local_riot_id().await {
+            return Ok(id);
+        }
         let me = s.puuid.clone();
         self.load_names(&mut st, &s, std::slice::from_ref(&me)).await;
         st.names
@@ -1103,6 +1112,14 @@ impl Engine {
     /// Akış girişi için Riot'un imzaladığı kimlik belirteci.
     pub async fn my_id_token(&self) -> Result<String, String> {
         let mut st = self.state.lock().await;
+        let s = self.session(&mut st).await.map_err(|e| {
+            st.session = None;
+            friendly(&e)
+        })?;
+        if let Some(t) = s.local_id_token().await {
+            return Ok(t);
+        }
+        st.session = None; // hesap değişmiş olabilir: yeni oturumla bir kez daha
         let s = self.session(&mut st).await.map_err(|e| {
             st.session = None;
             friendly(&e)
