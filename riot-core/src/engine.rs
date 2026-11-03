@@ -345,7 +345,10 @@ const ROUND_QUEUES: [&str; 3] = ["competitive", "unrated", "premier"];
 const FORM_N: usize = 5;
 const DEEP_COMP: usize = 20;
 const DEEP_OTHER: usize = 10;
-const DETAIL_BUDGET: usize = 10; // her turda en fazla bu kadar maç ayrıntısı çekilir
+const DETAIL_BUDGET: usize = 10; // her turda en fazla bu kadar maç ayrıntısı çekilir (ajan seçiminde)
+/// Maç sırasında: maç ayrıntıları büyük yanıtlardır (her biri yüzlerce KB); oyunun bağlantısını sıkıştırmamak için
+/// her turda en fazla bu kadar, gerisi sonraki turlarda.
+const DETAIL_BUDGET_INGAME: usize = 3;
 
 /// Yalnızca rekabet maçları (party eşleşmesi gibi hesaplar bunu kullanır).
 /// Rekabet + diğer modlar (özel maçlar hariç), yeniden eskiye.
@@ -432,6 +435,8 @@ fn to_rank(m: &Mmr) -> Rank {
 struct State {
     /// Riot Client kapalıyken ya da oturum açılmamışken her turda tekrar sorulmaz; bu ana kadar son durum döner.
     retry_at: Option<(Instant, Snapshot)>,
+    /// Maç kimliği → (maç bilgisi, kaplamalar, alındığı an).
+    match_cache: Option<(String, Value, Option<Value>, Instant)>,
     debug_match: Option<String>,
     debug_party: Option<String>,
     debug_pre: Option<String>,
@@ -556,12 +561,32 @@ impl Engine {
     }
 
     async fn ingame(&self, st: &mut State, s: &Session, mid: &str) -> Result<Snapshot> {
-        let m = self
-            .get(s, &s.glz, &format!("/core-game/v1/matches/{mid}"))
-            .await?
-            .ok_or_else(|| anyhow!("maç bilgisi alınamadı"))?;
-        // Donatı alınamazsa liste yine de görünsün (hata tüm tabloyu düşürmesin).
-        let loadouts = self.get(s, &s.glz, &format!("/core-game/v1/matches/{mid}/loadouts")).await.unwrap_or(None);
+        // Maç bilgisi ve kaplamalar maç boyunca değişmez: maç başına bir kez çekilir (kaplamalar gelmediyse
+        // 15 sn'de bir yeniden denenir, oyuncu listesi 2 dakikada bir tazelenir). Böylece maç sırasında
+        // her turda yalnızca küçük "maçta mıyım" isteği gider; oyunun bağlantısına yük olmaz.
+        let fresh = st.match_cache.as_ref().filter(|c| c.0 == mid).map(|c| (c.1.clone(), c.2.clone(), c.3.elapsed()));
+        let (m, loadouts) = match fresh {
+            Some((m, l, age)) if age < Duration::from_secs(120) && (l.is_some() || age < Duration::from_secs(15)) => (m, l),
+            Some((m_old, l_old, _)) => {
+                let m = self.get(s, &s.glz, &format!("/core-game/v1/matches/{mid}")).await.ok().flatten().unwrap_or(m_old);
+                let l = match l_old {
+                    Some(l) => Some(l),
+                    None => self.get(s, &s.glz, &format!("/core-game/v1/matches/{mid}/loadouts")).await.unwrap_or(None),
+                };
+                st.match_cache = Some((mid.to_string(), m.clone(), l.clone(), Instant::now()));
+                (m, l)
+            }
+            None => {
+                let m = self
+                    .get(s, &s.glz, &format!("/core-game/v1/matches/{mid}"))
+                    .await?
+                    .ok_or_else(|| anyhow!("maç bilgisi alınamadı"))?;
+                // Donatı alınamazsa liste yine de görünsün (hata tüm tabloyu düşürmesin).
+                let l = self.get(s, &s.glz, &format!("/core-game/v1/matches/{mid}/loadouts")).await.unwrap_or(None);
+                st.match_cache = Some((mid.to_string(), m.clone(), l.clone(), Instant::now()));
+                (m, l)
+            }
+        };
 
         if st.debug_match.as_deref() != Some(mid) {
             st.debug_match = Some(mid.to_string());
@@ -591,7 +616,7 @@ impl Engine {
             }
             players.push(p);
         }
-        self.enrich(st, s, &mut players, &season).await;
+        self.enrich(st, s, &mut players, &season, DETAIL_BUDGET_INGAME).await;
         let hidden = st.hidden_now.clone();
         st.lobbies.insert(mid.to_string(), hidden);
         Ok(Snapshot {
@@ -637,7 +662,7 @@ impl Engine {
                 }
             }
         }
-        self.enrich(st, s, &mut players, "").await;
+        self.enrich(st, s, &mut players, "", DETAIL_BUDGET).await;
         Ok(Snapshot {
             phase: Phase::Pregame,
             match_id: Some(mid.to_string()),
@@ -650,7 +675,7 @@ impl Engine {
     }
 
     /// İsim, rank ve parti bilgisini ekler. Hata verirse oyuncu satırı eksik kalır, tablo bozulmaz.
-    async fn enrich(&self, st: &mut State, s: &Session, players: &mut [Player], season: &str) {
+    async fn enrich(&self, st: &mut State, s: &Session, players: &mut [Player], season: &str, budget: usize) {
         // İsimler: gizli isimli oyuncular için isim sorgusu YAPILMAZ.
         for p in players.iter().filter(|p| p.hidden_name && !p.is_self) {
             netlog::skipped_hidden(&p.puuid);
@@ -747,7 +772,7 @@ impl Engine {
                     }
                 }
             }
-            want.truncate(DETAIL_BUDGET);
+            want.truncate(budget);
             for (id, r) in join_all(want.iter().map(|id| async move { (id.clone(), self.fetch_detail(s, id).await) })).await {
                 match r {
                     Ok(d) => {

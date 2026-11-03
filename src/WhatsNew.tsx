@@ -3,6 +3,11 @@ import { useState } from "react";
 /* Güncellemeden sonra bir kez görünen "neler yeni" kartı. Kapatınca bu sürüm için bir daha çıkmaz. */
 const KEY = "overlay-whatsnew";
 const NOTES: Record<string, string[]> = {
+  "0.7.2": [
+    "Maç sırasında çok daha az internet: maç bilgisi ve kaplamalar maç başına bir kez çekilir, oyuncu geçmişi azar azar yüklenir; overlay gizliyken denetim seyrekleşir.",
+    "Ajanlar sütunu daha hızlı doluyor, yüklenirken kaybolmuyor; ölüm maçı sayılmıyor.",
+  ],
+
   "0.7.1": [
     "Parti artık maç sırasında da görünüyor; bütün modlardaki önceki maç kayıtlarından çıkarılıyor.",
     "MMR göstergesi: MMR ↑ / ↓ rozeti ve sonraki ranka kaç galibiyet kaldığı.",

@@ -117,7 +117,7 @@ export function App() {
     let t = 0;
     const tick = async () => {
       try { if (!stop) setSnap(await invoke<Snapshot>("get_snapshot")); } catch { /* sonraki turda tekrar dene */ }
-      if (!stop) t = window.setTimeout(tick, fpsRef.current && idle() ? 5000 : 2500);
+      if (!stop) t = window.setTimeout(tick, idle() ? (fpsRef.current ? 15000 : 8000) : 2500); // gizliyken seyrek: maç sırasında bağlantıya yük olmasın
     };
     tick();
     return () => { stop = true; window.clearTimeout(t); };
