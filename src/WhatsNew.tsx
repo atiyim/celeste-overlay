@@ -4,6 +4,7 @@ import { useState } from "react";
 const KEY = "overlay-whatsnew";
 const NOTES: Record<string, string[]> = {
   "0.7.2": [
+    "Akış'ta yorum yapmak tek adım: her paylaşımın altında yorum kutusu, hızlı yorumlar (GG WP, Efsane 🔥…) ve son yorumlar tıklamadan görünür.",
     "Maç sırasında çok daha az internet: maç bilgisi ve kaplamalar maç başına bir kez çekilir, oyuncu geçmişi azar azar yüklenir; overlay gizliyken denetim seyrekleşir.",
     "Ajanlar sütunu daha hızlı doluyor, yüklenirken kaybolmuyor; ölüm maçı sayılmıyor.",
   ],

@@ -368,10 +368,58 @@ function PostView({ p, assets, canWrite, onToast, onChanged }: { p: Post; assets
         <button type="button" className={liked ? "fgg on" : "fgg"} onClick={gg} disabled={!canWrite} aria-pressed={liked} title="GG ver">GG <b>{likes}</b></button>
         <Reacts p={p} canWrite={canWrite} onToast={onToast} />
         <span className="sp" />
-        <button type="button" className={open ? "fgg on2" : "fgg"} onClick={() => setOpen(!open)} aria-expanded={open}>Yorumlar <b>{count}</b></button>
+        <button type="button" className={open ? "fgg fcbtn on2" : "fgg fcbtn"} onClick={() => setOpen(!open)} aria-expanded={open}>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" /></svg>
+          {count > 0 ? <>{count} yorum</> : "Yorum yap"}
+        </button>
       </footer>
+      {!open && (p.preview?.length ?? 0) > 0 && (
+        <div className="fprev">
+          {count > (p.preview?.length ?? 0) && <button className="lnk" type="button" onClick={() => setOpen(true)}>Tüm yorumları gör ({count})</button>}
+          {p.preview!.map((c) => (
+            <div key={c.id} className="fprevc"><Who riot={c.riot} /><RichText text={c.text} /></div>
+          ))}
+        </div>
+      )}
+      {!open && canWrite && <QuickComment post={p} first={count === 0} onSent={() => { setCount((n) => n + 1); setOpen(true); }} onToast={onToast} />}
       {open && <Comments post={p} canWrite={canWrite} onToast={onToast} onCount={setCount} />}
     </article>
+  );
+}
+
+/* ---------- Hızlı yorum: her paylaşımın altında, tek satır ---------- */
+const QUICK = ["GG WP", "Efsane 🔥", "Temiz clutch", "Şanssızlık 😅", "Sonraki maç senin 💪"];
+
+function QuickComment({ post, first, onSent, onToast }: { post: Post; first: boolean; onSent: () => void; onToast: Toast }) {
+  const [text, setText] = useState("");
+  const [focus, setFocus] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const send = async (t: string) => {
+    const v = t.trim();
+    if (!v || busy) return;
+    setBusy(true);
+    try { await feedComment(post.id, v); setText(""); onSent(); onToast("Yorumun gönderildi"); }
+    catch (e) { onToast((e as Error).message); }
+    setBusy(false);
+  };
+  return (
+    <div className={focus || first ? "fquick open" : "fquick"}>
+      <div className="fqin">
+        <input
+          className="inp" value={text} maxLength={COMMENT_MAX}
+          placeholder={first ? "İlk yorumu sen yap…" : "Yorum yaz…"}
+          aria-label="Yorum yaz"
+          onFocus={() => setFocus(true)} onBlur={() => window.setTimeout(() => setFocus(false), 150)}
+          onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(text); }}
+        />
+        {text.trim() && <button className="x pri" type="button" onClick={() => send(text)} disabled={busy}>Gönder</button>}
+      </div>
+      {(focus || first) && !text && (
+        <div className="fqchips" aria-label="Hızlı yorum">
+          {QUICK.map((q) => <button key={q} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => send(q)} disabled={busy}>{q}</button>)}
+        </div>
+      )}
+    </div>
   );
 }
 

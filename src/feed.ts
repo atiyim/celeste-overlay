@@ -24,7 +24,9 @@ export interface FeedCard {
   board?: { a: string; k: number; d: number; as: number; acs: number; me: boolean; ally: boolean }[];
 }
 export interface Post { id: number; riot: string; text: string; card: FeedCard | null; created: number; likes: number; comments: number; liked: boolean; mine: boolean; pinned?: boolean; roles: Role[]; reports?: number; hidden?: boolean;
-  reacts?: Record<string, number>; myReacts?: string[]; clip?: Clip | null }
+  reacts?: Record<string, number>; myReacts?: string[]; clip?: Clip | null;
+  /** Son 2 yorum (akışta tıklamadan görünür). */
+  preview?: { id: number; riot: string; text: string; created: number }[] }
 export interface Clip { url: string; kind: "youtube" | "tiktok" | "medal" | "twitch"; id: string }
 export interface Note { id: number; kind: "gg" | "react" | "comment" | "mention" | "weekly"; post: number; by: string; text: string; at: number; seen: boolean }
 export interface Profile { riot: string; puuid: string; roles: Role[]; tier: { tier: number; name: string } | null; stats: { posts: number; gg: number; comments: number; since: number | null }; agents: { agentId: string; name: string; n: number; w: number }[]; posts: Post[] }
