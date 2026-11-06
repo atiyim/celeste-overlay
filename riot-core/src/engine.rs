@@ -459,6 +459,8 @@ struct State {
 pub struct Engine {
     http: reqwest::Client,
     state: Mutex<State>,
+    /// Telefon: Riot girişinden açılan uzak oturum. Varsa Riot Client'a hiç bakılmaz.
+    remote: std::sync::Mutex<Option<Session>>,
 }
 
 impl Default for Engine {
@@ -469,7 +471,31 @@ impl Default for Engine {
 
 impl Engine {
     pub fn new() -> Self {
-        Self { http: reqwest::Client::new(), state: Mutex::new(State::default()) }
+        Self { http: reqwest::Client::new(), state: Mutex::new(State::default()), remote: std::sync::Mutex::new(None) }
+    }
+
+    /// Telefon: Riot'un giriş sayfasından alınan belirteçlerle oturum açar. Kendi Riot ID'ni ve hesap kimliğini döner.
+    pub async fn login_remote(&self, access: &str, id_token: &str) -> Result<(String, String), String> {
+        let s = Session::from_tokens(access, id_token).await.map_err(|e| friendly(&e))?;
+        let puuid = s.puuid.clone();
+        *self.remote.lock().unwrap() = Some(s);
+        let mut st = self.state.lock().await;
+        st.session = None;
+        st.retry_at = None;
+        drop(st);
+        let riot = self.my_riot_id().await.unwrap_or_default();
+        Ok((riot, puuid))
+    }
+
+    /// Telefon: oturumu kapatır (belirteçler bellekten silinir).
+    pub async fn logout_remote(&self) {
+        *self.remote.lock().unwrap() = None;
+        let mut st = self.state.lock().await;
+        *st = State::default();
+    }
+
+    pub fn has_remote(&self) -> bool {
+        self.remote.lock().unwrap().is_some()
     }
 
     /// Oyuncu ayrıntısı açıldı: bu oyuncunun son 25 maçı içindeki rekabet maçlarının ayrıntıları da çekilsin.
@@ -520,7 +546,11 @@ impl Engine {
 
     async fn session(&self, st: &mut State) -> Result<Session> {
         if st.session.is_none() {
-            st.session = Some(Session::open().await?);
+            let remote = self.remote.lock().unwrap().clone();
+            st.session = Some(match remote {
+                Some(r) => r,
+                None => Session::open().await?,
+            });
         }
         st.session.clone().ok_or_else(|| anyhow!("oturum yok"))
     }

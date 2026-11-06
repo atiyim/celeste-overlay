@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "mobile:dev": "vite --config vite.mobile.config.ts",
+    "mobile:build": "tsc --noEmit -p mobile && vite build --config vite.mobile.config.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.1.0",

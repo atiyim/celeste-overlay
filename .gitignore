@@ -4,3 +4,4 @@ target
 src-tauri/gen
 *.key
 *.key.pub
+mobile/src-tauri/gen

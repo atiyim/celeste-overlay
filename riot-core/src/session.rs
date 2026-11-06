@@ -160,8 +160,32 @@ pub struct Session {
     entitlement: String,
     version: String,
     local: reqwest::Client,
+    /// 0: uzak oturum (telefon). Riot Client'ın yerel API'si yok; yerel istekler atlanır.
     port: u16,
     password: String,
+}
+
+/// Bölge (PAS'ın verdiği "eu", "na", "latam", "br", "ap", "kr") → (glz, pd) adresleri.
+pub fn region_endpoints(region: &str) -> Option<(String, String)> {
+    let (region, shard) = match region {
+        "eu" => ("eu", "eu"),
+        "na" => ("na", "na"),
+        "latam" => ("latam", "na"),
+        "br" => ("br", "na"),
+        "ap" => ("ap", "ap"),
+        "kr" => ("kr", "kr"),
+        _ => return None,
+    };
+    Some((format!("https://glz-{region}-1.{shard}.a.pvp.net"), format!("https://pd.{shard}.a.pvp.net")))
+}
+
+/// JWT'nin gövdesinden bir alan (imza doğrulanmaz; yalnızca kendi belirtecimizden puuid okumak için).
+fn jwt_claim(token: &str, key: &str) -> Option<String> {
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    let body = token.split('.').nth(1)?;
+    let bytes = URL_SAFE_NO_PAD.decode(body.trim_end_matches('=')).ok()?;
+    let v: Value = serde_json::from_slice(&bytes).ok()?;
+    v[key].as_str().map(String::from)
 }
 
 impl Session {
@@ -211,8 +235,47 @@ impl Session {
         })
     }
 
+    /// Telefon: Riot'un giriş sayfasından alınan erişim ve kimlik belirteçleriyle uzak oturum.
+    /// Riot Client gerekmez; oyun sunucularına (glz/pd) aynı biçimde sorulur. Belirteçler yalnızca bu cihazda kalır.
+    pub async fn from_tokens(access: &str, id_token: &str) -> Result<Self> {
+        let http = reqwest::Client::builder().timeout(Duration::from_secs(10)).build()?;
+        let bearer = format!("Bearer {access}");
+        // Hak belirteci (entitlements)
+        let ent: Value = netlog::exec(&http, http.post("https://entitlements.auth.riotgames.com/api/token/v1").header(AUTHORIZATION, &bearer).json(&serde_json::json!({})))
+            .await
+            .map_err(|_| fault(Fault::NotLoggedIn, "Riot'a bağlanılamadı"))?
+            .json()
+            .await
+            .map_err(|_| fault(Fault::NotLoggedIn, "Riot oturum bilgisi okunamadı"))?;
+        let entitlement = ent["entitlements_token"].as_str().ok_or_else(|| fault(Fault::NotLoggedIn, "Riot oturumu açılamadı, yeniden giriş yap"))?.to_string();
+        // Bölge
+        let geo: Value = netlog::exec(
+            &http,
+            http.put("https://riot-geo.pas.si.riotgames.com/pas/v1/product/valorant").header(AUTHORIZATION, &bearer).json(&serde_json::json!({ "id_token": id_token })),
+        )
+        .await
+        .map_err(|_| fault(Fault::NoRegion, "Bölge bilgisi alınamadı"))?
+        .json()
+        .await
+        .map_err(|_| fault(Fault::NoRegion, "Bölge bilgisi okunamadı"))?;
+        let region = geo["affinities"]["live"].as_str().unwrap_or("");
+        let (glz, pd) = region_endpoints(region).ok_or_else(|| fault(Fault::NoRegion, format!("Bilinmeyen bölge: {region}")))?;
+        let puuid = jwt_claim(access, "sub").ok_or_else(|| fault(Fault::NotLoggedIn, "Hesap kimliği okunamadı"))?.to_lowercase();
+        let ver: Value = netlog::exec(&http, http.get("https://valorant-api.com/v1/version")).await?.json().await?;
+        let version = ver["data"]["riotClientVersion"].as_str().ok_or_else(|| anyhow!("istemci sürümü alınamadı"))?.to_string();
+        Ok(Self { puuid, glz, pd, access: access.to_string(), entitlement, version, local: http, port: 0, password: String::new() })
+    }
+
+    /// Uzak (telefon) oturumu mu?
+    pub fn is_remote(&self) -> bool {
+        self.port == 0
+    }
+
     /// Valorant çalışıyor mu? Riot Client'ın yerel API'sine sorulur. Öğrenilemezse None.
     pub async fn valorant_running(&self) -> Option<bool> {
+        if self.is_remote() {
+            return None;
+        }
         let r = netlog::exec(
             &self.local,
             self.local.get(format!("https://127.0.0.1:{}/product-session/v1/external-sessions", self.port)).basic_auth("riot", Some(&self.password)),
@@ -230,6 +293,9 @@ impl Session {
     /// Riot Client'ın yerel sohbet listesinden oyuncuların parti kimliklerini okur.
     /// Dönüş: (listedeki Valorant kaydı sayısı, oyuncu → partyId). Liste alınamazsa None.
     pub async fn party_ids(&self) -> Option<PartyScan> {
+        if self.is_remote() {
+            return None;
+        }
         let r = netlog::exec(
             &self.local,
             self.local.get(format!("https://127.0.0.1:{}/chat/v4/presences", self.port)).basic_auth("riot", Some(&self.password)),
@@ -271,6 +337,9 @@ impl Session {
 
     /// Kendi Riot ID'n ("isim#etiket"), Riot Client'ın yerel API'sinden. Valorant'ın açık olması gerekmez.
     pub async fn local_riot_id(&self) -> Option<String> {
+        if self.is_remote() {
+            return None;
+        }
         for path in ["/chat/v1/session", "/player-account/aliases/v1/active"] {
             let Ok(r) = netlog::exec(
                 &self.local,
@@ -298,6 +367,9 @@ impl Session {
     /// olduğunu kanıtlamak için siteye bir kez gönderilir. Kimlik belirteci API çağrısı yapmaya yaramaz
     /// (erişim belirteci değildir); site imzayı Riot'un açık anahtarıyla doğrular ve saklamaz.
     pub async fn local_id_token(&self) -> Option<String> {
+        if self.is_remote() {
+            return None;
+        }
         for path in ["/rso-auth/v1/authorization/id-token", "/rso-auth/v1/authorization"] {
             let Ok(r) = netlog::exec(
                 &self.local,
@@ -320,6 +392,7 @@ impl Session {
     }
 
     pub fn headers(&self) -> HeaderMap {
+        // Telefonda da oyun sunucuları PC istemcisi biçimini bekler.
         let platform = STANDARD.encode(
             r#"{"platformType":"PC","platformOS":"Windows","platformOSVersion":"10.0.19042.1.256.64bit","platformChipset":"Unknown"}"#,
         );
@@ -336,5 +409,25 @@ impl Session {
             h.insert(AUTHORIZATION, v);
         }
         h
+    }
+}
+
+#[cfg(test)]
+mod remote_tests {
+    use super::*;
+
+    #[test]
+    fn regions_map_to_shards() {
+        assert_eq!(region_endpoints("eu").unwrap().0, "https://glz-eu-1.eu.a.pvp.net");
+        assert_eq!(region_endpoints("latam").unwrap(), ("https://glz-latam-1.na.a.pvp.net".to_string(), "https://pd.na.a.pvp.net".to_string()));
+        assert!(region_endpoints("xx").is_none());
+    }
+
+    #[test]
+    fn reads_sub_from_jwt() {
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+        let body = URL_SAFE_NO_PAD.encode(r#"{"sub":"ABC-123","iss":"x"}"#);
+        assert_eq!(jwt_claim(&format!("h.{body}.s"), "sub").as_deref(), Some("ABC-123"));
+        assert_eq!(jwt_claim("bozuk", "sub"), None);
     }
 }
