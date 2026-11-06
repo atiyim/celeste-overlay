@@ -303,3 +303,6 @@ button { font: inherit; }
 .pv { display: flex; flex-direction: column; gap: 4px; background: var(--s1); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
 .pv p { margin: 0; color: var(--fg-2); font-size: 13px; line-height: 1.5; }
 .page .top > span:empty { width: 40px; }
+/* Kaydırılan gövdedeki bölümler sıkışmasın (ayarlar kutuları kesiliyordu). */
+.body > * { flex-shrink: 0; }
+.tile.wished .tile-txt { padding-right: 16px; }
