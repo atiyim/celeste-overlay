@@ -7,4 +7,5 @@ mod session;
 pub mod verify;
 
 pub use engine::Engine;
+pub use session::jwt_exp;
 pub use model::*;

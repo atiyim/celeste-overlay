@@ -437,6 +437,8 @@ struct State {
     retry_at: Option<(Instant, Snapshot)>,
     /// Maç kimliği → (maç bilgisi, kaplamalar, alındığı an).
     match_cache: Option<(String, Value, Option<Value>, Instant)>,
+    /// Ajan seçimindeki kaplamalar: seçim boyunca nadiren değişir; 20 sn'de bir tazelenir.
+    pre_cache: Option<(String, Option<Value>, Instant)>,
     debug_match: Option<String>,
     debug_party: Option<String>,
     debug_pre: Option<String>,
@@ -673,7 +675,16 @@ impl Engine {
             .map(|v| basic_player(v, &team, &s.puuid))
             .collect();
         // Ajan seçiminde kaplamalar: bu uç her sürümde olmayabilir; yoksa kaplamalar oyun başlayınca gelir.
-        let loadouts = self.get(s, &s.glz, &format!("/pregame/v1/matches/{mid}/loadouts")).await.unwrap_or(None);
+        // Ajan seçimleri her turda değişir (maç bilgisi her turda), kaplamalar değişmez: 20 sn'de bir (gelmediyse 10 sn).
+        let cached = st.pre_cache.as_ref().filter(|c| c.0 == mid).map(|c| (c.1.clone(), c.2.elapsed()));
+        let loadouts = match cached {
+            Some((l, age)) if age < Duration::from_secs(if l.is_some() { 20 } else { 10 }) => l,
+            _ => {
+                let l = self.get(s, &s.glz, &format!("/pregame/v1/matches/{mid}/loadouts")).await.unwrap_or(None);
+                st.pre_cache = Some((mid.to_string(), l.clone(), Instant::now()));
+                l
+            }
+        };
         if st.debug_pre.as_deref() != Some(mid) {
             st.debug_pre = Some(mid.to_string());
             let text = match loadouts.as_ref() {

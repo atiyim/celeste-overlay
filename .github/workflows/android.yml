@@ -42,7 +42,7 @@ jobs:
           echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android,armv7-linux-androideabi
+          targets: aarch64-linux-android
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: "mobile/src-tauri -> target"
@@ -76,7 +76,7 @@ jobs:
 
       - name: Derle
         working-directory: mobile
-        run: npx tauri android build --apk --target aarch64 --target armv7
+        run: npx tauri android build --apk --target aarch64
 
       - name: İmzala ve adlandır
         run: |

@@ -12,10 +12,10 @@ const inTauri = "__TAURI_INTERNALS__" in window;
 const LOGGED = "celeste-riot-logged";
 
 interface LoginResult { ok: boolean; riot?: string | null; puuid?: string | null; error?: string | null }
-interface LoginState { session: boolean; pending: boolean; last?: LoginResult | null }
+interface LoginState { session: boolean; pending: boolean; last?: LoginResult | null; expires?: number }
 
 const tierColor = (hex?: string) => (hex ? `#${hex.slice(0, 6)}` : undefined);
-const PHASE: Record<string, string> = { menu: "Menüdesin", pregame: "Ajan seçimi", ingame: "Maç sürüyor", offline: "Valorant kapalı" };
+const PHASE: Record<string, string> = { menu: "Menüde ya da oyun kapalı", pregame: "Ajan seçimi", ingame: "Maç sürüyor", offline: "Valorant kapalı" };
 const QUEUE: Record<string, string> = { competitive: "Rekabetçi", unrated: "Derecesiz", swiftplay: "Tam gaz", premier: "Premier", deathmatch: "Ölüm maçı", hurm: "Takım ölüm maçı", spikerush: "Spike Rush" };
 
 /* Satırda kaplaması gösterilen silahlar (masaüstündekiyle aynı). */
@@ -106,16 +106,18 @@ function PlayerCard({ p, a, i, skins, onOpen }: { p: Player; a: Assets; i: numbe
 }
 
 /* ---------------- Lobi ---------------- */
-function Lobby({ snap, a }: { snap: Snapshot | null; a: Assets }) {
+function Lobby({ snap, a, renewing }: { snap: Snapshot | null; a: Assets; renewing: boolean }) {
   const prefs = usePrefs();
   const [open, setOpen] = useState<string | null>(null);
+  if (renewing && (!snap || snap.status?.fault === "rejected")) return <p className="empty">Riot oturumu yenileniyor…</p>;
   if (!snap) return <p className="empty">Yükleniyor…</p>;
+  if (snap.status?.fault === "rejected") return <p className="empty err">Riot oturumu sona erdi. Ayarlar'dan çıkış yapıp yeniden giriş yapabilirsin.</p>;
   if (snap.error) return <p className="empty err">{snap.error}</p>;
   if (!snap.players.length) {
     return (
       <div className="empty">
         <b>{PHASE[snap.phase] ?? "Bekleniyor"}</b>
-        <p>Ajan seçimine ya da maça girince lobidekiler burada görünür. Bilgisayarında Valorant açık olmalı.</p>
+        <p>{snap.phase === "menu" ? "Telefon, bilgisayarındaki oyunun açık olup olmadığını göremez. Ajan seçimine ya da maça girince lobidekiler burada görünür." : "Ajan seçimine ya da maça girince lobidekiler burada görünür."}</p>
       </div>
     );
   }
@@ -147,10 +149,21 @@ function Lobby({ snap, a }: { snap: Snapshot | null; a: Assets }) {
 }
 
 /* ---------------- Mağaza ---------------- */
+/* Mağaza ve Profil: sekme her açıldığında yeniden indirilmez. Mağaza yenilenene kadar, maçlar 3 dakika saklanır. */
+let storeCache: { data: Store; until: number } | null = null;
+let statsCache: { data: MyStats; until: number } | null = null;
+export function clearCaches() { storeCache = null; statsCache = null; }
+
 function StoreView({ a }: { a: Assets }) {
-  const [s, setS] = useState<Store | null>(null);
+  const [s, setS] = useState<Store | null>(() => (storeCache && Date.now() < storeCache.until ? storeCache.data : null));
   const [err, setErr] = useState<string | null>(null);
-  useEffect(() => { invoke<Store>("get_store").then(setS).catch((e) => setErr(String(e))); }, []);
+  useEffect(() => {
+    if (s) return;
+    invoke<Store>("get_store").then((d) => {
+      storeCache = { data: d, until: Date.now() + Math.min(d.dailyRemaining ?? 3600, 6 * 3600) * 1000 };
+      setS(d);
+    }).catch((e) => setErr(String(e)));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   if (err) return <p className="empty err">{err}</p>;
   if (!s) return <p className="empty">Mağaza yükleniyor…</p>;
   const left = (sec?: number | null) => {
@@ -181,9 +194,12 @@ function StoreView({ a }: { a: Assets }) {
 
 /* ---------------- Profil ---------------- */
 function Profile({ a, riot }: { a: Assets; riot?: string | null }) {
-  const [s, setS] = useState<MyStats | null>(null);
+  const [s, setS] = useState<MyStats | null>(() => (statsCache && Date.now() < statsCache.until ? statsCache.data : null));
   const [err, setErr] = useState<string | null>(null);
-  useEffect(() => { invoke<MyStats>("get_my_stats").then(setS).catch((e) => setErr(String(e))); }, []);
+  useEffect(() => {
+    if (s) return;
+    invoke<MyStats>("get_my_stats").then((d) => { statsCache = { data: d, until: Date.now() + 180_000 }; setS(d); }).catch((e) => setErr(String(e)));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const t = s ? a.tiers.get(s.rank.current) : undefined;
   const pk = s ? a.tiers.get(s.rank.peak) : undefined;
   return (
@@ -230,15 +246,32 @@ export function App() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [tab, setTab] = useState<Tab>("lobby");
   const [settings, setSettings] = useState(false);
-  const relogAt = useRef(0);
+  const [renewing, setRenewing] = useState(false);
+  const renewRef = useRef<Promise<boolean> | null>(null);
+  const expires = useRef(0);
   useWakeLock(prefs.keepAwake && (snap?.phase === "pregame" || snap?.phase === "ingame"));
 
-  useEffect(() => { loadAssets().then(setAssets).catch(() => undefined); }, []);
+  useEffect(() => { loadAssets({ lite: true }).then(setAssets).catch(() => undefined); }, []);
 
   const startLogin = useCallback(() => {
     try { localStorage.setItem(LOGGED, "1"); } catch { /* */ }
     invoke("riot_login").catch(() => undefined);
   }, []);
+
+  /* Sessiz yenileme: Riot'un çereziyle arka planda yeni belirteç (ekran yenilenmez).
+     Çerez yoksa ya da Riot şifre isterse giriş sayfası açılır. */
+  const renew = useCallback((): Promise<boolean> => {
+    if (renewRef.current) return renewRef.current;
+    setRenewing(true);
+    const job = invoke<LoginResult>("refresh_session")
+      .then((r) => { if (r.riot) setRiot(r.riot); return invoke<LoginState>("login_state"); })
+      .then((s) => { expires.current = s.expires ?? 0; setLogin(s); return true; })
+      .catch((e) => { if (String(e) === "login") startLogin(); return false; })
+      .finally(() => { renewRef.current = null; setRenewing(false); });
+    renewRef.current = job;
+    return job;
+  }, [startLogin]);
+  const nearExpiry = () => expires.current > 0 && Date.now() / 1000 > expires.current - 300;
 
   // Giriş durumu: sayfa Riot'tan dönünce yeniden yüklenir; sonucu çekirdekten okuruz.
   useEffect(() => {
@@ -248,42 +281,61 @@ export function App() {
       const s = await invoke<LoginState>("login_state").catch(() => null);
       if (stop || !s) return;
       setLogin(s);
+      expires.current = s.expires ?? 0;
       if (s.last?.riot) setRiot(s.last.riot);
       if (s.pending) window.setTimeout(ask, 700);
       else if (!s.session && !s.last) {
         // Daha önce giriş yapıldıysa Riot'un çerezi durur: sayfa şifre sormadan anında geri döner.
         let was = false;
         try { was = localStorage.getItem(LOGGED) === "1"; } catch { /* */ }
-        if (was) startLogin();
+        if (was) renew();
       }
     };
     ask();
     const un = listen<LoginResult>("riot-login", () => ask());
     return () => { stop = true; un.then((f) => f()); };
-  }, [startLogin]);
+  }, [startLogin, renew]);
 
-  // Lobi: ayardaki aralıkla; uygulama arka plandayken sorulmaz.
+  // Uygulama öne gelince: oturumun süresi dolmak üzereyse önce yenile.
+  useEffect(() => {
+    const vis = () => { if (!document.hidden && login?.session && nearExpiry()) renew(); };
+    document.addEventListener("visibilitychange", vis);
+    return () => document.removeEventListener("visibilitychange", vis);
+  }, [login?.session, renew]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Lobi: ajan seçiminde ve maçta ayardaki aralıkla, menüdeyken 15 sn'de bir.
+     Uygulama arka plandayken hiç sorulmaz. Belirtecin süresi dolmadan sessizce yenilenir. */
   useEffect(() => {
     if (!login?.session) return;
-    let stop = false, t = 0;
+    let stop = false, t = 0, phase = "menu", lastRenew = 0, busy = false;
     const tick = async () => {
+      if (busy) return;
+      busy = true;
       if (!document.hidden) {
+        if (nearExpiry()) await renew();
         const s = await invoke<Snapshot>("get_snapshot").catch(() => null);
         if (!stop && s) {
           setSnap(s);
-          // Riot'un erişim belirteci yaklaşık 1 saat geçerli: reddedilince sessizce yeniden giriş (çerezle anında).
-          if (s.status?.fault === "rejected" && Date.now() - relogAt.current > 5 * 60_000) { relogAt.current = Date.now(); startLogin(); }
+          phase = s.phase;
+          // Süre beklenenden önce dolduysa (Riot reddetti): dakikada en fazla bir kez yenile.
+          if (s.status?.fault === "rejected" && Date.now() - lastRenew > 60_000) { lastRenew = Date.now(); renew(); }
         }
       }
-      if (!stop) t = window.setTimeout(tick, prefs.interval * 1000);
+      busy = false;
+      const live = phase === "pregame" || phase === "ingame";
+      if (!stop) t = window.setTimeout(tick, live ? prefs.interval * 1000 : 15_000);
     };
     tick();
-    return () => { stop = true; window.clearTimeout(t); };
-  }, [login?.session, startLogin, prefs.interval]);
+    // Öne gelince beklemeden sor (menüdeyken 15 sn beklenmesin).
+    const vis = () => { if (!document.hidden && !stop) { window.clearTimeout(t); tick(); } };
+    document.addEventListener("visibilitychange", vis);
+    return () => { stop = true; window.clearTimeout(t); document.removeEventListener("visibilitychange", vis); };
+  }, [login?.session, renew, prefs.interval]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const logout = async () => {
     try { localStorage.removeItem(LOGGED); } catch { /* */ }
     await invoke("riot_logout").catch(() => undefined);
+    clearCaches(); expires.current = 0;
     setSettings(false); setLogin({ session: false, pending: false }); setRiot(null); setSnap(null);
   };
 
@@ -298,7 +350,7 @@ export function App() {
         <span className="top-r"><small>{riot ?? ""}</small><button type="button" className="icon" onClick={() => setSettings(true)} aria-label="Ayarlar"><Gear /></button></span>
       </header>
       <main className="body">
-        {tab === "lobby" && <Lobby snap={snap} a={assets} />}
+        {tab === "lobby" && <Lobby snap={snap} a={assets} renewing={renewing} />}
         {tab === "store" && <StoreView a={assets} />}
         {tab === "me" && <Profile a={assets} riot={riot} />}
       </main>

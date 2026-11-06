@@ -69,20 +69,23 @@ export interface Assets {
 const k = (s?: string | null) => (s ?? "").toLowerCase();
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export async function loadAssets(): Promise<Assets> {
+/** `lite`: telefon uygulaması; kullanmadığı listeler (aksesuar, sprey, kart, unvan, sezon) hiç indirilmez. */
+export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets> {
   await invalidateOnNewVersion();
+  const skip = async () => [] as any[];
+  const opt = (path: string) => (opts.lite ? skip() : cachedJson<any[]>(path));
   const [agents, weapons, buddies, sprays, cards, titles, tiers, maps, flex, ctiers, seasons] = await Promise.all([
     cachedJson<any[]>("/agents?isPlayableCharacter=true"),
     cachedJson<any[]>("/weapons"),
-    cachedJson<any[]>("/buddies"),
-    cachedJson<any[]>("/sprays"),
-    cachedJson<any[]>("/playercards"),
-    cachedJson<any[]>("/playertitles"),
+    opt("/buddies"),
+    opt("/sprays"),
+    opt("/playercards"),
+    opt("/playertitles"),
     cachedJson<any[]>("/competitivetiers"),
     cachedJson<any[]>("/maps"),
-    cachedJson<any[]>("/flex").catch(() => [] as any[]),
+    opt("/flex").catch(() => [] as any[]),
     cachedJson<any[]>("/contenttiers").catch(() => [] as any[]),
-    cachedJson<any[]>("/seasons").catch(() => [] as any[]),
+    opt("/seasons").catch(() => [] as any[]),
   ]);
 
   const a: Assets = {

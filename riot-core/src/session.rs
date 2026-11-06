@@ -180,6 +180,15 @@ pub fn region_endpoints(region: &str) -> Option<(String, String)> {
 }
 
 /// JWT'nin gövdesinden bir alan (imza doğrulanmaz; yalnızca kendi belirtecimizden puuid okumak için).
+/// Belirtecin bitiş zamanı (Unix saniye).
+pub fn jwt_exp(token: &str) -> Option<u64> {
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    let body = token.split('.').nth(1)?;
+    let bytes = URL_SAFE_NO_PAD.decode(body.trim_end_matches('=')).ok()?;
+    let v: Value = serde_json::from_slice(&bytes).ok()?;
+    v["exp"].as_u64()
+}
+
 fn jwt_claim(token: &str, key: &str) -> Option<String> {
     use base64::engine::general_purpose::URL_SAFE_NO_PAD;
     let body = token.split('.').nth(1)?;

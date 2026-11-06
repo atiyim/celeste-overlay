@@ -10,6 +10,7 @@
 
 use riot_core::{Account, Engine, MyStats, Snapshot, Store};
 use serde::Serialize;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::{Emitter, Manager, State, Url, WebviewUrl, WebviewWindowBuilder};
 
@@ -24,6 +25,49 @@ struct AppState {
     last: Mutex<Option<LoginResult>>,
     /// Belirteçler alındı, oturum açılıyor.
     pending: std::sync::atomic::AtomicBool,
+    /// Erişim belirtecinin bitişi (Unix saniye). Riot'ta yaklaşık 1 saat.
+    expires: AtomicU64,
+}
+
+/// Belirteçlerle oturum aç; sonuç her iki giriş yolunda (sayfa ya da sessiz yenileme) aynı.
+async fn open_session(engine: &Engine, st: &AppState, access: &str, id_token: &str) -> LoginResult {
+    match engine.login_remote(access, id_token).await {
+        Ok((riot, puuid)) => {
+            st.expires.store(riot_core::jwt_exp(access).unwrap_or(0), Ordering::SeqCst);
+            LoginResult { ok: true, riot: Some(riot), puuid: Some(puuid), error: None, id_token: Some(id_token.to_string()) }
+        }
+        Err(e) => LoginResult { ok: false, riot: None, puuid: None, error: Some(e), id_token: None },
+    }
+}
+
+/// Sessiz yenileme: Riot'un bu telefondaki oturum çereziyle giriş adresine sorulur; Riot şifre sormadan
+/// yeni belirteçlerle yönlendirir. Sayfa değişmez, ekran yenilenmez. Çerez yoksa ya da Riot şifre isterse
+/// "login" döner; o zaman uygulama giriş sayfasını açar.
+#[tauri::command]
+async fn refresh_session(window: tauri::WebviewWindow, state: State<'_, AppState>) -> Result<LoginResult, String> {
+    let url = Url::parse("https://auth.riotgames.com/").map_err(|e| e.to_string())?;
+    let cookies = window.cookies_for_url(url).map_err(|_| "login".to_string())?;
+    if cookies.is_empty() {
+        return Err("login".into());
+    }
+    let header = cookies.iter().map(|c| format!("{}={}", c.name(), c.value())).collect::<Vec<_>>().join("; ");
+    let http = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let r = http
+        .get(AUTH_URL)
+        .header("Cookie", header)
+        .header("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36")
+        .send()
+        .await
+        .map_err(|_| "net".to_string())?;
+    let loc = r.headers().get("location").and_then(|v| v.to_str().ok()).and_then(|v| Url::parse(v).ok()).ok_or("login")?;
+    let (Some(a), Some(i)) = (frag(&loc, "access_token"), frag(&loc, "id_token")) else { return Err("login".into()) };
+    let res = open_session(&state.engine, &state, &a, &i).await;
+    *state.last.lock().unwrap() = Some(res.clone());
+    if res.ok { Ok(res) } else { Err(res.error.unwrap_or_default()) }
 }
 
 #[derive(Serialize, Clone)]
@@ -68,6 +112,7 @@ fn riot_login(window: tauri::WebviewWindow, state: State<'_, AppState>) -> Resul
 async fn riot_logout(window: tauri::WebviewWindow, state: State<'_, AppState>) -> Result<(), String> {
     state.engine.logout_remote().await;
     *state.last.lock().unwrap() = None;
+    state.expires.store(0, Ordering::SeqCst);
     window.clear_all_browsing_data().map_err(|e| e.to_string())
 }
 
@@ -77,6 +122,8 @@ struct LoginState {
     session: bool,
     pending: bool,
     last: Option<LoginResult>,
+    /// Oturumun bitişi (Unix saniye); 0 = bilinmiyor.
+    expires: u64,
 }
 
 #[tauri::command]
@@ -85,6 +132,7 @@ fn login_state(state: State<'_, AppState>) -> LoginState {
         session: state.engine.has_remote(),
         pending: state.pending.load(std::sync::atomic::Ordering::SeqCst),
         last: state.last.lock().unwrap().clone(),
+        expires: state.expires.load(Ordering::SeqCst),
     }
 }
 
@@ -118,8 +166,8 @@ async fn deepen_player(state: State<'_, AppState>, puuid: String) -> Result<(), 
 pub fn run() {
     let engine = Arc::new(Engine::new());
     tauri::Builder::default()
-        .manage(AppState { engine: engine.clone(), home: Mutex::new(None), last: Mutex::new(None), pending: Default::default() })
-        .invoke_handler(tauri::generate_handler![riot_login, riot_logout, login_state, get_snapshot, get_my_stats, get_store, get_account, deepen_player])
+        .manage(AppState { engine: engine.clone(), home: Mutex::new(None), last: Mutex::new(None), pending: Default::default(), expires: AtomicU64::new(0) })
+        .invoke_handler(tauri::generate_handler![riot_login, riot_logout, refresh_session, login_state, get_snapshot, get_my_stats, get_store, get_account, deepen_player])
         .setup(move |app| {
             let handle = app.handle().clone();
             let engine = engine.clone();
@@ -135,10 +183,7 @@ pub fn run() {
                         tauri::async_runtime::spawn(async move {
                             go_home(&handle);
                             let res = match (access, id_token) {
-                                (Some(a), Some(i)) => match engine.login_remote(&a, &i).await {
-                                    Ok((riot, puuid)) => LoginResult { ok: true, riot: Some(riot), puuid: Some(puuid), error: None, id_token: Some(i) },
-                                    Err(e) => LoginResult { ok: false, riot: None, puuid: None, error: Some(e), id_token: None },
-                                },
+                                (Some(a), Some(i)) => open_session(&engine, &handle.state::<AppState>(), &a, &i).await,
                                 _ => LoginResult { ok: false, riot: None, puuid: None, error: Some("Riot giriş bilgisi vermedi. Tekrar dene.".into()), id_token: None },
                             };
                             let st = handle.state::<AppState>();
