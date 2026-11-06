@@ -283,7 +283,6 @@ export function App() {
   useEffect(() => { loadAssets({ lite: true }).then(setAssets).catch(() => undefined); }, []);
 
   const startLogin = useCallback(() => {
-    try { localStorage.setItem(LOGGED, "1"); } catch { /* */ }
     invoke("riot_login").catch(() => undefined);
   }, []);
 
@@ -311,6 +310,8 @@ export function App() {
       if (stop || !s) return;
       setLogin(s);
       expires.current = s.expires ?? 0;
+      // Açılışta kendiliğinden giriş yalnızca daha önce gerçekten giriş yapıldıysa (yarım kalan giriş sayfası her açılışta gelmesin).
+      if (s.session) { try { localStorage.setItem(LOGGED, "1"); } catch { /* */ } }
       if (s.last?.riot) setRiot(s.last.riot);
       if (s.pending) window.setTimeout(ask, 700);
       else if (!s.session && !s.last) {
