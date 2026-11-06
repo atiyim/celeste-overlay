@@ -17,6 +17,11 @@ jobs:
       attestations: write
     steps:
       - uses: actions/checkout@v4
+      # Kökte masaüstü uygulamasının src-tauri'si de var: Gradle'ın çağırdığı tauri komutu yanlışını bulmasın.
+      - name: Uygulama yolu
+        run: |
+          echo "TAURI_APP_PATH=$GITHUB_WORKSPACE/mobile/src-tauri" >> "$GITHUB_ENV"
+          echo "TAURI_FRONTEND_PATH=$GITHUB_WORKSPACE/mobile" >> "$GITHUB_ENV"
       - uses: pnpm/action-setup@v4
         with:
           version: 10
