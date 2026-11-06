@@ -306,3 +306,4 @@ button { font: inherit; }
 /* Kaydırılan gövdedeki bölümler sıkışmasın (ayarlar kutuları kesiliyordu). */
 .body > * { flex-shrink: 0; }
 .tile.wished .tile-txt { padding-right: 16px; }
+.seg { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
