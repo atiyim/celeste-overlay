@@ -18,6 +18,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # Kökte masaüstü uygulamasının src-tauri'si de var: Gradle'ın çağırdığı tauri komutu yanlışını bulmasın.
+      # Etiketle derlenince sürüm numarası etiketten alınır (android-v0.2.0 → 0.2.0); uygulama içi güncelleme buna bakar.
+      - name: Sürüm
+        if: startsWith(github.ref, 'refs/tags/android-v')
+        run: |
+          V="${GITHUB_REF_NAME#android-v}"
+          node -e "const f='mobile/src-tauri/tauri.conf.json',c=require('./'+f);c.version=process.argv[1];require('fs').writeFileSync(f,JSON.stringify(c,null,2))" "$V"
+          grep '"version"' mobile/src-tauri/tauri.conf.json
       - name: Uygulama yolu
         run: |
           echo "TAURI_APP_PATH=$GITHUB_WORKSPACE/mobile/src-tauri" >> "$GITHUB_ENV"
@@ -52,7 +59,7 @@ jobs:
         working-directory: mobile
         run: |
           npx tauri android init --ci
-          npx tauri icon ../src-tauri/icons/icon.png
+          npx tauri icon icon/app-icon.png
 
       # Kalıcı anahtar (ANDROID_KEYSTORE…) yoksa bu çalışmaya özel geçici anahtar üretilir: APK yine küçük ve hızlı
       # "release" derlemesidir, ama sonraki derlemeler onun üstüne kurulmaz (önce silmek gerekir).
@@ -112,7 +119,7 @@ jobs:
           TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'android-latest' }}
         run: |
           gh release view "$TAG" >/dev/null 2>&1 || \
-          gh release create "$TAG" --target "$GITHUB_SHA" --title "Celeste Android ($TAG)" --notes "Android uygulaması (deneme). APK dosyasını telefondan indirip kur." --prerelease
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "Celeste Android ${TAG#android-v}" --notes "Telefonlar için **telefon-arm64**, BlueStacks gibi bilgisayar emülatörleri için **emulator-x86_64** APK dosyasını indirip kur."
           # Eski APK'lar kalmasın: sayfada yalnızca son derleme görünsün.
           for f in $(gh release view "$TAG" --json assets -q '.assets[].name'); do gh release delete-asset "$TAG" "$f" -y; done
           gh release upload "$TAG" dist-apk/* --clobber

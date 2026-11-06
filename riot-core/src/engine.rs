@@ -1090,6 +1090,31 @@ impl Engine {
         Ok(out)
     }
 
+    /// Sahip olunan eşyalar (Riot'un ham yanıtı). `item_type`: eşya türü kimliği (ör. kaplama seviyeleri).
+    pub async fn owned(&self, item_type: &str) -> Result<Value, String> {
+        if !is_uuid(item_type) {
+            return Err("Geçersiz eşya türü.".into());
+        }
+        let mut st = self.state.lock().await;
+        let s = self.session(&mut st).await.map_err(|e| friendly(&e))?;
+        match self.get(&s, &s.pd, &format!("/store/v1/entitlements/{}/{item_type}", s.puuid)).await {
+            Ok(Some(v)) => Ok(v),
+            Ok(None) => Err("Eşya listesi bulunamadı.".into()),
+            Err(e) => Err(friendly(&e)),
+        }
+    }
+
+    /// Görevler ve sözleşmeler (savaş bileti ilerlemesi dahil; Riot'un ham yanıtı).
+    pub async fn contracts(&self) -> Result<Value, String> {
+        let mut st = self.state.lock().await;
+        let s = self.session(&mut st).await.map_err(|e| friendly(&e))?;
+        match self.get(&s, &s.pd, &format!("/contracts/v1/contracts/{}", s.puuid)).await {
+            Ok(Some(v)) => Ok(v),
+            Ok(None) => Err("Görev bilgisi bulunamadı.".into()),
+            Err(e) => Err(friendly(&e)),
+        }
+    }
+
     pub async fn store(&self) -> Result<Store, String> {
         let r = self.store_inner().await;
         if let Err(e) = &r {
@@ -1487,6 +1512,7 @@ fn basic_player(v: &Value, team: &str, me: &str) -> Player {
         hidden_name: hidden,
         level,
         agent_id: v["CharacterID"].as_str().unwrap_or("").to_string(),
+        agent_state: v["CharacterSelectionState"].as_str().filter(|x| !x.is_empty()).map(String::from),
         card_id: id["PlayerCardID"].as_str().map(String::from),
         title_id: id["PlayerTitleID"].as_str().map(String::from),
         ..Default::default()

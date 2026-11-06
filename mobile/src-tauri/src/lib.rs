@@ -154,6 +154,16 @@ async fn get_account(state: State<'_, AppState>) -> Result<Account, String> {
 }
 
 #[tauri::command]
+async fn get_owned(state: State<'_, AppState>, kind: String) -> Result<serde_json::Value, String> {
+    state.engine.owned(&kind).await
+}
+
+#[tauri::command]
+async fn get_contracts(state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    state.engine.contracts().await
+}
+
+#[tauri::command]
 async fn deepen_player(state: State<'_, AppState>, puuid: String) -> Result<(), String> {
     state.engine.deepen(&puuid).await;
     Ok(())
@@ -163,8 +173,9 @@ async fn deepen_player(state: State<'_, AppState>, puuid: String) -> Result<(), 
 pub fn run() {
     let engine = Arc::new(Engine::new());
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .manage(AppState { engine: engine.clone(), home: Mutex::new(None), last: Mutex::new(None), pending: Default::default(), expires: AtomicU64::new(0) })
-        .invoke_handler(tauri::generate_handler![riot_login, riot_logout, last_crash, minimize, login_state, get_snapshot, get_my_stats, get_store, get_account, deepen_player])
+        .invoke_handler(tauri::generate_handler![riot_login, riot_logout, last_crash, minimize, login_state, get_snapshot, get_my_stats, get_store, get_account, get_owned, get_contracts, deepen_player])
         .setup(move |app| {
             if let Ok(dir) = app.path().app_data_dir() {
                 let _ = std::fs::create_dir_all(&dir);

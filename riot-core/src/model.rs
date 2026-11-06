@@ -51,6 +51,8 @@ pub struct Player {
     /// Oyuncu seviyesini gizlediyse `None`.
     pub level: Option<u32>,
     pub agent_id: String,
+    /// Ajan seçiminde: "selected" (seçiyor) ya da "locked" (kilitledi). Maçta ve bilinmiyorsa `None`.
+    pub agent_state: Option<String>,
     pub card_id: Option<String>,
     pub title_id: Option<String>,
     pub rank: Rank,

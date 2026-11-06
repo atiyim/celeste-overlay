@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import "@fontsource-variable/geist";
 import "./mobile.css";
 import { App } from "./App";
+import { t } from "./i18n";
 
 /* Arayüz hataları: bir sonraki açılışta rapor olarak gösterilir (sorunu bulmak için). */
 const JS_ERR = "celeste-js-error";
@@ -18,10 +19,10 @@ class Guard extends Component<{ children: ReactNode }, { err: string | null }> {
     if (!this.state.err) return this.props.children;
     return (
       <main className="crash">
-        <b>Bir şey ters gitti</b>
-        <p>Uygulamayı yeniden başlatabilirsin. Aşağıdaki raporu kopyalayıp gönderirsen sorunu bulabiliriz.</p>
+        <b>{t("oops")}</b>
+        <p>{t("oopsText")}</p>
         <textarea readOnly value={this.state.err} />
-        <button className="btn pri" type="button" onClick={() => location.reload()}>Yeniden başlat</button>
+        <button className="btn pri" type="button" onClick={() => location.reload()}>{t("restart")}</button>
       </main>
     );
   }

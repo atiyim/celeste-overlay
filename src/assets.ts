@@ -2,7 +2,9 @@ import type { Loadout, WeaponSlot } from "./types";
 import { tfetch } from "./net";
 
 const BASE = "https://valorant-api.com/v1";
-const LANG = "language=tr-TR";
+let LANG = "language=tr-TR";
+/** Görsel veritabanının dili (ör. "en-US"). loadAssets'ten önce çağrılır. */
+export function setAssetLanguage(code: string) { LANG = `language=${code}`; }
 
 /* Büyük JSON'lar (kaplamalar vb.) Cache API'de tutulur; oyun sürümü değişince temizlenir. */
 export async function cachedJson<T>(path: string): Promise<T> {
@@ -38,7 +40,7 @@ export interface SeasonInfo { name: string; start: number; end: number }
 export interface Tier { name: string; icon: string; color: string }
 export interface WeaponInfo { id: string; name: string; category: string; icon: string; defaultSkinId: string }
 export interface SkinInfo { name: string; icon: string }
-export interface SkinMeta { id: string; name: string; icon: string; weapon: string; tierId: string; levels: string[] }
+export interface SkinMeta { id: string; name: string; icon: string; weapon: string; weaponId: string; tierId: string; levels: string[] }
 export interface ContentTier { name: string; color: string; rank: number; icon?: string }
 export interface Callout { name: string; x: number; y: number }
 /* Minimap + bölge adları. Bölge koordinatı oyun birimidir; minimap oranına çevrilmiş halde tutulur. */
@@ -60,6 +62,8 @@ export interface Assets {
   maps: Map<string, string>;
   /** Harita kimliği (mapUrl) → geniş görsel (maç kartı için). */
   mapArt: Map<string, string>;
+  /** Harita kimliği → küçük, geniş liste görseli (telefon için hafif). */
+  mapBanner: Map<string, string>;
   mapList: MapInfo[]; // yalnızca rekabet haritaları (minimap'i olanlar)
   skinMeta: Map<string, SkinMeta>; // yalnızca ana kaplama kimliği
   levelToSkin: Map<string, string>; // seviye ve chroma kimliği → ana kaplama kimliği
@@ -90,7 +94,7 @@ export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets>
 
   const a: Assets = {
     agents: new Map(), seasons: new Map(), weapons: [], skins: new Map(), chromas: new Map(), charms: new Map(),
-    sprays: new Map(), flex: new Map(), cards: new Map(), titles: new Map(), tiers: new Map(), maps: new Map(), mapArt: new Map(), mapList: [],
+    sprays: new Map(), flex: new Map(), cards: new Map(), titles: new Map(), tiers: new Map(), maps: new Map(), mapArt: new Map(), mapBanner: new Map(), mapList: [],
     skinMeta: new Map(), levelToSkin: new Map(), contentTiers: new Map(),
   };
   const TIER_RANK: Record<string, number> = { Select: 1, Deluxe: 2, Premium: 3, Ultra: 4, Exclusive: 5 };
@@ -115,7 +119,7 @@ export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets>
     for (const s of w.skins ?? []) {
       const info: SkinInfo = { name: s.displayName, icon: s.displayIcon ?? s.chromas?.[0]?.fullRender ?? "" };
       a.skins.set(k(s.uuid), info);
-      a.skinMeta.set(k(s.uuid), { id: k(s.uuid), name: info.name, icon: info.icon, weapon: w.displayName, tierId: k(s.contentTierUuid), levels: (s.levels ?? []).map((l: any) => k(l.uuid)) });
+      a.skinMeta.set(k(s.uuid), { id: k(s.uuid), name: info.name, icon: info.icon, weapon: w.displayName, weaponId: k(w.uuid), tierId: k(s.contentTierUuid), levels: (s.levels ?? []).map((l: any) => k(l.uuid)) });
       a.levelToSkin.set(k(s.uuid), k(s.uuid));
       for (const l of s.levels ?? []) { a.skins.set(k(l.uuid), { name: info.name, icon: l.displayIcon ?? info.icon }); a.levelToSkin.set(k(l.uuid), k(s.uuid)); }
       (s.chromas ?? []).forEach((c: any, i: number) => {
@@ -148,6 +152,7 @@ export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets>
   for (const m of maps) {
     a.maps.set(k(m.mapUrl), m.displayName);
     if (m.splash || m.listViewIcon) a.mapArt.set(k(m.mapUrl), m.splash ?? m.listViewIcon);
+    if (m.listViewIcon || m.splash) a.mapBanner.set(k(m.mapUrl), m.listViewIcon ?? m.splash);
     if (!m.displayIcon || !m.tacticalDescription) continue; // ölüm maçı, eğitim vb. hariç
     const callouts: Callout[] = [];
     for (const c of m.callouts ?? []) {

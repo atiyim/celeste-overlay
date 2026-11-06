@@ -27,6 +27,8 @@ export interface WeaponCount { weaponId: string; count: number }
 export interface Player {
   puuid: string;
   team: string;
+  /** Ajan seçiminde: "selected" ya da "locked". */
+  agentState?: string | null;
   name?: string | null;
   hiddenName: boolean;
   level?: number | null;

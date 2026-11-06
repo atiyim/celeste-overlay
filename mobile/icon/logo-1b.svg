@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a9dcff"/><stop offset="1" stop-color="#2f8fd6"/></linearGradient>
+  </defs>
+  <g transform="translate(4.5 0)">
+    <polyline points="68.3,27.1 37.9,28.4 25,50 37.9,71.6 68.3,72.9" fill="none" stroke="#5ab9f2" stroke-opacity=".55" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M68.3 20.6 L72.34 27.1 L68.3 33.6 L64.28 27.1 Z M37.9 21.9 L41.94 28.4 L37.9 34.9 L33.88 28.4 Z M25 40 L31.2 50 L25 60 L18.8 50 Z M37.9 65.1 L41.94 71.6 L37.9 78.1 L33.88 71.6 Z M68.3 66.4 L72.34 72.9 L68.3 79.4 L64.28 72.9 Z" fill="url(#g)"/>
+  </g>
+</svg>
