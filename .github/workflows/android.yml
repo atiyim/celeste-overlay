@@ -1,7 +1,7 @@
 name: Android APK
 
 # Elle çalıştır (Actions → Android APK → Run workflow) ya da "android-v0.1.0" gibi bir etiket gönder.
-# İmza anahtarı (ANDROID_KEYSTORE…) varsa imzalı "release" APK, yoksa debug anahtarıyla imzalı APK çıkar.
+# İmza anahtarı (ANDROID_KEYSTORE…) varsa kalıcı anahtarla, yoksa geçici anahtarla imzalı "release" APK çıkar.
 # Not: farklı anahtarla imzalanmış APK, eskisinin üstüne kurulmaz; kalıcı dağıtımdan önce anahtarı ekle.
 on:
   workflow_dispatch:
@@ -54,27 +54,31 @@ jobs:
           npx tauri android init --ci
           npx tauri icon ../src-tauri/icons/icon.png
 
+      # Kalıcı anahtar (ANDROID_KEYSTORE…) yoksa bu çalışmaya özel geçici anahtar üretilir: APK yine küçük ve hızlı
+      # "release" derlemesidir, ama sonraki derlemeler onun üstüne kurulmaz (önce silmek gerekir).
       - name: İmza anahtarı
         id: key
         env:
           KS: ${{ secrets.ANDROID_KEYSTORE }}
+          ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          if [ -n "$KS" ]; then echo "$KS" | base64 -d > "$RUNNER_TEMP/celeste.jks"; echo "signed=1" >> "$GITHUB_OUTPUT"; else echo "signed=0" >> "$GITHUB_OUTPUT"; fi
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/celeste.jks"
+            { echo "KEY_ALIAS=$ALIAS"; echo "KEY_PASS=$PASS"; echo "APK_SUFFIX="; } >> "$GITHUB_ENV"
+          else
+            TMP=$(openssl rand -hex 16)
+            keytool -genkeypair -keystore "$RUNNER_TEMP/celeste.jks" -alias celeste -keyalg RSA -keysize 2048 -validity 3650 \
+              -storepass "$TMP" -keypass "$TMP" -dname "CN=Celeste test"
+            echo "::add-mask::$TMP"
+            { echo "KEY_ALIAS=celeste"; echo "KEY_PASS=$TMP"; echo "APK_SUFFIX=-test"; } >> "$GITHUB_ENV"
+          fi
 
-      - name: Derle (imzalı)
-        if: steps.key.outputs.signed == '1'
+      - name: Derle
         working-directory: mobile
         run: npx tauri android build --apk --target aarch64 --target armv7
 
-      - name: Derle (debug)
-        if: steps.key.outputs.signed != '1'
-        working-directory: mobile
-        run: npx tauri android build --apk --debug --target aarch64 --target armv7
-
       - name: İmzala ve adlandır
-        env:
-          ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           BT="$ANDROID_SDK_ROOT/build-tools/34.0.0"
@@ -82,15 +86,11 @@ jobs:
           find "$OUT" -name '*.apk' -print
           V=$(node -p "require('./mobile/src-tauri/tauri.conf.json').version")
           mkdir -p dist-apk
-          if [ "${{ steps.key.outputs.signed }}" = "1" ]; then
-            SRC=$(find "$OUT" -name '*release-unsigned.apk' | head -1)
-            "$BT/zipalign" -f -p 4 "$SRC" aligned.apk
-            "$BT/apksigner" sign --ks "$RUNNER_TEMP/celeste.jks" --ks-key-alias "$ALIAS" --ks-pass env:PASS --key-pass env:PASS --out "dist-apk/Celeste-$V.apk" aligned.apk
-          else
-            SRC=$(find "$OUT" -name '*debug.apk' | head -1)
-            cp "$SRC" "dist-apk/Celeste-$V-debug.apk"
-          fi
-          "$BT/apksigner" verify --print-certs dist-apk/*.apk | head -5
+          SRC=$(find "$OUT" -name '*release-unsigned.apk' | head -1)
+          "$BT/zipalign" -f -p 4 "$SRC" aligned.apk
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/celeste.jks" --ks-key-alias "$KEY_ALIAS" --ks-pass env:KEY_PASS --key-pass env:KEY_PASS --out "dist-apk/Celeste-$V$APK_SUFFIX.apk" aligned.apk
+          "$BT/apksigner" verify --print-certs dist-apk/*.apk | head -3
+          ls -la dist-apk
           cd dist-apk && sha256sum *.apk | tee SHA256.txt
 
       - uses: actions/attest-build-provenance@v2
@@ -108,4 +108,6 @@ jobs:
         run: |
           gh release view "$TAG" >/dev/null 2>&1 || \
           gh release create "$TAG" --target "$GITHUB_SHA" --title "Celeste Android ($TAG)" --notes "Android uygulaması (deneme). APK dosyasını telefondan indirip kur." --prerelease
+          # Eski APK'lar kalmasın: sayfada yalnızca son derleme görünsün.
+          for f in $(gh release view "$TAG" --json assets -q '.assets[].name'); do gh release delete-asset "$TAG" "$f" -y; done
           gh release upload "$TAG" dist-apk/* --clobber
