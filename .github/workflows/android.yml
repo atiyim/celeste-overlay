@@ -100,11 +100,12 @@ jobs:
         with:
           name: celeste-apk
           path: dist-apk/*
+      # Etiketle çalışınca o sürüme, elle çalışınca "android-latest" sürümüne eklenir (telefondan tek dokunuşla indirilir).
       - name: Sürüme ekle
-        if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'android-latest' }}
         run: |
-          gh release view "${{ github.ref_name }}" >/dev/null 2>&1 || \
-          gh release create "${{ github.ref_name }}" --title "Celeste Android ${{ github.ref_name }}" --notes "Android uygulaması (deneme)." --prerelease
-          gh release upload "${{ github.ref_name }}" dist-apk/* --clobber
+          gh release view "$TAG" >/dev/null 2>&1 || \
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "Celeste Android ($TAG)" --notes "Android uygulaması (deneme). APK dosyasını telefondan indirip kur." --prerelease
+          gh release upload "$TAG" dist-apk/* --clobber
