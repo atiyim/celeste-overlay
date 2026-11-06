@@ -207,6 +207,13 @@ pub fn run() {
                 .build()?;
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("Celeste başlatılamadı");
+        .build(tauri::generate_context!())
+        .expect("Celeste başlatılamadı")
+        .run(|_app, event| {
+            // Android'de ekran kapanınca (geri tuşu vb.) uygulama süreci sonlandırılmaya çalışılır; bu sırada
+            // grafik sürücüsü çöküyordu ("uygulama sürekli duruyor"). Süreç açık kalır, Android gerektiğinde kendisi kapatır.
+            if let tauri::RunEvent::ExitRequested { api, .. } = event {
+                api.prevent_exit();
+            }
+        });
 }
