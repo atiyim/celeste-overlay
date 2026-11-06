@@ -42,7 +42,7 @@ jobs:
           echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android
+          targets: aarch64-linux-android,x86_64-linux-android
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: "mobile/src-tauri -> target"
@@ -76,7 +76,8 @@ jobs:
 
       - name: Derle
         working-directory: mobile
-        run: npx tauri android build --apk --target aarch64
+        # Telefonlar için arm64, BlueStacks gibi bilgisayar emülatörleri için x86_64: ayrı ayrı APK.
+        run: npx tauri android build --apk --split-per-abi --target aarch64 --target x86_64
 
       - name: İmzala ve adlandır
         run: |
@@ -86,10 +87,12 @@ jobs:
           find "$OUT" -name '*.apk' -print
           V=$(node -p "require('./mobile/src-tauri/tauri.conf.json').version")
           mkdir -p dist-apk
-          SRC=$(find "$OUT" -name '*release-unsigned.apk' | head -1)
-          "$BT/zipalign" -f -p 4 "$SRC" aligned.apk
-          "$BT/apksigner" sign --ks "$RUNNER_TEMP/celeste.jks" --ks-key-alias "$KEY_ALIAS" --ks-pass env:KEY_PASS --key-pass env:KEY_PASS --out "dist-apk/Celeste-$V$APK_SUFFIX.apk" aligned.apk
-          "$BT/apksigner" verify --print-certs dist-apk/*.apk | head -3
+          for SRC in $(find "$OUT" -name '*release-unsigned.apk'); do
+            case "$SRC" in *x86_64*) ABI="emulator-x86_64";; *arm64*) ABI="telefon-arm64";; *) ABI="universal";; esac
+            "$BT/zipalign" -f -p 4 "$SRC" aligned.apk
+            "$BT/apksigner" sign --v4-signing-enabled false --ks "$RUNNER_TEMP/celeste.jks" --ks-key-alias "$KEY_ALIAS" --ks-pass env:KEY_PASS --key-pass env:KEY_PASS --out "dist-apk/Celeste-$V$APK_SUFFIX-$ABI.apk" aligned.apk
+          done
+          for f in dist-apk/*.apk; do "$BT/apksigner" verify "$f"; done
           ls -la dist-apk
           cd dist-apk && sha256sum *.apk | tee SHA256.txt
 
