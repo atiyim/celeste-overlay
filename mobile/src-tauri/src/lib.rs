@@ -40,10 +40,6 @@ async fn open_session(engine: &Engine, st: &AppState, access: &str, id_token: &s
     }
 }
 
-async fn tokio_timeout<T>(f: impl std::future::Future<Output = T>) -> Option<T> {
-    tokio::time::timeout(std::time::Duration::from_secs(12), f).await.ok()
-}
-
 /// Son çökmenin kaydı: bir sonraki açılışta uygulamada gösterilir (hatayı bulmak için).
 static CRASH_FILE: std::sync::OnceLock<std::path::PathBuf> = std::sync::OnceLock::new();
 
@@ -53,42 +49,6 @@ fn last_crash() -> Option<String> {
     let t = std::fs::read_to_string(p).ok()?;
     let _ = std::fs::remove_file(p);
     Some(t)
-}
-
-/// Sessiz yenileme: Riot'un bu telefondaki oturum çereziyle giriş adresine sorulur; Riot şifre sormadan
-/// yeni belirteçlerle yönlendirir. Sayfa değişmez, ekran yenilenmez. Çerez yoksa ya da Riot şifre isterse
-/// "login" döner; o zaman uygulama giriş sayfasını açar.
-#[tauri::command]
-async fn refresh_session(window: tauri::WebviewWindow, state: State<'_, AppState>) -> Result<LoginResult, String> {
-    let url = Url::parse("https://auth.riotgames.com/").map_err(|e| e.to_string())?;
-    // Çerez okuma ana iş parçacığını bekler: ayrı iş parçacığında ve süre sınırıyla.
-    let w = window.clone();
-    let cookies = tokio_timeout(tauri::async_runtime::spawn_blocking(move || w.cookies_for_url(url)))
-        .await
-        .ok_or("login")?
-        .map_err(|_| "login".to_string())?
-        .map_err(|_| "login".to_string())?;
-    if cookies.is_empty() {
-        return Err("login".into());
-    }
-    let header = cookies.iter().map(|c| format!("{}={}", c.name(), c.value())).collect::<Vec<_>>().join("; ");
-    let http = reqwest::Client::builder()
-        .redirect(reqwest::redirect::Policy::none())
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
-        .map_err(|e| e.to_string())?;
-    let r = http
-        .get(AUTH_URL)
-        .header("Cookie", header)
-        .header("User-Agent", "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36")
-        .send()
-        .await
-        .map_err(|_| "net".to_string())?;
-    let loc = r.headers().get("location").and_then(|v| v.to_str().ok()).and_then(|v| Url::parse(v).ok()).ok_or("login")?;
-    let (Some(a), Some(i)) = (frag(&loc, "access_token"), frag(&loc, "id_token")) else { return Err("login".into()) };
-    let res = open_session(&state.engine, &state, &a, &i).await;
-    *state.last.lock().unwrap() = Some(res.clone());
-    if res.ok { Ok(res) } else { Err(res.error.unwrap_or_default()) }
 }
 
 #[derive(Serialize, Clone)]
@@ -188,7 +148,7 @@ pub fn run() {
     let engine = Arc::new(Engine::new());
     tauri::Builder::default()
         .manage(AppState { engine: engine.clone(), home: Mutex::new(None), last: Mutex::new(None), pending: Default::default(), expires: AtomicU64::new(0) })
-        .invoke_handler(tauri::generate_handler![riot_login, riot_logout, refresh_session, last_crash, login_state, get_snapshot, get_my_stats, get_store, get_account, deepen_player])
+        .invoke_handler(tauri::generate_handler![riot_login, riot_logout, last_crash, login_state, get_snapshot, get_my_stats, get_store, get_account, deepen_player])
         .setup(move |app| {
             if let Ok(dir) = app.path().app_data_dir() {
                 let _ = std::fs::create_dir_all(&dir);

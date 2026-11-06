@@ -269,7 +269,6 @@ export function App() {
   const [tab, setTab] = useState<Tab>("lobby");
   const [settings, setSettings] = useState(false);
   const [renewing, setRenewing] = useState(false);
-  const renewRef = useRef<Promise<boolean> | null>(null);
   const expires = useRef(0);
   useWakeLock(prefs.keepAwake && (snap?.phase === "pregame" || snap?.phase === "ingame"));
 
@@ -280,18 +279,18 @@ export function App() {
     invoke("riot_login").catch(() => undefined);
   }, []);
 
-  /* Sessiz yenileme: Riot'un çereziyle arka planda yeni belirteç (ekran yenilenmez).
-     Çerez yoksa ya da Riot şifre isterse giriş sayfası açılır. */
-  const renew = useCallback((): Promise<boolean> => {
-    if (renewRef.current) return renewRef.current;
+  /* Yenileme: Riot'un giriş sayfası açılır; telefonda Riot oturumu durduğu için şifre sormadan anında geri döner.
+     (Riot'un oturum çerezini çekirdekten okumak bazı telefonlarda uygulamayı kapattığı için kullanılmıyor.)
+     Aynı dakikada ikinci kez denenmez: döngüye girmesin. */
+  const renew = useCallback(async (): Promise<boolean> => {
+    let last = 0;
+    try { last = Number(sessionStorage.getItem("celeste-renew-at")) || 0; } catch { /* */ }
+    if (Date.now() - last < 60_000) return false;
+    try { sessionStorage.setItem("celeste-renew-at", String(Date.now())); } catch { /* */ }
     setRenewing(true);
-    const job = invoke<LoginResult>("refresh_session")
-      .then((r) => { if (r.riot) setRiot(r.riot); return invoke<LoginState>("login_state"); })
-      .then((s) => { expires.current = s.expires ?? 0; setLogin(s); return true; })
-      .catch((e) => { if (String(e) === "login") startLogin(); return false; })
-      .finally(() => { renewRef.current = null; setRenewing(false); });
-    renewRef.current = job;
-    return job;
+    window.setTimeout(() => setRenewing(false), 15_000);
+    startLogin();
+    return true;
   }, [startLogin]);
   const nearExpiry = () => expires.current > 0 && Date.now() / 1000 > expires.current - 300;
 
