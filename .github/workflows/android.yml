@@ -100,8 +100,10 @@ jobs:
         with:
           name: celeste-apk
           path: dist-apk/*
-      # Etiketle çalışınca o sürüme, elle çalışınca "android-latest" sürümüne eklenir (telefondan tek dokunuşla indirilir).
+      # Yalnızca "android-v…" etiketiyle çalışınca herkese açık sürüme eklenir. Elle çalışınca APK sadece Actions'ta kalır
+      # (depoya giriş yapmış ve yetkisi olan görür; sürüm sayfası herkese açıktır).
       - name: Sürüme ekle
+        if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'android-latest' }}
