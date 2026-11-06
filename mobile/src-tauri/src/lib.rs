@@ -40,6 +40,22 @@ async fn open_session(engine: &Engine, st: &AppState, access: &str, id_token: &s
     }
 }
 
+/// Geri tuşu ana ekrandayken: uygulamayı kapatmak yerine arka plana al (diğer uygulamalar gibi).
+/// Kapatmak (Activity'nin bitmesi) uygulama sürecini sonlandırırken çöküyordu.
+#[tauri::command]
+fn minimize(window: tauri::WebviewWindow) {
+    #[cfg(target_os = "android")]
+    let _ = window.with_webview(|w| {
+        w.jni_handle().exec(|env, activity, _| {
+            if env.call_method(activity, "moveTaskToBack", "(Z)Z", &[jni::objects::JValue::Bool(1)]).is_err() {
+                let _ = env.exception_clear();
+            }
+        });
+    });
+    #[cfg(not(target_os = "android"))]
+    let _ = window;
+}
+
 /// Son çökmenin kaydı: bir sonraki açılışta uygulamada gösterilir (hatayı bulmak için).
 static CRASH_FILE: std::sync::OnceLock<std::path::PathBuf> = std::sync::OnceLock::new();
 
@@ -148,7 +164,7 @@ pub fn run() {
     let engine = Arc::new(Engine::new());
     tauri::Builder::default()
         .manage(AppState { engine: engine.clone(), home: Mutex::new(None), last: Mutex::new(None), pending: Default::default(), expires: AtomicU64::new(0) })
-        .invoke_handler(tauri::generate_handler![riot_login, riot_logout, last_crash, login_state, get_snapshot, get_my_stats, get_store, get_account, deepen_player])
+        .invoke_handler(tauri::generate_handler![riot_login, riot_logout, last_crash, minimize, login_state, get_snapshot, get_my_stats, get_store, get_account, deepen_player])
         .setup(move |app| {
             if let Ok(dir) = app.path().app_data_dir() {
                 let _ = std::fs::create_dir_all(&dir);

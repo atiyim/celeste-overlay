@@ -4,7 +4,8 @@ import { listen } from "@tauri-apps/api/event";
 import { loadAssets, lookup, resolveSkin, type Assets } from "../../src/assets";
 import { LoadoutSheet, SkinTile } from "./Loadout";
 import { Settings } from "./Settings";
-import { usePrefs, useWakeLock } from "./prefs";
+import { hasOpenLayer, usePrefs, useWakeLock } from "./prefs";
+import { onBackButtonPress } from "@tauri-apps/api/app";
 import type { MyStats, Player, Snapshot, Store } from "../../src/types";
 import { agentPool } from "../../src/insights";
 
@@ -271,6 +272,13 @@ export function App() {
   const [renewing, setRenewing] = useState(false);
   const expires = useRef(0);
   useWakeLock(prefs.keepAwake && (snap?.phase === "pregame" || snap?.phase === "ingame"));
+
+  // Geri tuşu: açık panel/ayar varsa onu kapat, yoksa uygulamayı arka plana al.
+  useEffect(() => {
+    if (!inTauri) return;
+    const l = onBackButtonPress(() => { if (hasOpenLayer()) history.back(); else invoke("minimize").catch(() => undefined); });
+    return () => { l.then((x) => x.unregister()).catch(() => undefined); };
+  }, []);
 
   useEffect(() => { loadAssets({ lite: true }).then(setAssets).catch(() => undefined); }, []);
 

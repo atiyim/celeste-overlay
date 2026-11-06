@@ -40,14 +40,18 @@ export function useWakeLock(on: boolean) {
   }, [on]);
 }
 
-/* Android geri tuşu: açık panel ya da ekran geçmişe bir adım ekler; geri basınca o kapanır. */
+/* Android geri tuşu: açık panel ya da ekran geçmişe bir adım ekler; geri basınca o kapanır.
+   Açık bir şey yoksa uygulama arka plana alınır (kapatılmaz). */
+let openLayers = 0;
+export const hasOpenLayer = () => openLayers > 0;
 export function useBackClose(open: boolean, close: () => void) {
   useEffect(() => {
     if (!open) return;
+    openLayers++;
     history.pushState({ sheet: true }, "");
     let popped = false;
     const pop = () => { popped = true; close(); };
     window.addEventListener("popstate", pop);
-    return () => { window.removeEventListener("popstate", pop); if (!popped) history.back(); };
+    return () => { openLayers--; window.removeEventListener("popstate", pop); if (!popped) history.back(); };
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 }
