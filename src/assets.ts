@@ -39,7 +39,7 @@ export interface Tier { name: string; icon: string; color: string }
 export interface WeaponInfo { id: string; name: string; category: string; icon: string; defaultSkinId: string }
 export interface SkinInfo { name: string; icon: string }
 export interface SkinMeta { id: string; name: string; icon: string; weapon: string; tierId: string; levels: string[] }
-export interface ContentTier { name: string; color: string; rank: number }
+export interface ContentTier { name: string; color: string; rank: number; icon?: string }
 export interface Callout { name: string; x: number; y: number }
 /* Minimap + bölge adları. Bölge koordinatı oyun birimidir; minimap oranına çevrilmiş halde tutulur. */
 export interface MapInfo { key: string; name: string; icon: string; callouts: Callout[] }
@@ -91,7 +91,7 @@ export async function loadAssets(): Promise<Assets> {
     skinMeta: new Map(), levelToSkin: new Map(), contentTiers: new Map(),
   };
   const TIER_RANK: Record<string, number> = { Select: 1, Deluxe: 2, Premium: 3, Ultra: 4, Exclusive: 5 };
-  for (const t of ctiers ?? []) a.contentTiers.set(k(t.uuid), { name: t.displayName, color: `#${String(t.highlightColor ?? "888888").slice(0, 6)}`, rank: TIER_RANK[t.devName] ?? 0 });
+  for (const t of ctiers ?? []) a.contentTiers.set(k(t.uuid), { name: t.displayName, color: `#${String(t.highlightColor ?? "888888").slice(0, 6)}`, rank: TIER_RANK[t.devName] ?? 0, icon: t.displayIcon ?? undefined });
 
   for (const x of agents) a.agents.set(k(x.uuid), { name: x.displayName, icon: x.displayIcon, role: x.role?.displayName, roleIcon: x.role?.displayIcon, portrait: x.fullPortrait ?? x.bustPortrait ?? undefined });
 

@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { loadAssets, lookup, resolveSkin, type Assets } from "../../src/assets";
+import { LoadoutSheet, SkinTile } from "./Loadout";
+import { Settings } from "./Settings";
+import { usePrefs, useWakeLock } from "./prefs";
 import type { MyStats, Player, Snapshot, Store } from "../../src/types";
 import { agentPool } from "../../src/insights";
 
@@ -47,28 +50,30 @@ function Login({ busy, error, onLogin }: { busy: boolean; error?: string | null;
 }
 
 /* ---------------- Oyuncu kartı ---------------- */
-function PlayerCard({ p, a, i }: { p: Player; a: Assets; i: number }) {
-  const [open, setOpen] = useState(false);
+function displayName(p: Player, i: number): [string, string] {
+  const name = p.hiddenName && !p.isSelf ? `Oyuncu ${i + 1}` : p.name ?? "…";
+  const at = name.lastIndexOf("#");
+  return at > 0 ? [name.slice(0, at), name.slice(at)] : [name, ""];
+}
+
+function PlayerCard({ p, a, i, skins, onOpen }: { p: Player; a: Assets; i: number; skins: boolean; onOpen: () => void }) {
   const agent = a.agents.get(lookup(p.agentId));
   const cur = a.tiers.get(p.rank.current);
   const peak = a.tiers.get(p.rank.peak);
-  const name = p.hiddenName && !p.isSelf ? `Oyuncu ${i + 1}` : p.name ?? "…";
-  const [nm, tag] = name.includes("#") ? [name.slice(0, name.lastIndexOf("#")), name.slice(name.lastIndexOf("#"))] : [name, ""];
+  const [nm, tag] = displayName(p, i);
   const r = p.rank;
   const [w, g] = r.games > 0 ? [r.wins, r.games] : [r.totalWins, r.totalGames];
   const pool = agentPool(p);
   const thumbs = THUMBS.map((t) => {
-    const weapon = a.weapons.find((x) => x.id === t.id) ?? a.weapons.find((x) => x.name === t.name) ?? (t.category ? a.weapons.find((x) => x.category === t.category) : undefined);
+    const weapon = a.weapons.find((x) => x.id === t.id) ?? (t.category ? a.weapons.find((x) => x.category === t.category) : undefined);
     if (!weapon) return null;
     const slot = p.loadout.weapons.find((x) => lookup(x.weaponId) === weapon.id);
     return { weapon, skin: resolveSkin(a, weapon, slot) };
   }).filter((x): x is NonNullable<typeof x> => !!x);
-  const all = p.loadout.weapons
-    .map((slot) => { const weapon = a.weapons.find((x) => x.id === lookup(slot.weaponId)); return weapon ? { weapon, skin: resolveSkin(a, weapon, slot) } : null; })
-    .filter((x): x is NonNullable<typeof x> => !!x && !x.skin.isDefault);
+  const hasLoadout = p.loadout.weapons.length > 0;
 
   return (
-    <article className={p.isSelf ? "pc me" : "pc"} onClick={() => setOpen(!open)}>
+    <article className={p.isSelf ? "pc me" : "pc"} onClick={hasLoadout ? onOpen : undefined}>
       <div className="pc-top">
         {agent ? <img className="pc-agent" src={agent.icon} alt={agent.name} /> : <span className="pc-agent" />}
         <div className="pc-name">
@@ -82,37 +87,28 @@ function PlayerCard({ p, a, i }: { p: Player; a: Assets; i: number }) {
         </div>
       </div>
       <div className="pc-row">
-        {peak && r.peak > 0 && <span className="pc-peak">Peak <img src={peak.icon} alt="" /> <b style={{ color: tierColor(peak.color) }}>{peak.name}</b></span>}
+        {peak && r.peak > 0 ? <span className="pc-peak">Peak <img src={peak.icon} alt="" /> <b style={{ color: tierColor(peak.color) }}>{peak.name}</b></span> : <span />}
         {pool && (
           <span className="pc-pool">
             {pool.top.map((x) => { const ag = a.agents.get(lookup(x.agentId)); return ag ? <span key={x.agentId}><img src={ag.icon} alt={ag.name} /><small>{x.count}</small></span> : null; })}
           </span>
         )}
       </div>
-      {thumbs.length > 0 && (p.loadout.weapons.length > 0) && (
+      {skins && hasLoadout && (
         <div className="pc-skins">
           {thumbs.map((t) => (
             <img key={t.weapon.id} className={t.skin.isDefault ? "dim" : ""} src={t.skin.image} alt={`${t.weapon.name}: ${t.skin.name}`} style={t.skin.tier && !t.skin.isDefault ? ({ "--tc": t.skin.tier.color } as React.CSSProperties) : undefined} />
           ))}
         </div>
       )}
-      {open && all.length > 0 && (
-        <div className="pc-all">
-          {all.map((t) => (
-            <div key={t.weapon.id} className="pc-skin">
-              <img src={t.skin.image} alt="" />
-              <span><b>{t.skin.name}</b><small>{t.weapon.name}{t.skin.tier ? ` · ${t.skin.tier.name}` : ""}</small></span>
-            </div>
-          ))}
-        </div>
-      )}
-      {open && all.length === 0 && <small className="pc-none">Kaplama bilgisi henüz yok ya da hepsi standart.</small>}
     </article>
   );
 }
 
 /* ---------------- Lobi ---------------- */
 function Lobby({ snap, a }: { snap: Snapshot | null; a: Assets }) {
+  const prefs = usePrefs();
+  const [open, setOpen] = useState<string | null>(null);
   if (!snap) return <p className="empty">Yükleniyor…</p>;
   if (snap.error) return <p className="empty err">{snap.error}</p>;
   if (!snap.players.length) {
@@ -126,15 +122,26 @@ function Lobby({ snap, a }: { snap: Snapshot | null; a: Assets }) {
   const me = snap.players.find((p) => p.isSelf);
   const ally = snap.players.filter((p) => p.team === me?.team);
   const enemy = snap.players.filter((p) => p.team !== me?.team);
+  const order = [...ally, ...enemy];
   const map = snap.mapId ? a.maps.get(lookup(snap.mapId)) : undefined;
+  const sel = open ? order.find((p) => p.puuid === open) : undefined;
+  const selIdx = sel ? order.indexOf(sel) : 0;
+  const card = (p: Player, i: number) => (
+    <PlayerCard key={p.puuid} p={p} a={a} i={i} skins={p.team === me?.team || prefs.enemySkins} onOpen={() => setOpen(p.puuid)} />
+  );
   return (
     <>
       <div className="lob-head"><b>{map ?? PHASE[snap.phase]}</b><small>{[PHASE[snap.phase], snap.queueId ? QUEUE[snap.queueId] ?? snap.queueId : null].filter(Boolean).join(" · ")}</small></div>
       <h2 className="grp ally">Takımın</h2>
-      {ally.map((p, i) => <PlayerCard key={p.puuid} p={p} a={a} i={i} />)}
+      {ally.map((p, i) => card(p, i))}
       {enemy.length > 0 && <h2 className="grp enemy">Rakipler</h2>}
-      {enemy.map((p, i) => <PlayerCard key={p.puuid} p={p} a={a} i={ally.length + i} />)}
-      <small className="fine">Kartın üstüne dokununca bütün kaplamaları açılır.</small>
+      {enemy.map((p, i) => card(p, ally.length + i))}
+      <small className="fine">Bütün kaplamaları görmek için oyuncunun kartına dokun.</small>
+      {sel && (() => {
+        const [nm, tag] = displayName(sel, selIdx);
+        const ag = a.agents.get(lookup(sel.agentId));
+        return <LoadoutSheet p={sel} a={a} onClose={() => setOpen(null)} title={<span className="st-name">{ag && <img src={ag.icon} alt="" />}<b>{nm}</b><small>{tag}</small></span>} />;
+      })()}
     </>
   );
 }
@@ -146,41 +153,48 @@ function StoreView({ a }: { a: Assets }) {
   useEffect(() => { invoke<Store>("get_store").then(setS).catch((e) => setErr(String(e))); }, []);
   if (err) return <p className="empty err">{err}</p>;
   if (!s) return <p className="empty">Mağaza yükleniyor…</p>;
-  const left = (sec?: number | null) => (sec ? `${Math.floor(sec / 3600)} sa ${Math.floor((sec % 3600) / 60)} dk` : "");
+  const left = (sec?: number | null) => {
+    if (!sec) return "";
+    const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
+    return d > 0 ? `${d} gün ${h} sa` : `${h} sa ${m} dk`;
+  };
   const offer = (itemId: string, price?: number | null, disc?: number | null) => {
     const id = lookup(itemId);
     const sk = a.skins.get(id);
     const main = a.levelToSkin.get(id) ?? id;
-    const tier = a.contentTiers.get(a.skinMeta.get(main)?.tierId ?? "");
+    const meta = a.skinMeta.get(main);
+    const tier = a.contentTiers.get(meta?.tierId ?? "");
     return (
-      <div key={itemId} className="offer" style={tier ? ({ "--tc": tier.color } as React.CSSProperties) : undefined}>
-        {sk?.icon && <img src={sk.icon} alt="" />}
-        <b>{sk?.name ?? "Bilinmeyen"}</b>
-        <small>{disc != null ? <><s>{price}</s> {disc}</> : price} VP</small>
-      </div>
+      <SkinTile key={itemId} big name={sk?.name ?? "Bilinmeyen"} image={sk?.icon} tier={tier}
+        sub={<span className="price">{disc != null ? <><s>{price}</s> <b>{disc}</b></> : <b>{price}</b>} VP</span>} />
     );
   };
   return (
     <>
       {s.wallet && <div className="wallet"><span><b>{s.wallet.vp ?? 0}</b> VP</span><span><b>{s.wallet.rp ?? 0}</b> RP</span><span><b>{s.wallet.kc ?? 0}</b> KC</span></div>}
-      <h2 className="grp">Günlük mağaza <small>{left(s.dailyRemaining)}</small></h2>
+      <h2 className="grp">Günlük mağaza <small>{left(s.dailyRemaining)} sonra yenilenir</small></h2>
       <div className="offers">{s.daily.map((o) => offer(o.itemId, o.price))}</div>
-      {s.night.length > 0 && <><h2 className="grp">Gece pazarı <small>{left(s.nightRemaining)}</small></h2><div className="offers">{s.night.map((o) => offer(o.itemId, o.price, o.discounted))}</div></>}
+      {s.night.length > 0 && <><h2 className="grp">Gece pazarı <small>{left(s.nightRemaining)} kaldı</small></h2><div className="offers">{s.night.map((o) => offer(o.itemId, o.price, o.discounted))}</div></>}
     </>
   );
 }
 
-/* ---------------- Ben ---------------- */
-function Me({ a, riot, onLogout }: { a: Assets; riot?: string | null; onLogout: () => void }) {
+/* ---------------- Profil ---------------- */
+function Profile({ a, riot }: { a: Assets; riot?: string | null }) {
   const [s, setS] = useState<MyStats | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => { invoke<MyStats>("get_my_stats").then(setS).catch((e) => setErr(String(e))); }, []);
   const t = s ? a.tiers.get(s.rank.current) : undefined;
+  const pk = s ? a.tiers.get(s.rank.peak) : undefined;
   return (
     <>
       <div className="me-head">
         {t && <img src={t.icon} alt="" />}
-        <div><b>{riot ?? "Hesabın"}</b>{t && <span style={{ color: tierColor(t.color) }}>{t.name} · {s!.rank.rr} RR</span>}</div>
+        <div>
+          <b>{riot ?? "Hesabın"}</b>
+          {t && <span style={{ color: tierColor(t.color) }}>{t.name} · {s!.rank.rr} RR</span>}
+          {pk && s!.rank.peak > 0 && <small>Peak {pk.name}</small>}
+        </div>
       </div>
       {err && <p className="empty err">{err}</p>}
       {!s && !err && <p className="empty">Maçların yükleniyor…</p>}
@@ -196,20 +210,28 @@ function Me({ a, riot, onLogout }: { a: Assets; riot?: string | null; onLogout: 
           </div>
         );
       })}
-      <button className="btn ghost" type="button" onClick={onLogout}>Çıkış yap</button>
-      <small className="fine">Çıkış yapınca bu telefondaki Riot oturumu da silinir.</small>
     </>
   );
 }
 
+const Gear = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </svg>
+);
+
 /* ---------------- Uygulama ---------------- */
 export function App() {
+  const prefs = usePrefs();
   const [assets, setAssets] = useState<Assets | null>(null);
   const [login, setLogin] = useState<LoginState | null>(null);
   const [riot, setRiot] = useState<string | null>(null);
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [tab, setTab] = useState<Tab>("lobby");
+  const [settings, setSettings] = useState(false);
   const relogAt = useRef(0);
+  useWakeLock(prefs.keepAwake && (snap?.phase === "pregame" || snap?.phase === "ingame"));
 
   useEffect(() => { loadAssets().then(setAssets).catch(() => undefined); }, []);
 
@@ -240,7 +262,7 @@ export function App() {
     return () => { stop = true; un.then((f) => f()); };
   }, [startLogin]);
 
-  // Lobi: 3 sn'de bir; uygulama arka plandayken sorulmaz.
+  // Lobi: ayardaki aralıkla; uygulama arka plandayken sorulmaz.
   useEffect(() => {
     if (!login?.session) return;
     let stop = false, t = 0;
@@ -253,31 +275,35 @@ export function App() {
           if (s.status?.fault === "rejected" && Date.now() - relogAt.current > 5 * 60_000) { relogAt.current = Date.now(); startLogin(); }
         }
       }
-      if (!stop) t = window.setTimeout(tick, 3000);
+      if (!stop) t = window.setTimeout(tick, prefs.interval * 1000);
     };
     tick();
     return () => { stop = true; window.clearTimeout(t); };
-  }, [login?.session, startLogin]);
+  }, [login?.session, startLogin, prefs.interval]);
 
   const logout = async () => {
     try { localStorage.removeItem(LOGGED); } catch { /* */ }
     await invoke("riot_logout").catch(() => undefined);
-    setLogin({ session: false, pending: false }); setRiot(null); setSnap(null);
+    setSettings(false); setLogin({ session: false, pending: false }); setRiot(null); setSnap(null);
   };
 
   if (!login || !assets) return <main className="splash"><img src="/icon.png" alt="" width={64} height={64} /><p>Celeste</p></main>;
   if (!login.session) return <Login busy={login.pending} error={login.last && !login.last.ok ? login.last.error : null} onLogin={startLogin} />;
+  if (settings) return <Settings riot={riot} onClose={() => setSettings(false)} onLogout={logout} />;
 
   return (
     <div className="app">
-      <header className="top"><b>Celeste</b><small>{riot ?? ""}</small></header>
+      <header className="top">
+        <b>Celeste</b>
+        <span className="top-r"><small>{riot ?? ""}</small><button type="button" className="icon" onClick={() => setSettings(true)} aria-label="Ayarlar"><Gear /></button></span>
+      </header>
       <main className="body">
         {tab === "lobby" && <Lobby snap={snap} a={assets} />}
         {tab === "store" && <StoreView a={assets} />}
-        {tab === "me" && <Me a={assets} riot={riot} onLogout={logout} />}
+        {tab === "me" && <Profile a={assets} riot={riot} />}
       </main>
       <nav className="tabbar" aria-label="Bölümler">
-        {([["lobby", "Lobi"], ["store", "Mağaza"], ["me", "Ben"]] as [Tab, string][]).map(([id, label]) => (
+        {([["lobby", "Lobi"], ["store", "Mağaza"], ["me", "Profil"]] as [Tab, string][]).map(([id, label]) => (
           <button key={id} type="button" className={tab === id ? "on" : ""} onClick={() => setTab(id)}>{label}</button>
         ))}
       </nav>
