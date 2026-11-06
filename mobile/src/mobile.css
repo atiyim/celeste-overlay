@@ -178,3 +178,12 @@ button { font: inherit; }
 .about { padding: 13px 14px; color: var(--fg-2); font-size: 13px; }
 .about p { margin: 0 0 8px; }
 @media (prefers-reduced-motion: reduce) { .sheet, .sheet-wrap { animation: none; } }
+
+/* hata raporu */
+.crash { min-height: 100%; display: flex; flex-direction: column; gap: 12px; padding: calc(env(safe-area-inset-top) + 40px) 20px 24px; }
+.crash b { font-size: 20px; }
+.crash p { margin: 0; color: var(--fg-2); }
+.crash textarea, .crash-note textarea { width: 100%; min-height: 140px; background: var(--bg); color: var(--fg-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: 11px/1.4 ui-monospace, monospace; resize: vertical; }
+.crash-note { display: flex; flex-direction: column; gap: 6px; padding: 12px; background: color-mix(in srgb, var(--loss) 10%, var(--s1)); border: 1px solid color-mix(in srgb, var(--loss) 40%, var(--line)); border-radius: 12px; }
+.crash-note p { margin: 0; color: var(--fg-2); font-size: 13px; }
+.crash-note .link { align-self: flex-end; }

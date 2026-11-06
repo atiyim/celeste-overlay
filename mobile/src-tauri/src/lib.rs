@@ -40,13 +40,34 @@ async fn open_session(engine: &Engine, st: &AppState, access: &str, id_token: &s
     }
 }
 
+async fn tokio_timeout<T>(f: impl std::future::Future<Output = T>) -> Option<T> {
+    tokio::time::timeout(std::time::Duration::from_secs(12), f).await.ok()
+}
+
+/// Son çökmenin kaydı: bir sonraki açılışta uygulamada gösterilir (hatayı bulmak için).
+static CRASH_FILE: std::sync::OnceLock<std::path::PathBuf> = std::sync::OnceLock::new();
+
+#[tauri::command]
+fn last_crash() -> Option<String> {
+    let p = CRASH_FILE.get()?;
+    let t = std::fs::read_to_string(p).ok()?;
+    let _ = std::fs::remove_file(p);
+    Some(t)
+}
+
 /// Sessiz yenileme: Riot'un bu telefondaki oturum çereziyle giriş adresine sorulur; Riot şifre sormadan
 /// yeni belirteçlerle yönlendirir. Sayfa değişmez, ekran yenilenmez. Çerez yoksa ya da Riot şifre isterse
 /// "login" döner; o zaman uygulama giriş sayfasını açar.
 #[tauri::command]
 async fn refresh_session(window: tauri::WebviewWindow, state: State<'_, AppState>) -> Result<LoginResult, String> {
     let url = Url::parse("https://auth.riotgames.com/").map_err(|e| e.to_string())?;
-    let cookies = window.cookies_for_url(url).map_err(|_| "login".to_string())?;
+    // Çerez okuma ana iş parçacığını bekler: ayrı iş parçacığında ve süre sınırıyla.
+    let w = window.clone();
+    let cookies = tokio_timeout(tauri::async_runtime::spawn_blocking(move || w.cookies_for_url(url)))
+        .await
+        .ok_or("login")?
+        .map_err(|_| "login".to_string())?
+        .map_err(|_| "login".to_string())?;
     if cookies.is_empty() {
         return Err("login".into());
     }
@@ -167,8 +188,20 @@ pub fn run() {
     let engine = Arc::new(Engine::new());
     tauri::Builder::default()
         .manage(AppState { engine: engine.clone(), home: Mutex::new(None), last: Mutex::new(None), pending: Default::default(), expires: AtomicU64::new(0) })
-        .invoke_handler(tauri::generate_handler![riot_login, riot_logout, refresh_session, login_state, get_snapshot, get_my_stats, get_store, get_account, deepen_player])
+        .invoke_handler(tauri::generate_handler![riot_login, riot_logout, refresh_session, last_crash, login_state, get_snapshot, get_my_stats, get_store, get_account, deepen_player])
         .setup(move |app| {
+            if let Ok(dir) = app.path().app_data_dir() {
+                let _ = std::fs::create_dir_all(&dir);
+                let _ = CRASH_FILE.set(dir.join("last-crash.txt"));
+                let prev = std::panic::take_hook();
+                std::panic::set_hook(Box::new(move |info| {
+                    if let Some(p) = CRASH_FILE.get() {
+                        let at = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+                        let _ = std::fs::write(p, format!("{at}\n{info}"));
+                    }
+                    prev(info);
+                }));
+            }
             let handle = app.handle().clone();
             let engine = engine.clone();
             WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))

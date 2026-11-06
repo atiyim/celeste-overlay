@@ -237,6 +237,28 @@ const Gear = () => (
   </svg>
 );
 
+/* Son açılışta uygulama kapandıysa raporu göster (uzun basıp kopyalanabilir). */
+function CrashNote() {
+  const [text, setText] = useState<string | null>(null);
+  useEffect(() => {
+    let js: string | null = null;
+    try { js = localStorage.getItem("celeste-js-error"); localStorage.removeItem("celeste-js-error"); } catch { /* */ }
+    (inTauri ? invoke<string | null>("last_crash").catch(() => null) : Promise.resolve(null)).then((native) => {
+      const all = [native && `Çekirdek:\n${native}`, js && `Arayüz:\n${js}`].filter(Boolean).join("\n\n");
+      if (all) setText(all);
+    });
+  }, []);
+  if (!text) return null;
+  return (
+    <div className="crash-note">
+      <b>Uygulama son açılışta bir hatayla karşılaştı</b>
+      <p>Bu raporu kopyalayıp gönderirsen sorunu bulabiliriz.</p>
+      <textarea readOnly value={text} />
+      <button type="button" className="link" onClick={() => setText(null)}>Kapat</button>
+    </div>
+  );
+}
+
 /* ---------------- Uygulama ---------------- */
 export function App() {
   const prefs = usePrefs();
@@ -350,6 +372,7 @@ export function App() {
         <span className="top-r"><small>{riot ?? ""}</small><button type="button" className="icon" onClick={() => setSettings(true)} aria-label="Ayarlar"><Gear /></button></span>
       </header>
       <main className="body">
+        <CrashNote />
         {tab === "lobby" && <Lobby snap={snap} a={assets} renewing={renewing} />}
         {tab === "store" && <StoreView a={assets} />}
         {tab === "me" && <Profile a={assets} riot={riot} />}
