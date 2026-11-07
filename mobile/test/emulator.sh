@@ -22,10 +22,11 @@ check() { # $1 adım adı; $2: 1 = çalışmalı ve ekran beyaz olmamalı, 2 = y
 
 adb install -r "$APK" > "$OUT/install.txt" 2>&1 || { cat "$OUT/install.txt"; exit 1; }
 adb logcat -c
-launch; sleep 25; check 01-ilk-acilis 1
+# İlk açılış: emülatörde WebView'in ilk kurulumu yavaş olabilir; tam açılmasını bekle.
+launch; sleep 40; check 01-ilk-acilis 1
 adb shell input keyevent KEYCODE_BACK; sleep 5; check 02-geri 0
-launch; sleep 8; check 03-geri-sonra-acilis 1
-adb shell input keyevent KEYCODE_HOME; sleep 4; launch; sleep 8; check 04-ana-ekran-sonra-acilis 1
+launch; sleep 15; check 03-geri-sonra-acilis 1
+adb shell input keyevent KEYCODE_HOME; sleep 4; launch; sleep 15; check 04-ana-ekran-sonra-acilis 1
 adb shell input tap 160 270; sleep 15; check 05-giris-sayfasi 2
 # Riot'un sayfasında geri: Android uygulamayı kapatır (çökmeden); sonraki açılış giriş ekranıyla başlamalı.
 adb shell input keyevent KEYCODE_BACK; sleep 5; check 06-giris-sayfasinda-geri 0
@@ -40,6 +41,9 @@ adb shell input keyevent KEYCODE_HOME; sleep 3; adb shell am kill $P; sleep 3; c
 launch; sleep 20; check 11-son-acilis 1
 
 adb logcat -d > "$OUT/logcat.txt"
+# Uygulama sürecinin neden bittiğini derleme kaydına yaz (sorun olursa buradan anlaşılır).
+echo "--- süreç kayıtları ---"
+grep -E "Start proc [0-9]+:$P|Process $P .*(died|kill)|Killing [0-9]+:$P|Force stopping $P|FATAL|Fatal signal|$P.*(onDestroy|finish)" "$OUT/logcat.txt" | cut -c1-220 | head -60
 adb logcat -b crash -d > "$OUT/crash.txt"
 if grep -q "$P" "$OUT/crash.txt"; then log "HATA: çökme kaydı var (crash.txt)"; FAIL=1; fi
 if grep -qE "ANR in $P" "$OUT/logcat.txt"; then log "HATA: uygulama yanıt vermedi (ANR)"; FAIL=1; fi
