@@ -17,17 +17,19 @@ const PRIVACY = {
     ["Giriş", "Riot ile giriş, Riot'un kendi sayfasında (auth.riotgames.com) yapılır. Şifren uygulamaya hiç gelmez."],
     ["Riot oturumu", "Riot'un verdiği oturum, telefonun bu uygulamaya ait tarayıcı bölümünde durur. Uygulamanın kullandığı erişim belgesi yalnızca uygulama açıkken bellekte tutulur. \"Çıkış yap\" ikisini de siler."],
     ["Okunan veriler", "Lobideki oyuncular, ranklar, kaplamalar, mağazan, maç geçmişin, görevlerin ve sahip olduğun kaplamalar. Hepsi doğrudan Riot'un sunucularından okunur. Uygulama oyunda hiçbir işlem yapmaz."],
-    ["Bağlandığı yerler", "Riot'un sunucuları (oyun verisi), valorant-api.com (ajan, harita ve kaplama görselleri) ve GitHub (yeni sürüm denetimi). Celeste'nin sunucusuna hiçbir veri gitmez."],
+    ["Bağlandığı yerler", "Riot'un sunucuları (oyun verisi), valorant-api.com (ajan, harita ve kaplama görselleri), GitHub (yeni sürüm denetimi) ve Celeste'nin sitesi."],
+    ["Celeste'nin sitesine gidenler", "Anonim kullanım sayımı: uygulama açıkken 10 dakikada bir, bu telefon için üretilen rastgele bir kimlik, uygulama sürümü ve telefon mu emülatör mü olduğu. Bir de yalnızca sen gönderirsen öneri/hata bildirimin (Riot ID'n dahil). Riot oturumun, şifren ve oyun verilerin gönderilmez."],
     ["Telefonda kalanlar", "Ayarların, istek listen ve görsel önbelleği. Uygulamayı silince hepsi silinir."],
-    ["Yok", "Reklam, analiz, takip ya da hesabını başkasıyla paylaşma yok."],
+    ["Yok", "Reklam, takip ya da hesabını başkasıyla paylaşma yok."],
   ],
   en: [
     ["Sign-in", "You sign in on Riot's own page (auth.riotgames.com). Your password never reaches the app."],
     ["Riot session", "The session Riot gives you stays in this app's own browser storage on your phone. The access token the app uses is only kept in memory while the app is open. \"Sign out\" removes both."],
     ["What it reads", "Players in your lobby, ranks, skins, your store, match history, missions and owned skins. All read straight from Riot's servers. The app never does anything in the game."],
-    ["Where it connects", "Riot's servers (game data), valorant-api.com (agent, map and skin images) and GitHub (update check). No data goes to Celeste's server."],
+    ["Where it connects", "Riot's servers (game data), valorant-api.com (agent, map and skin images), GitHub (update check) and Celeste's site."],
+    ["What goes to Celeste's site", "An anonymous usage count: every 10 minutes while the app is open, a random ID made for this phone, the app version and whether it's a phone or an emulator. And your feedback, only if you send it (including your Riot ID). Your Riot session, password and game data are never sent."],
     ["Stored on your phone", "Your settings, wishlist and image cache. Uninstalling the app removes all of it."],
-    ["Never", "No ads, analytics, tracking or sharing your account with anyone."],
+    ["Never", "No ads, tracking or sharing your account with anyone."],
   ],
 } as const;
 

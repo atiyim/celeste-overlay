@@ -139,6 +139,12 @@ fn clear_cookies(window: &tauri::WebviewWindow) {
     let _ = window.clear_all_browsing_data();
 }
 
+/// Kullanım sayımı için platform: x86_64 APK'sı BlueStacks gibi bilgisayar emülatörleri içindir.
+#[tauri::command]
+fn platform() -> &'static str {
+    if cfg!(target_arch = "x86_64") { "emulator" } else { "android" }
+}
+
 /// Yalnızca emülatör testindeki derlemede açık: arayüz hesap değiştirme adımlarını kendisi dener.
 #[tauri::command]
 fn selftest() -> bool {
@@ -207,7 +213,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(AppState { engine: engine.clone(), home: Mutex::new(None), last: Mutex::new(None), pending: Default::default(), expires: AtomicU64::new(0) })
-        .invoke_handler(tauri::generate_handler![riot_login, riot_logout, last_crash, minimize, selftest, login_state, get_snapshot, get_my_stats, get_store, get_account, get_owned, get_contracts, deepen_player])
+        .invoke_handler(tauri::generate_handler![riot_login, riot_logout, last_crash, minimize, selftest, platform, login_state, get_snapshot, get_my_stats, get_store, get_account, get_owned, get_contracts, deepen_player])
         .setup(move |app| {
             if let Ok(dir) = app.path().app_data_dir() {
                 let _ = std::fs::create_dir_all(&dir);

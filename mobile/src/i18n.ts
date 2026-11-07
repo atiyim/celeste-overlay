@@ -75,7 +75,7 @@ const tr = {
   logout: "Çıkış yap", logoutHelp: "Bu telefondaki Riot oturumu da silinir.",
   sGeneral: "Genel", language: "Dil", privacy: "Gizlilik", privacyHelp: "Hangi veri nerede durur?",
   sAbout: "Hakkında", version: "Sürüm {v}", checkUpdate: "Güncellemeleri denetle", upToDate: "En son sürümü kullanıyorsun.", checking: "Denetleniyor…", updateErr: "Denetlenemedi. İnternetini kontrol et.",
-  aboutText: "Giriş bilgin ve ayarların yalnızca bu telefonda durur, Celeste'nin sunucusuna gitmez. Uygulama yalnızca okur, oyunda hiçbir işlem yapmaz.",
+  aboutText: "Riot oturumun ve ayarların yalnızca bu telefonda durur, Celeste'nin sunucusuna gitmez. Uygulama yalnızca okur, oyunda hiçbir işlem yapmaz.",
   doneBtn: "Bitti", back: "Geri",
 
   updTitle: "Yeni sürüm var: {v}", updText: "İndirip kurman yeterli; ayarların ve istek listen kalır.", download: "İndir", later: "Sonra",
@@ -159,7 +159,7 @@ const en: Dict = {
   logout: "Sign out", logoutHelp: "Also removes the Riot session on this phone.",
   sGeneral: "General", language: "Language", privacy: "Privacy", privacyHelp: "What data stays where?",
   sAbout: "About", version: "Version {v}", checkUpdate: "Check for updates", upToDate: "You're on the latest version.", checking: "Checking…", updateErr: "Couldn't check. Check your connection.",
-  aboutText: "Your sign-in and settings stay on this phone and never go to Celeste's server. The app only reads; it never does anything in the game.",
+  aboutText: "Your Riot session and settings stay on this phone and never go to Celeste's server. The app only reads; it never does anything in the game.",
   doneBtn: "Done", back: "Back",
 
   updTitle: "New version available: {v}", updText: "Just download and install it; your settings and wishlist stay.", download: "Download", later: "Later",

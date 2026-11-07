@@ -127,3 +127,28 @@ export function useNotices(): [Notice[], () => void] {
   }, []);
   return [list, () => setList([])];
 }
+
+/* Anonim kullanım sayımı (masaüstüyle aynı): uygulama açık ve ekrandayken 10 dakikada bir
+   bu telefonun rastgele kimliği, uygulama sürümü ve platform (android / emulator) gider. Başka hiçbir şey gitmez. */
+export function useUsagePing(enabled: boolean) {
+  useEffect(() => {
+    if (!enabled) return;
+    let meta: { v: string; p: string } | null = null;
+    const ping = async () => {
+      if (document.hidden) return;
+      try {
+        if (!meta) {
+          const { invoke } = await import("@tauri-apps/api/core");
+          meta = { v: await getVersion(), p: await invoke<string>("platform") };
+        }
+        const id = installId();
+        if (id && /^\d+\.\d+\.\d+$/.test(meta.v)) await fetch(`${SITE}/api/overlay/ping?id=${id}&v=${meta.v}&p=${meta.p}`);
+      } catch { /* sonraki turda */ }
+    };
+    ping();
+    const t = window.setInterval(ping, 10 * 60_000);
+    const vis = () => { if (!document.hidden) ping(); };
+    document.addEventListener("visibilitychange", vis);
+    return () => { window.clearInterval(t); document.removeEventListener("visibilitychange", vis); };
+  }, [enabled]);
+}

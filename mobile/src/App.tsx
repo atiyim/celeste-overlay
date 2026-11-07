@@ -9,7 +9,7 @@ import { agentPool } from "../../src/insights";
 import { PlayerSheet, SkinDetail, SkinTile, Sheet } from "./Loadout";
 import { Settings } from "./Settings";
 import { Login } from "./Login";
-import { Feedback, useNotices } from "./Feedback";
+import { Feedback, useNotices, useUsagePing } from "./Feedback";
 import { Collection } from "./Collection";
 import { Profile } from "./Profile";
 import { SkeletonCards, SkeletonTiles } from "./Skeleton";
@@ -325,6 +325,7 @@ export function App() {
   const [renewing, setRenewing] = useState(false);
   const expires = useRef(0);
   const tickNow = useRef<() => Promise<void>>(async () => undefined);
+  useUsagePing(inTauri);
   useWakeLock(prefs.keepAwake && (snap?.phase === "pregame" || snap?.phase === "ingame"));
 
   // Geri tuşu: açık panel/ayar varsa onu kapat, yoksa uygulamayı arka plana al.
