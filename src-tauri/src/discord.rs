@@ -10,7 +10,7 @@ use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 /// Discord Developer Portal → uygulama → Application ID. Gizli değildir.
-pub const CLIENT_ID: &str = "0";
+pub const CLIENT_ID: &str = "1568761057885818932";
 
 trait Pipe: Read + Write + Send {}
 impl<T: Read + Write + Send> Pipe for T {}
