@@ -443,7 +443,7 @@ export function App() {
   if (!login || !assets) return <main className="splash"><Logo size={72} tile /><p>Celeste</p></main>;
   if (!login.session) return <Login busy={login.pending} error={login.last && !login.last.ok ? login.last.error : null} onLogin={startLogin} />;
   if (feedback) return <Feedback riot={riot} report={feedback.report} onClose={() => setFeedback(null)} />;
-  if (settings) return <Settings onFeedback={() => setFeedback({})} riot={riot} onClose={() => setSettings(false)} onLogout={logout} onSwitch={switchAccount} />;
+  if (settings) return <Settings riot={riot} onClose={() => setSettings(false)} onLogout={logout} onSwitch={switchAccount} />;
 
   return (
     <div className="app">

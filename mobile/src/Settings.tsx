@@ -5,6 +5,7 @@ import { setPrefs, usePrefs, useBackClose, wakeLockSupported, type Prefs } from 
 import { lang, setLang, t } from "./i18n";
 import { checkUpdate } from "./update";
 import { Logo } from "./icons";
+import { Feedback } from "./Feedback";
 
 function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return <button type="button" role="switch" aria-checked={on} aria-label={label} className={on ? "sw-t on" : "sw-t"} onClick={() => onChange(!on)}><i /></button>;
@@ -43,10 +44,11 @@ export function Privacy({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function Settings({ riot, onClose, onLogout, onSwitch, onFeedback }: { riot?: string | null; onClose: () => void; onLogout: () => void; onSwitch: () => void; onFeedback: () => void }) {
+export function Settings({ riot, onClose, onLogout, onSwitch }: { riot?: string | null; onClose: () => void; onLogout: () => void; onSwitch: () => void }) {
   const p = usePrefs();
   const [ver, setVer] = useState("");
   const [privacy, setPrivacy] = useState(false);
+  const [fb, setFb] = useState(false);
   const [upd, setUpd] = useState<{ state: "idle" | "busy" | "none" | "err" } | { state: "found"; v: string; url: string }>({ state: "idle" });
   useBackClose(true, onClose);
   useEffect(() => { getVersion().then(setVer).catch(() => undefined); }, []);
@@ -60,6 +62,8 @@ export function Settings({ riot, onClose, onLogout, onSwitch, onFeedback }: { ri
   };
 
   if (privacy) return <Privacy onClose={() => setPrivacy(false)} />;
+  // Alt sayfalar Ayarlar'ın içinde açılır: geri tuşu önce alt sayfayı, sonra Ayarlar'ı kapatır.
+  if (fb) return <Feedback riot={riot} onClose={() => setFb(false)} />;
 
   return (
     <div className="page">
@@ -104,7 +108,7 @@ export function Settings({ riot, onClose, onLogout, onSwitch, onFeedback }: { ri
               <button type="button" role="radio" aria-checked={lang === "en"} className={lang === "en" ? "on" : ""} onClick={() => lang !== "en" && setLang("en")}>English</button>
             </div>
           </div>
-          <button type="button" className="set-row" onClick={onFeedback}><span><b>{t("fbRow")}</b><small>{t("fbRowHelp")}</small></span><i className="chev">›</i></button>
+          <button type="button" className="set-row" onClick={() => setFb(true)}><span><b>{t("fbRow")}</b><small>{t("fbRowHelp")}</small></span><i className="chev">›</i></button>
           <button type="button" className="set-row" onClick={() => setPrivacy(true)}><span><b>{t("privacy")}</b><small>{t("privacyHelp")}</small></span><i className="chev">›</i></button>
         </div>
 
