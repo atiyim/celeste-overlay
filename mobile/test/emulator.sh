@@ -27,7 +27,9 @@ adb shell input keyevent KEYCODE_BACK; sleep 5; check 02-geri 0
 launch; sleep 8; check 03-geri-sonra-acilis 1
 adb shell input keyevent KEYCODE_HOME; sleep 4; launch; sleep 8; check 04-ana-ekran-sonra-acilis 1
 adb shell input tap 160 270; sleep 15; check 05-giris-sayfasi 2
-adb shell input keyevent KEYCODE_BACK; sleep 4; check 06-giris-sayfasinda-geri 2
+# Riot'un sayfasında geri: Android uygulamayı kapatır (çökmeden); sonraki açılış giriş ekranıyla başlamalı.
+adb shell input keyevent KEYCODE_BACK; sleep 5; check 06-giris-sayfasinda-geri 0
+launch; sleep 15; check 06b-sonra-acilis 1
 adb shell am force-stop $P; sleep 2; launch; sleep 20; check 07-zorla-kapat-sonra-acilis 1
 # Android ekranı kapatıp süreci açık bırakırsa (bellek darlığı, "etkinlikleri tutma"): bir sonraki açılış beyaz kalmamalı.
 adb shell settings put global always_finish_activities 1
