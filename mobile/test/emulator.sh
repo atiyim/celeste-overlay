@@ -10,20 +10,8 @@ log() { echo "$*" | tee -a "$OUT/steps.txt"; }
 launch() { adb shell monkey -p $P -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; }
 pid() { adb shell pidof $P | tr -d '\r'; }
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
-# Ekran beyaz mı? (uygulama koyu renkli; ortalama parlaklık çok yüksekse WebView çizilmemiş demektir)
-white() { python3 - "$OUT/$1.png" <<'PY'
-import sys, zlib, struct
-d = open(sys.argv[1], 'rb').read()
-# PNG'yi ek kütüphane olmadan çöz: yalnızca IDAT verisinin kabaca parlaklığına bakılır.
-i, chunks = 8, b''
-while i < len(d):
-    n = struct.unpack('>I', d[i:i+4])[0]; t = d[i+4:i+8]
-    if t == b'IDAT': chunks += d[i+8:i+8+n]
-    i += 12 + n
-raw = zlib.decompress(chunks)
-print(1 if sum(raw[::97]) / max(1, len(raw[::97])) > 200 else 0)
-PY
-}
+# Ekran beyaz mı? (uygulama koyu renkli; ortalama parlaklık çok yüksekse WebView çizilmemiş demektir. Pillow gerekir.)
+white() { python3 -c "import sys;from PIL import Image,ImageStat;print(1 if ImageStat.Stat(Image.open(sys.argv[1]).convert('L')).mean[0]>200 else 0)" "$OUT/$1.png" 2>/dev/null || echo 0; }
 check() { # $1 adım adı; $2: 1 = çalışmalı ve ekran beyaz olmamalı, 2 = yalnızca çalışmalı (Riot'un sayfası), 0 = denetim yok
   local p; p=$(pid)
   log "$1: pid=${p:-yok}"
