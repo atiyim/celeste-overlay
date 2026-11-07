@@ -12,14 +12,6 @@ button { font: inherit; }
 .splash { height: 100%; display: grid; place-content: center; justify-items: center; gap: 10px; color: var(--fg-2); }
 
 /* giriş */
-.login { min-height: 100%; display: flex; flex-direction: column; gap: 18px; padding: calc(env(safe-area-inset-top) + 48px) 22px calc(env(safe-area-inset-bottom) + 24px); }
-.lg-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
-.lg-brand img { border-radius: 18px; }
-.lg-brand h1 { margin: 6px 0 0; font-size: 30px; letter-spacing: -.02em; }
-.lg-brand p { margin: 0; color: var(--fg-2); font-size: 15px; }
-.lg-notes { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.lg-notes li { padding: 12px 14px; background: var(--s1); border: 1px solid var(--line); border-radius: 12px; color: var(--fg-2); font-size: 13px; }
-.lg-notes b { color: var(--fg); display: block; margin-bottom: 2px; }
 .err { color: var(--loss); }
 .fine { display: block; color: var(--fg-3); font-size: 11.5px; margin-top: 6px; }
 
@@ -190,7 +182,6 @@ button { font: inherit; }
 /* marka */
 .brand { display: inline-flex; align-items: center; gap: 8px; }
 .logo { display: block; flex: none; }
-.lg-brand .logo { border-radius: 18px; }
 
 /* harita başlığı: harita görseli soldan sağa kararır, yazı üstünde */
 .lob-head.has-art { min-height: 86px; justify-content: flex-end; padding: 12px 14px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
@@ -307,3 +298,35 @@ button { font: inherit; }
 .body > * { flex-shrink: 0; }
 .tile.wished .tile-txt { padding-right: 16px; }
 .seg { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
+
+/* giriş ekranı */
+.login { min-height: 100%; display: flex; justify-content: center; padding: calc(env(safe-area-inset-top) + 28px) 22px calc(env(safe-area-inset-bottom) + 22px);
+  background: radial-gradient(120% 60% at 50% -10%, #0e2233 0%, transparent 60%), var(--bg); }
+.lg-inner { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 26px; }
+.lg-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding-top: 12px; }
+.lg-mark { width: 112px; height: 112px; border-radius: 28px; position: relative;
+  background: radial-gradient(80% 80% at 50% 35%, #12283b, #070b11); border: 1px solid #1b2a38; box-shadow: 0 0 0 1px #000, 0 18px 50px -12px #2f8fd655; }
+.lm-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: lm-draw 1.1s .35s cubic-bezier(.4, 0, .2, 1) forwards; }
+.lm-star { opacity: 0; transform-box: fill-box; transform-origin: center; animation: lm-pop .45s cubic-bezier(.2, .9, .3, 1.3) forwards; }
+@keyframes lm-draw { to { stroke-dashoffset: 0; } }
+@keyframes lm-pop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .lm-line { animation: none; stroke-dashoffset: 0; } .lm-star { animation: none; opacity: 1; } }
+.lg-hero h1 { margin: 10px 0 0; font-size: 32px; font-weight: 700; letter-spacing: -.025em; }
+.lg-hero p { margin: 0; max-width: 32ch; color: var(--fg-2); font-size: 15px; line-height: 1.5; text-wrap: balance; }
+.lg-cta { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.lg-cta .btn { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border-radius: 14px; }
+.lg-cta small { color: var(--fg-3); font-size: 12px; }
+.lg-cta .err { margin: 0; text-align: center; font-size: 13px; }
+.spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #00101880; border-top-color: #001018; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.lg-how h2 { margin: 0 0 10px 2px; font-size: 13px; font-weight: 600; color: var(--fg-2); }
+.lg-how ul { list-style: none; margin: 0; padding: 0; background: var(--s1); border: 1px solid var(--line); border-radius: 16px; }
+.lg-how li { display: flex; gap: 12px; padding: 14px; }
+.lg-how li + li { border-top: 1px solid var(--line-soft); }
+.lg-ic { flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.lg-how li > span:last-child { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.lg-how b { font-size: 14px; font-weight: 600; }
+.lg-how li > span:last-child > span { color: var(--fg-2); font-size: 13px; line-height: 1.5; }
+.lg-foot { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; margin-top: auto; }
+.lg-foot .link { font-size: 13px; }
+.lg-foot small { color: var(--fg-3); font-size: 10.5px; line-height: 1.5; max-width: 44ch; }

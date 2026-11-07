@@ -8,6 +8,7 @@ import type { Player, Snapshot } from "../../src/types";
 import { agentPool } from "../../src/insights";
 import { PlayerSheet, SkinDetail, SkinTile, Sheet } from "./Loadout";
 import { Settings } from "./Settings";
+import { Login } from "./Login";
 import { Collection } from "./Collection";
 import { Profile } from "./Profile";
 import { SkeletonCards, SkeletonTiles } from "./Skeleton";
@@ -39,27 +40,6 @@ const THUMBS = [
 ];
 
 type Tab = "lobby" | "store" | "collection" | "me";
-
-/* ---------------- Giriş ---------------- */
-function Login({ busy, error, onLogin }: { busy: boolean; error?: string | null; onLogin: () => void }) {
-  return (
-    <main className="login">
-      <div className="lg-brand">
-        <Logo size={76} tile />
-        <h1>Celeste</h1>
-        <p>{t("tagline")}</p>
-      </div>
-      <button className="btn pri big" type="button" onClick={onLogin} disabled={busy}>{busy ? t("loggingIn") : t("login")}</button>
-      {error && <p className="err" role="alert">{error}</p>}
-      <ul className="lg-notes">
-        <li><b>{t("note1t")}</b> {t("note1")}</li>
-        <li><b>{t("note2t")}</b> {t("note2")}</li>
-        <li><b>{t("note3t")}</b> {t("note3")}</li>
-      </ul>
-      <small className="fine">{t("notAffiliated")}</small>
-    </main>
-  );
-}
 
 /* ---------------- Oyuncu kartı ---------------- */
 function displayName(p: Player, i: number): [string, string] {

@@ -30,7 +30,7 @@ const PRIVACY = {
   ],
 } as const;
 
-function Privacy({ onClose }: { onClose: () => void }) {
+export function Privacy({ onClose }: { onClose: () => void }) {
   useBackClose(true, onClose);
   return (
     <div className="page">

@@ -17,16 +17,19 @@ export function setLang(l: Lang) {
 }
 
 const tr = {
-  tagline: "Valorant lobini, rankları ve kaplamaları telefondan gör.",
-  login: "Riot ile giriş yap",
-  loggingIn: "Giriş yapılıyor…",
-  note1t: "Şifreni Riot'a yazarsın.",
-  note1: "Açılan sayfa Riot'un kendi giriş sayfasıdır (auth.riotgames.com). Uygulama şifreni görmez.",
-  note2t: "Giriş bilgin bu telefonda kalır.",
-  note2: "Celeste'nin sunucusuna gitmez. \"Çıkış yap\" ile silinir.",
-  note3t: "Uygulama yalnızca okur.",
-  note3: "Oyunda hiçbir işlem yapmaz.",
-  notAffiliated: "Celeste Overlay, Riot Games ile bağlantılı değildir ve Riot Games tarafından onaylanmamıştır.",
+  tagline: "Valorant lobini telefonundan takip et. Oyuncuların rankları, kaplamaların ve mağazan tek yerde.",
+  login: "Riot hesabınla giriş yap",
+  loggingIn: "Riot'a bağlanılıyor…",
+  loginHint: "Riot Games'in resmî giriş sayfası açılır.",
+  howTitle: "Hesabın nasıl korunur?",
+  note1t: "Şifren yalnızca Riot'a gider",
+  note1: "Giriş, Riot'un kendi sayfasında (auth.riotgames.com) yapılır. Celeste şifreni hiçbir zaman görmez ve saklamaz.",
+  note2t: "Oturumun bu telefonda kalır",
+  note2: "Riot'un verdiği oturum yalnızca bu cihazda tutulur, Celeste'nin sunucularına gönderilmez. Çıkış yaptığında silinir.",
+  note3t: "Yalnızca görüntüler",
+  note3: "Lobi, rank, kaplama ve mağaza bilgilerini okur. Oyunda senin adına hiçbir işlem yapmaz.",
+  privacyLink: "Gizlilik ayrıntıları",
+  notAffiliated: "Celeste, Riot Games tarafından desteklenmemektedir ve Riot Games'in ya da Riot Games mülklerinin yapımında veya yönetiminde resmî olarak yer alan kimsenin görüşlerini yansıtmaz. Riot Games ve ilgili tüm mülkler, Riot Games, Inc.'in ticari markaları veya tescilli ticari markalarıdır.",
 
   tabLobby: "Lobi", tabStore: "Mağaza", tabCollection: "Koleksiyon", tabProfile: "Profil", sections: "Bölümler", settings: "Ayarlar",
 
@@ -84,16 +87,19 @@ const tr = {
 type Dict = typeof tr;
 
 const en: Dict = {
-  tagline: "See your Valorant lobby, ranks and skins from your phone.",
-  login: "Sign in with Riot",
-  loggingIn: "Signing in…",
-  note1t: "You type your password into Riot.",
-  note1: "The page that opens is Riot's own sign-in page (auth.riotgames.com). The app never sees your password.",
-  note2t: "Your sign-in stays on this phone.",
-  note2: "It never goes to Celeste's server. \"Sign out\" removes it.",
-  note3t: "The app only reads.",
-  note3: "It never does anything in the game.",
-  notAffiliated: "Celeste Overlay isn't affiliated with or endorsed by Riot Games.",
+  tagline: "Follow your Valorant lobby from your phone. Players' ranks, skins and your store in one place.",
+  login: "Sign in with your Riot account",
+  loggingIn: "Connecting to Riot…",
+  loginHint: "Riot Games' official sign-in page will open.",
+  howTitle: "How your account stays safe",
+  note1t: "Your password only goes to Riot",
+  note1: "You sign in on Riot's own page (auth.riotgames.com). Celeste never sees or stores your password.",
+  note2t: "Your session stays on this phone",
+  note2: "The session Riot gives you is kept only on this device and never sent to Celeste's servers. Signing out removes it.",
+  note3t: "View only",
+  note3: "It reads lobby, rank, skin and store info. It never does anything in the game on your behalf.",
+  privacyLink: "Privacy details",
+  notAffiliated: "Celeste isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
 
   tabLobby: "Lobby", tabStore: "Store", tabCollection: "Collection", tabProfile: "Profile", sections: "Sections", settings: "Settings",
 
