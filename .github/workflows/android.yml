@@ -161,6 +161,8 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           gh release view "$TAG" >/dev/null 2>&1 || \
-          gh release create "$TAG" --target "$GITHUB_SHA" --title "Celeste Android ${TAG#android-v}" --notes "Telefonlar için **telefon-arm64**, BlueStacks gibi bilgisayar emülatörleri için **emulator-x86_64** APK dosyasını indirip kur."
+          gh release create "$TAG" --latest=false --target "$GITHUB_SHA" --title "Celeste Android ${TAG#android-v}" --notes "Telefonlar için **telefon-arm64**, BlueStacks gibi bilgisayar emülatörleri için **emulator-x86_64** APK dosyasını indirip kur."
           for f in $(gh release view "$TAG" --json assets -q '.assets[].name'); do gh release delete-asset "$TAG" "$f" -y; done
           gh release upload "$TAG" dist-apk/* --clobber
+          # "En son sürüm" PC sürümü kalmalı: masaüstü uygulamasının güncelleyicisi ve indirme bağlantıları releases/latest'e bakar.
+          gh release edit "$TAG" --latest=false
