@@ -1204,6 +1204,13 @@ impl Engine {
         Ok(s.puuid.to_lowercase())
     }
 
+    /// Kendi Valorant durumun (çözülmüş presence). Riot Client kapalıysa ya da kayıt yoksa `None`.
+    pub async fn my_presence(&self) -> Option<Value> {
+        let mut st = self.state.lock().await;
+        let s = self.session(&mut st).await.ok()?;
+        s.my_presence().await
+    }
+
     /// Akış girişi için Riot'un imzaladığı kimlik belirteci.
     pub async fn my_id_token(&self) -> Result<String, String> {
         let mut st = self.state.lock().await;

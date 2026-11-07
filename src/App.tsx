@@ -26,6 +26,7 @@ import { TrustPanel } from "./TrustPanel";
 import { teamSummary } from "./insights";
 import { FeedbackPanel } from "./FeedbackPanel";
 import { FeedPanel } from "./FeedPanel";
+import { useDiscordPresence } from "./discordRpc";
 import { useFeedBadge, type FeedCard } from "./feed";
 import { alertOf, fmtDur, fmtRr, sessionOf, type Session } from "./tilt";
 import { useUpdater } from "./updater";
@@ -73,6 +74,8 @@ export function App() {
   const [hideAt, setHideAt] = useState<number | null>(null);
   const [askQuit, setAskQuit] = useState(false);
   const [assetsFailed, setAssetsFailed] = useState(false);
+  // Discord kartı ("Yarışıyor: Celeste Overlay"); ayarlardan kapatılabilir.
+  useDiscordPresence(snap, assets, theme.discord, theme.streamer);
   const updater = useUpdater();
   useUsagePing(updater.version);
   const [notices, clearNotices] = useNotices();

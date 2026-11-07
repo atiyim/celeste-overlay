@@ -344,6 +344,29 @@ impl Session {
         Some(scan)
     }
 
+    /// Kendi Valorant durumun (Riot Client'ın yerel sohbet listesindeki şifresiz "private" alanı, çözülmüş hali):
+    /// oturum durumu, sıra, harita, parti büyüklüğü, sıraya giriş zamanı, maçtaki skor. Discord kartı için.
+    /// Riot bu alanın biçimini değiştirebilir; çağıran taraf alanları yoksa göstermez.
+    pub async fn my_presence(&self) -> Option<Value> {
+        if self.is_remote() {
+            return None;
+        }
+        let r = netlog::exec(
+            &self.local,
+            self.local.get(format!("https://127.0.0.1:{}/chat/v4/presences", self.port)).basic_auth("riot", Some(&self.password)),
+        )
+        .await
+        .ok()?;
+        if !r.status().is_success() {
+            return None;
+        }
+        let v: Value = r.json().await.ok()?;
+        let me = self.puuid.to_lowercase();
+        let e = v["presences"].as_array()?.iter().find(|e| e["product"].as_str() == Some("valorant") && e["puuid"].as_str().map(|p| p.to_lowercase()) == Some(me.clone()))?;
+        let raw = e["private"].as_str().filter(|x| !x.is_empty())?;
+        STANDARD.decode(raw).ok().and_then(|b| serde_json::from_slice::<Value>(&b).ok())
+    }
+
     /// Kendi Riot ID'n ("isim#etiket"), Riot Client'ın yerel API'sinden. Valorant'ın açık olması gerekmez.
     pub async fn local_riot_id(&self) -> Option<String> {
         if self.is_remote() {

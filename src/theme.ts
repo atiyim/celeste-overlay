@@ -40,6 +40,10 @@ export interface Theme {
   fps: boolean;
   /** OBS tarayıcı kaynağı (yalnızca bu bilgisayardan erişilir). */
   obs: boolean;
+  /** Discord'da "Yarışıyor: Celeste Overlay" kartı. */
+  discord: boolean;
+  /** Yayıncı modu: Discord kartında rank, skor ve RR gizlenir. */
+  streamer: boolean;
 }
 
 const ALL_ON = Object.fromEntries(COLS.map((c) => [c.id, true])) as Record<ColId, boolean>;
@@ -55,6 +59,8 @@ export const DEFAULT_THEME: Theme = {
   tilt: DEFAULT_TILT,
   fps: false,
   obs: false,
+  discord: true,
+  streamer: false,
 };
 export const ACCENTS = ["#38bdf8", "#a78bfa", "#34d399", "#fbbf24", "#fb7185", "#ededed"];
 export const HIDE_AFTER_OPTIONS = [5, 10, 15, 30];
@@ -91,6 +97,8 @@ export function loadTheme(): Theme {
       },
       fps: t.fps === true,
       obs: t.obs === true,
+      discord: t.discord !== false,
+      streamer: t.streamer === true,
     };
   } catch { return DEFAULT_THEME; }
 }

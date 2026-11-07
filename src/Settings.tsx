@@ -39,10 +39,14 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
   const hide = hideOf(theme);
   // F2 kısayolunun durumu: başka bir program tutuyorsa kullanıcı nedenini burada görür.
   const [hotkey, setHotkey] = useState<boolean | null>(null);
+  const [discordOn, setDiscordOn] = useState<boolean | null>(null);
   useEffect(() => {
     if (!inTauri || sec !== "overlay") return;
     let live = true;
-    const ask = () => invoke<boolean>("hotkey_ok").then((v) => live && setHotkey(v)).catch(() => undefined);
+    const ask = () => {
+      invoke<boolean>("hotkey_ok").then((v) => live && setHotkey(v)).catch(() => undefined);
+      invoke<[boolean, string | null]>("discord_status").then(([c]) => live && setDiscordOn(c)).catch(() => undefined);
+    };
     ask();
     const t = window.setInterval(ask, 5000);
     return () => { live = false; window.clearInterval(t); };
@@ -158,6 +162,19 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
                   {theme.obs && (
                     <Row title={<code className="obsurl">{OBS_URL}</code>} desc="Rank ve seans 2 dakikada bir ve her maçtan sonra yenilenir.">
                       <button className="x" type="button" onClick={() => { navigator.clipboard.writeText(OBS_URL).then(() => onToast("Adres kopyalandı"), () => onToast("Kopyalanamadı")); }}>Adresi kopyala</button>
+                    </Row>
+                  )}
+                </div>
+              </section>
+              <section>
+                <h3 className="h2">Discord</h3>
+                <div className="box">
+                  <Row title={<>Discord'da göster{theme.discord && discordOn !== null && <span className={discordOn ? "ustat ok" : "ustat bad"}><i />{discordOn ? "Bağlı" : "Discord kapalı"}</span>}</>} desc="Profilinde &quot;Yarışıyor: Celeste Overlay&quot; görünür: haritan, ajanın, skor, sıradaysan bekleme süresi; maçtan sonra rank atlama, MVP ya da galibiyet serisi. Bilgiler yalnızca bu bilgisayardaki Discord uygulamasına gider.">
+                    <Toggle on={theme.discord} label="Discord'da göster" onChange={(v) => set({ discord: v })} />
+                  </Row>
+                  {theme.discord && (
+                    <Row title="Yayıncı modu" desc="Discord kartında rankın, RR'ın ve maç skoru gizlenir. Harita, ajan ve süre görünmeye devam eder.">
+                      <Toggle on={theme.streamer} label="Yayıncı modu" onChange={(v) => set({ streamer: v })} />
                     </Row>
                   )}
                 </div>
