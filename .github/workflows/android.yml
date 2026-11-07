@@ -5,6 +5,11 @@ name: Android APK
 # Not: farklı anahtarla imzalanmış APK, eskisinin üstüne kurulmaz; kalıcı dağıtımdan önce anahtarı ekle.
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Var olan bir android-v… etiketine yayınla (boş: yalnızca derle)"
+        required: false
+        default: ""
   push:
     tags: ["android-v*"]
 
@@ -20,9 +25,11 @@ jobs:
       # Kökte masaüstü uygulamasının src-tauri'si de var: Gradle'ın çağırdığı tauri komutu yanlışını bulmasın.
       # Etiketle derlenince sürüm numarası etiketten alınır (android-v0.2.0 → 0.2.0); uygulama içi güncelleme buna bakar.
       - name: Sürüm
-        if: startsWith(github.ref, 'refs/tags/android-v')
+        if: startsWith(github.ref, 'refs/tags/android-v') || startsWith(inputs.release_tag, 'android-v')
+        env:
+          TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
-          V="${GITHUB_REF_NAME#android-v}"
+          V="${TAG#android-v}"
           node -e "const f='mobile/src-tauri/tauri.conf.json',c=require('./'+f);c.version=process.argv[1];require('fs').writeFileSync(f,JSON.stringify(c,null,2))" "$V"
           grep '"version"' mobile/src-tauri/tauri.conf.json
       - name: Uygulama yolu
@@ -145,11 +152,12 @@ jobs:
   # Elle çalışınca APK sadece Actions'ta kalır.
   release:
     needs: [apk, emulator]
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || startsWith(inputs.release_tag, 'android-v')
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: celeste-apk
@@ -157,11 +165,11 @@ jobs:
       - name: Sürüme ekle
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.release_tag || github.ref_name }}
           GH_REPO: ${{ github.repository }}
         run: |
           gh release view "$TAG" >/dev/null 2>&1 || \
-          gh release create "$TAG" --latest=false --target "$GITHUB_SHA" --title "Celeste Android ${TAG#android-v}" --notes "Telefonlar için **telefon-arm64**, BlueStacks gibi bilgisayar emülatörleri için **emulator-x86_64** APK dosyasını indirip kur."
+          GH_DEBUG=api gh release create "$TAG" --latest=false --verify-tag --title "Celeste Android ${TAG#android-v}" --notes "Telefonlar için **telefon-arm64**, BlueStacks gibi bilgisayar emülatörleri için **emulator-x86_64** APK dosyasını indirip kur."
           for f in $(gh release view "$TAG" --json assets -q '.assets[].name'); do gh release delete-asset "$TAG" "$f" -y; done
           gh release upload "$TAG" dist-apk/* --clobber
           # "En son sürüm" PC sürümü kalmalı: masaüstü uygulamasının güncelleyicisi ve indirme bağlantıları releases/latest'e bakar.
