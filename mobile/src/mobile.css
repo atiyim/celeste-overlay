@@ -330,3 +330,23 @@ button { font: inherit; }
 .lg-foot { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; margin-top: auto; }
 .lg-foot .link { font-size: 13px; }
 .lg-foot small { color: var(--fg-3); font-size: 10.5px; line-height: 1.5; max-width: 44ch; }
+
+/* öneri / hata formu */
+.fb { gap: 12px; }
+.fb-sub { margin: 0; color: var(--fg-2); font-size: 13.5px; line-height: 1.5; }
+.fb-kinds { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fb-kind { display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 12px; border-radius: 12px; background: var(--s1); border: 1px solid var(--line); color: var(--fg); }
+.fb-kind small { color: var(--fg-3); font-size: 11.5px; line-height: 1.35; }
+.fb-kind.on.oneri { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); background: color-mix(in srgb, var(--accent) 10%, var(--s1)); }
+.fb-kind.on.hata { border-color: color-mix(in srgb, var(--loss) 60%, var(--line)); background: color-mix(in srgb, var(--loss) 10%, var(--s1)); }
+.fb-field { display: flex; flex-direction: column; gap: 6px; }
+.fb-field > span { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; }
+.fb-field em { font-style: normal; font-weight: 500; color: var(--fg-3); }
+.fb-field em.warn, .fb-field small.warn { color: var(--gold); }
+.fb-field textarea, .fb-field input { width: 100%; background: var(--s1); color: var(--fg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; font: inherit; font-size: 14px; outline: 0; resize: vertical; }
+.fb-field textarea:focus, .fb-field input:focus { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+.fb .btn.pri { width: 100%; }
+.fb-done { display: flex; flex-direction: column; gap: 8px; padding: 24px 4px; }
+.fb-done b { font-size: 18px; }
+.fb-done p { margin: 0; color: var(--fg-2); font-size: 14px; line-height: 1.5; }
+.note p b { color: var(--fg); }

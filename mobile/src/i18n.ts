@@ -80,6 +80,20 @@ const tr = {
 
   updTitle: "Yeni sürüm var: {v}", updText: "İndirip kurman yeterli; ayarların ve istek listen kalır.", download: "İndir", later: "Sonra",
 
+  fbRow: "Öneri / Hata gönder", fbRowHelp: "Yazdığın doğrudan Celeste ekibine ulaşır.",
+  fbTitle: "Öneri / Hata gönder", fbSub: "Yazdığın doğrudan Celeste ekibine ulaşır, Discord'a geçmen gerekmez.",
+  fbIdea: "Öneri", fbIdeaHint: "Bir fikir ya da istediğin bir özellik", fbBug: "Hata", fbBugHint: "Çalışmayan ya da yanlış görünen bir şey",
+  fbIdeaPh: "Uygulamada şunu görmek isterdim, çünkü…", fbBugPh: "Ne yaparken oldu? Ne bekliyordun, ne oldu?",
+  fbText: "Önerin", fbTextBug: "Ne oldu?", fbContact: "Discord kullanıcı adın", fbOptional: "isteğe bağlı", fbContactPh: "ör. celeste",
+  fbDiag: "Tanı bilgisini ekle", fbDiagHelp: "Uygulama sürümü, Android sürümü, telefon modeli ve varsa son hata raporu. Şifre ya da oturum bilgisi içermez.",
+  fbNote: "Gönderirken Riot ID'n ({riot}), uygulama sürümü ve bu telefon için üretilen rastgele bir kimlik de eklenir. Ekip kimin yazdığını görür. Küfür ya da spam gönderen cihazdan gönderim kapatılır.",
+  fbSend: "Gönder", fbSending: "Gönderiliyor…", fbMin: "En az {n} karakter yaz.",
+  fbDone: "Gönderildi, teşekkürler!", fbDoneText: "Ekip ele aldığında uygulamayı açtığında burada haber vereceğiz.",
+  fbDoneContact: "Cevap vermemiz gerekirse Discord'da {c} adına yazarız.", fbDoneNoContact: "Discord adını yazmadığın için sana ayrıca ulaşamayabiliriz.",
+  fbNew: "Yeni bildirim yaz", fbOffline: "Bildirim servisi şu an kapalı. Biraz sonra tekrar dene.", fbFail: "Gönderilemedi. Biraz sonra tekrar dene.", fbNet: "İnternete bağlanılamadı. Bağlantını kontrol edip tekrar dene.",
+  sendReport: "Raporu gönder",
+  ntIdea: "Önerin", ntBug: "Bildirdiğin hata", ntEle: "ele alındı", ntPlan: "plana alındı", ntEkl: "eklendi", ntYok: "şimdilik eklenmeyecek",
+  ntFrom: "Celeste ekibinden:", ok: "Tamam",
   oops: "Bir şey ters gitti", oopsText: "Uygulamayı yeniden başlatabilirsin. Aşağıdaki raporu kopyalayıp gönderirsen sorunu bulabiliriz.", restart: "Yeniden başlat",
   crashTitle: "Uygulama son açılışta bir hatayla karşılaştı", crashText: "Bu raporu kopyalayıp gönderirsen sorunu bulabiliriz.",
 };
@@ -150,6 +164,20 @@ const en: Dict = {
 
   updTitle: "New version available: {v}", updText: "Just download and install it; your settings and wishlist stay.", download: "Download", later: "Later",
 
+  fbRow: "Send feedback", fbRowHelp: "Goes straight to the Celeste team.",
+  fbTitle: "Send feedback", fbSub: "What you write goes straight to the Celeste team; no need to open Discord.",
+  fbIdea: "Suggestion", fbIdeaHint: "An idea or a feature you'd like", fbBug: "Bug", fbBugHint: "Something broken or looking wrong",
+  fbIdeaPh: "I'd love to see this in the app, because…", fbBugPh: "What were you doing? What did you expect, and what happened?",
+  fbText: "Your suggestion", fbTextBug: "What happened?", fbContact: "Your Discord username", fbOptional: "optional", fbContactPh: "e.g. celeste",
+  fbDiag: "Include diagnostics", fbDiagHelp: "App version, Android version, phone model and the last error report if there is one. No passwords or session data.",
+  fbNote: "Your Riot ID ({riot}), the app version and a random ID made for this phone are added. The team sees who wrote it. Devices sending abuse or spam get blocked.",
+  fbSend: "Send", fbSending: "Sending…", fbMin: "Write at least {n} characters.",
+  fbDone: "Sent, thank you!", fbDoneText: "When the team picks it up, we'll let you know here next time you open the app.",
+  fbDoneContact: "If we need to reply, we'll message {c} on Discord.", fbDoneNoContact: "You didn't add a Discord name, so we may not be able to reach you.",
+  fbNew: "Write another", fbOffline: "The feedback service is down right now. Try again a bit later.", fbFail: "Couldn't send. Try again a bit later.", fbNet: "Couldn't connect. Check your connection and try again.",
+  sendReport: "Send report",
+  ntIdea: "Your suggestion", ntBug: "The bug you reported", ntEle: "is being looked at", ntPlan: "is planned", ntEkl: "has been added", ntYok: "won't be added for now",
+  ntFrom: "From the Celeste team:", ok: "OK",
   oops: "Something went wrong", oopsText: "You can restart the app. Copy the report below and send it so we can find the problem.", restart: "Restart",
   crashTitle: "The app hit an error last time it ran", crashText: "Copy this report and send it so we can find the problem.",
 };

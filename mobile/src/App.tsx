@@ -9,6 +9,7 @@ import { agentPool } from "../../src/insights";
 import { PlayerSheet, SkinDetail, SkinTile, Sheet } from "./Loadout";
 import { Settings } from "./Settings";
 import { Login } from "./Login";
+import { Feedback, useNotices } from "./Feedback";
 import { Collection } from "./Collection";
 import { Profile } from "./Profile";
 import { SkeletonCards, SkeletonTiles } from "./Skeleton";
@@ -205,7 +206,7 @@ function StoreView({ a }: { a: Assets }) {
 }
 
 /* ---------------- Üstteki bildirim kartları ---------------- */
-function CrashNote() {
+function CrashNote({ onSend }: { onSend: (report: string) => void }) {
   const [text, setText] = useState<string | null>(null);
   useEffect(() => {
     let js: string | null = null;
@@ -221,7 +222,10 @@ function CrashNote() {
       <b>{t("crashTitle")}</b>
       <p>{t("crashText")}</p>
       <textarea readOnly value={text} />
-      <button type="button" className="link" onClick={() => setText(null)}>{t("close")}</button>
+      <span className="note-act">
+        <button type="button" className="btn pri" onClick={() => { onSend(text); setText(null); }}>{t("sendReport")}</button>
+        <button type="button" className="link" onClick={() => setText(null)}>{t("close")}</button>
+      </span>
     </div>
   );
 }
@@ -241,6 +245,20 @@ function UpdateNote() {
         <button type="button" className="btn pri" onClick={() => openUrl(u.url).catch(() => undefined)}>{t("download")}</button>
         <button type="button" className="link" onClick={() => { skipUpdate(u.version); setU(null); }}>{t("later")}</button>
       </span>
+    </div>
+  );
+}
+
+function NoticeNotes() {
+  const [list, clear] = useNotices();
+  if (!list.length) return null;
+  const st = { ele: t("ntEle"), plan: t("ntPlan"), ekl: t("ntEkl"), yok: t("ntYok") };
+  return (
+    <div className="note acc-note">
+      {list.map((n, i) => (
+        <p key={i}><b>{n.kind === "hata" ? t("ntBug") : t("ntIdea")} {st[n.status ?? "ele"]}.</b>{n.message ? <> {t("ntFrom")} {n.message}</> : null}</p>
+      ))}
+      <button type="button" className="link" onClick={clear}>{t("ok")}</button>
     </div>
   );
 }
@@ -303,6 +321,7 @@ export function App() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [tab, setTab] = useState<Tab>("lobby");
   const [settings, setSettings] = useState(false);
+  const [feedback, setFeedback] = useState<{ report?: string } | null>(null);
   const [renewing, setRenewing] = useState(false);
   const expires = useRef(0);
   const tickNow = useRef<() => Promise<void>>(async () => undefined);
@@ -408,9 +427,23 @@ export function App() {
   };
   const switchAccount = async () => { await logout(); startLogin(); };
 
+  // Emülatör testi (yalnızca test derlemesinde): giriş ekranında hesap değiştirme adımlarını dener.
+  useEffect(() => {
+    if (!inTauri || login?.session !== false || login.pending) return;
+    let done = false;
+    try { done = sessionStorage.getItem("celeste-selftest") === "1"; } catch { /* */ }
+    if (done) return;
+    invoke<boolean>("selftest").then((on) => {
+      if (!on) return;
+      try { sessionStorage.setItem("celeste-selftest", "1"); } catch { /* */ }
+      window.setTimeout(() => { void switchAccount(); }, 4000);
+    }).catch(() => undefined);
+  }, [login?.session]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!login || !assets) return <main className="splash"><Logo size={72} tile /><p>Celeste</p></main>;
   if (!login.session) return <Login busy={login.pending} error={login.last && !login.last.ok ? login.last.error : null} onLogin={startLogin} />;
-  if (settings) return <Settings riot={riot} onClose={() => setSettings(false)} onLogout={logout} onSwitch={switchAccount} />;
+  if (feedback) return <Feedback riot={riot} report={feedback.report} onClose={() => setFeedback(null)} />;
+  if (settings) return <Settings onFeedback={() => setFeedback({})} riot={riot} onClose={() => setSettings(false)} onLogout={logout} onSwitch={switchAccount} />;
 
   return (
     <div className="app">
@@ -420,7 +453,8 @@ export function App() {
       </header>
       <main className="body" ref={pull.ref} {...pull.handlers}>
         <div className="ptr" style={{ height: pull.pull }} aria-hidden={!pull.pull}>{pull.pull > 8 && <span className={pull.busy ? "ptr-spin" : ""}>{pull.label}</span>}</div>
-        <CrashNote />
+        <CrashNote onSend={(report) => setFeedback({ report })} />
+        <NoticeNotes />
         <UpdateNote />
         {tab !== "store" && <WishNote a={assets} onOpen={() => setTab("store")} />}
         {tab === "lobby" && <Lobby snap={snap} a={assets} renewing={renewing} />}

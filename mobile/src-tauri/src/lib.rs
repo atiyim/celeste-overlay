@@ -104,13 +104,45 @@ fn riot_login(window: tauri::WebviewWindow, state: State<'_, AppState>) -> Resul
     window.navigate(Url::parse(AUTH_URL).map_err(|e| e.to_string())?).map_err(|e| e.to_string())
 }
 
-/// Çıkış: bellekteki belirteçler ve bu uygulamanın tarayıcı deposu (Riot'un oturum çerezi dahil) silinir.
+/// Çıkış: bellekteki belirteçler ve Riot'un bu telefondaki oturum çerezleri silinir.
+/// (Önceki yol tarayıcı önbelleğini ve geçmişini siliyordu; çerezleri silmiyordu ve hesap değiştirirken
+/// uygulamayı kapatıyordu. Artık yalnızca çerezler, Android'in kendi çerez yöneticisiyle silinir.)
 #[tauri::command]
 async fn riot_logout(window: tauri::WebviewWindow, state: State<'_, AppState>) -> Result<(), String> {
     state.engine.logout_remote().await;
     *state.last.lock().unwrap() = None;
     state.expires.store(0, Ordering::SeqCst);
-    window.clear_all_browsing_data().map_err(|e| e.to_string())
+    clear_cookies(&window);
+    Ok(())
+}
+
+#[cfg(target_os = "android")]
+fn clear_cookies(window: &tauri::WebviewWindow) {
+    use jni::objects::{JObject, JValue};
+    let _ = window.with_webview(|w| {
+        w.jni_handle().exec(|env, _activity, _webview| {
+            let ok = (|| -> jni::errors::Result<()> {
+                let cm = env.call_static_method("android/webkit/CookieManager", "getInstance", "()Landroid/webkit/CookieManager;", &[])?.l()?;
+                env.call_method(&cm, "removeAllCookies", "(Landroid/webkit/ValueCallback;)V", &[JValue::Object(&JObject::null())])?;
+                env.call_method(&cm, "flush", "()V", &[])?;
+                Ok(())
+            })();
+            if ok.is_err() {
+                let _ = env.exception_clear();
+            }
+        });
+    });
+}
+
+#[cfg(not(target_os = "android"))]
+fn clear_cookies(window: &tauri::WebviewWindow) {
+    let _ = window.clear_all_browsing_data();
+}
+
+/// Yalnızca emülatör testindeki derlemede açık: arayüz hesap değiştirme adımlarını kendisi dener.
+#[tauri::command]
+fn selftest() -> bool {
+    cfg!(feature = "selftest")
 }
 
 #[derive(Serialize)]
@@ -175,7 +207,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(AppState { engine: engine.clone(), home: Mutex::new(None), last: Mutex::new(None), pending: Default::default(), expires: AtomicU64::new(0) })
-        .invoke_handler(tauri::generate_handler![riot_login, riot_logout, last_crash, minimize, login_state, get_snapshot, get_my_stats, get_store, get_account, get_owned, get_contracts, deepen_player])
+        .invoke_handler(tauri::generate_handler![riot_login, riot_logout, last_crash, minimize, selftest, login_state, get_snapshot, get_my_stats, get_store, get_account, get_owned, get_contracts, deepen_player])
         .setup(move |app| {
             if let Ok(dir) = app.path().app_data_dir() {
                 let _ = std::fs::create_dir_all(&dir);
@@ -224,6 +256,17 @@ pub fn run() {
             // Android'de ekran kapanınca (geri tuşu vb.) uygulama süreci sonlandırılmaya çalışılır; bu sırada
             // grafik sürücüsü çöküyordu ("uygulama sürekli duruyor"). Süreç açık kalır, Android gerektiğinde kendisi kapatır.
             if let tauri::RunEvent::ExitRequested { api, .. } = event {
+                // Android: ekran (Activity) kapanınca süreç normal yoldan sonlandırılırsa grafik sürücüsü çöküyor;
+                // süreci açık bırakınca da bir sonraki açılışta ekran beyaz kalıyor (WebView yeniden kurulmuyor).
+                // Çözüm: süreci, Android'in arka plandaki uygulamaları kapattığı yolla (SIGKILL) hemen bitirmek.
+                // Böylece çökme olmaz, bir sonraki açılış da her zaman temiz başlar.
+                #[cfg(target_os = "android")]
+                unsafe {
+                    libc::kill(libc::getpid(), libc::SIGKILL);
+                }
+                #[cfg(not(target_os = "android"))]
+                let _ = &api;
+                #[cfg(target_os = "android")]
                 api.prevent_exit();
             }
         });

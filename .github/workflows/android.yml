@@ -110,16 +110,56 @@ jobs:
         with:
           name: celeste-apk
           path: dist-apk/*
-      # Yalnızca "android-v…" etiketiyle çalışınca herkese açık sürüme eklenir. Elle çalışınca APK sadece Actions'ta kalır
-      # (depoya giriş yapmış ve yetkisi olan görür; sürüm sayfası herkese açıktır).
+
+  # Çökme testi: x86_64 APK'sı Android 14 emülatöründe açılıp kapatılır (mobile/test/emulator.sh).
+  # Uygulamaya hiçbir şey eklemez; yalnızca derlemenin sonunda çalışır. Çökme varsa derleme kırmızı olur ve sürüm yayınlanmaz.
+  emulator:
+    needs: apk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: celeste-apk
+          path: dist-apk
+      - name: KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: bash mobile/test/emulator.sh "$(ls dist-apk/*emulator-x86_64.apk | head -1)" emu-out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emulator-test
+          path: emu-out
+
+  # Yalnızca "android-v…" etiketiyle çalışınca ve çökme testi geçince herkese açık sürüme eklenir.
+  # Elle çalışınca APK sadece Actions'ta kalır.
+  release:
+    needs: [apk, emulator]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: celeste-apk
+          path: dist-apk
       - name: Sürüme ekle
-        if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'android-latest' }}
+          TAG: ${{ github.ref_name }}
+          GH_REPO: ${{ github.repository }}
         run: |
           gh release view "$TAG" >/dev/null 2>&1 || \
           gh release create "$TAG" --target "$GITHUB_SHA" --title "Celeste Android ${TAG#android-v}" --notes "Telefonlar için **telefon-arm64**, BlueStacks gibi bilgisayar emülatörleri için **emulator-x86_64** APK dosyasını indirip kur."
-          # Eski APK'lar kalmasın: sayfada yalnızca son derleme görünsün.
           for f in $(gh release view "$TAG" --json assets -q '.assets[].name'); do gh release delete-asset "$TAG" "$f" -y; done
           gh release upload "$TAG" dist-apk/* --clobber

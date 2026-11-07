@@ -20,6 +20,11 @@ tauri-plugin-opener = "2"
 
 [target.'cfg(target_os = "android")'.dependencies]
 jni = "0.21"
+libc = "0.2"
+
+[features]
+# Emülatör testi için: hesap değiştirme adımlarını uygulama kendisi dener. Dağıtılan APK'da kapalı.
+selftest = []
 
 # Telefonda boyut önemli: boyut için optimize, hata ayıklama bilgisi yok, tek parça bağlama.
 # panic = "abort" kullanılmaz: bir arka plan işindeki hata bütün uygulamayı kapatmasın.

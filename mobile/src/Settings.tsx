@@ -43,7 +43,7 @@ export function Privacy({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function Settings({ riot, onClose, onLogout, onSwitch }: { riot?: string | null; onClose: () => void; onLogout: () => void; onSwitch: () => void }) {
+export function Settings({ riot, onClose, onLogout, onSwitch, onFeedback }: { riot?: string | null; onClose: () => void; onLogout: () => void; onSwitch: () => void; onFeedback: () => void }) {
   const p = usePrefs();
   const [ver, setVer] = useState("");
   const [privacy, setPrivacy] = useState(false);
@@ -104,6 +104,7 @@ export function Settings({ riot, onClose, onLogout, onSwitch }: { riot?: string 
               <button type="button" role="radio" aria-checked={lang === "en"} className={lang === "en" ? "on" : ""} onClick={() => lang !== "en" && setLang("en")}>English</button>
             </div>
           </div>
+          <button type="button" className="set-row" onClick={onFeedback}><span><b>{t("fbRow")}</b><small>{t("fbRowHelp")}</small></span><i className="chev">›</i></button>
           <button type="button" className="set-row" onClick={() => setPrivacy(true)}><span><b>{t("privacy")}</b><small>{t("privacyHelp")}</small></span><i className="chev">›</i></button>
         </div>
 

@@ -12,7 +12,7 @@
   "app": {
     "windows": [],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data: https://media.valorant-api.com; connect-src 'self' ipc: http://ipc.localhost https://valorant-api.com https://media.valorant-api.com https://api.github.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
+      "csp": "default-src 'self'; img-src 'self' data: https://media.valorant-api.com; connect-src 'self' ipc: http://ipc.localhost https://valorant-api.com https://media.valorant-api.com https://api.github.com https://celeste-feed.celestimbenim.workers.dev; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
     }
   },
   "bundle": {

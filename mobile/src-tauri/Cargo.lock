@@ -432,6 +432,7 @@ name = "celeste-mobile"
 version = "0.1.0"
 dependencies = [
  "jni",
+ "libc",
  "riot-core",
  "serde",
  "serde_json",
