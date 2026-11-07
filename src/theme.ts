@@ -40,7 +40,7 @@ export interface Theme {
   fps: boolean;
   /** OBS tarayıcı kaynağı (yalnızca bu bilgisayardan erişilir). */
   obs: boolean;
-  /** Discord'da "Yarışıyor: Celeste Overlay" kartı. */
+  /** Discord'da "Celeste Overlay oynuyor" kartı. */
   discord: boolean;
   /** Yayıncı modu: Discord kartında rank, skor ve RR gizlenir. */
   streamer: boolean;

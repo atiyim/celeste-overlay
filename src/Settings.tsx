@@ -169,7 +169,7 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
               <section>
                 <h3 className="h2">Discord</h3>
                 <div className="box">
-                  <Row title={<>Discord'da göster{theme.discord && discordOn !== null && <span className={discordOn ? "ustat ok" : "ustat bad"}><i />{discordOn ? "Bağlı" : "Discord kapalı"}</span>}</>} desc="Profilinde &quot;Yarışıyor: Celeste Overlay&quot; görünür: haritan, ajanın, skor, sıradaysan bekleme süresi; maçtan sonra rank atlama, MVP ya da galibiyet serisi. Bilgiler yalnızca bu bilgisayardaki Discord uygulamasına gider.">
+                  <Row title={<>Discord'da göster{theme.discord && discordOn !== null && <span className={discordOn ? "ustat ok" : "ustat bad"}><i />{discordOn ? "Bağlı" : "Discord kapalı"}</span>}</>} desc="Profilinde &quot;Celeste Overlay oynuyor&quot; görünür: haritan, ajanın, skor, sıradaysan bekleme süresi; maçtan sonra rank atlama, MVP ya da galibiyet serisi. Bilgiler yalnızca bu bilgisayardaki Discord uygulamasına gider.">
                     <Toggle on={theme.discord} label="Discord'da göster" onChange={(v) => set({ discord: v })} />
                   </Row>
                   {theme.discord && (

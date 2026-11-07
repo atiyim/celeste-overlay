@@ -5,7 +5,7 @@ import type { MyMatch, MyStats, Snapshot } from "./types";
 import { score } from "./MatchCard";
 import { DISCORD_URL } from "./community";
 
-/* Discord kartı ("Yarışıyor: Celeste Overlay"): oyundaki duruma göre değişir.
+/* Discord kartı ("Celeste Overlay oynuyor"): oyundaki duruma göre değişir.
    Büyük resim harita (menüde Celeste'nin gökyüzü resmi), küçük resim ajan (rank atlayınca yeni rank).
    Veriler: Riot Client'ın bu bilgisayardaki durumu (skor, sıra, parti) ve overlay'in zaten çektiği maç geçmişi.
    Discord'a yalnızca bu bilgisayarda gider; Celeste'nin sunucusuna hiçbir şey gitmez. */
@@ -56,7 +56,7 @@ interface Moment { title: string; line: string; short: string; rankIcon?: string
 function momentOf(list: MyMatch[], a: Assets, streamer: boolean): Moment | null {
   const m = list[0];
   if (!m) return null;
-  const map = a.maps.get(lookup(m.mapId)) ?? "";
+  const map = nice(a.maps.get(lookup(m.mapId)) ?? "");
   const sc = score(m);
   const res = `${m.won ? "Zafer" : "Yenilgi"}${sc ? ` ${sc[0]} – ${sc[1]}` : ""}`;
   const rr = !streamer && m.rrDelta != null ? ` · ${m.rrDelta > 0 ? "+" : ""}${m.rrDelta} RR` : "";
@@ -78,6 +78,9 @@ function momentOf(list: MyMatch[], a: Assets, streamer: boolean): Moment | null 
   }
   return { ...base, title: `${res} · ${map}`, short: res };
 }
+
+/** Bazı harita adları tamamen büyük harfle geliyor ("DISTRICT"): "District" yap. Harita adları İngilizce, Türkçe küçültme kullanılmaz. */
+const nice = (s: string) => (s && s === s.toUpperCase() ? s.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase()) : s);
 
 const cut = (s: string) => (s.length > 120 ? `${s.slice(0, 119)}…` : s.length < 2 ? `${s}  ` : s);
 
@@ -129,7 +132,7 @@ export function useDiscordPresence(snapNow: Snapshot, assetsNow: Assets | null, 
     const agent = me?.agentId ? assets.agents.get(lookup(me.agentId)) : undefined;
     const tier = me && me.rank.current > 0 ? assets.tiers.get(me.rank.current) : undefined;
     const mapKey = snap.mapId ? lookup(snap.mapId) : "";
-    const mapName = assets.maps.get(mapKey) ?? "";
+    const mapName = nice(assets.maps.get(mapKey) ?? "");
     const mapArt = assets.mapArt.get(mapKey);
     const q = queueName(snap.queueId ?? p?.queue);
     const party = p?.size && p.max && p.max > 1 ? { size: [p.size, p.max] } : undefined;
@@ -148,31 +151,29 @@ export function useDiscordPresence(snapNow: Snapshot, assetsNow: Assets | null, 
       const lead = sc ? (sc.ally! > sc.enemy! ? "Önde" : sc.ally! < sc.enemy! ? "Geride" : "Berabere") : "";
       a = {
         details: `${q}${mapName ? ` · ${mapName}` : ""}`, state: sc ? `${sc.ally} – ${sc.enemy} · ${lead}` : "Maçta",
-        large_image: mapArt ?? MENU_ART, large_text: mapName || "Valorant", small_image: agent?.icon, small_text: agentText,
-        status_display_type: sc ? 1 : 2,
+        large_image: mapArt ?? MENU_ART, large_text: agentText || mapName || "Valorant", small_image: agent?.icon, small_text: agentText,
       };
     } else if (snap.phase === "pregame") {
       a = {
         details: `${q}${mapName ? ` · ${mapName}` : ""}`, state: me?.agentState === "locked" && agent ? `${agent.name} kilitledi` : "Ajan seçiyor",
-        large_image: mapArt ?? MENU_ART, large_text: mapName || "Ajan seçimi", small_image: agent?.icon, small_text: agentText, status_display_type: 2,
+        large_image: mapArt ?? MENU_ART, large_text: agentText ?? "Ajan seçimi", small_image: agent?.icon, small_text: agentText,
       };
     } else if (queued) {
       a = {
         details: `${q} · Maç aranıyor`, state: mo ? `Son maç: ${mo.short}` : "Sırada",
-        large_image: MENU_ART, large_text: "Celeste Overlay", status_display_type: 2,
+        large_image: MENU_ART, large_text: tier && !streamer ? `${tier.name} · ${me!.rank.rr} RR` : "Valorant",
       };
     } else if (mo) {
       const art = mo.rankIcon ?? assets.mapArt.get(lookup(mo.mapId)) ?? MENU_ART;
       const ag = assets.agents.get(lookup(mo.agentId));
       a = {
         details: mo.title, state: mo.line,
-        large_image: art, large_text: mo.rankName ?? assets.maps.get(lookup(mo.mapId)) ?? "Son maç",
+        large_image: art, large_text: mo.rankName || nice(assets.maps.get(lookup(mo.mapId)) ?? "") || "Son maç",
         small_image: mo.rankIcon ? ag?.icon : tier?.icon && !streamer ? tier.icon : ag?.icon,
         small_text: mo.rankIcon ? ag?.name : tier && !streamer ? tier.name : ag?.name,
-        status_display_type: 2,
       };
     } else {
-      a = { details: "Menüde", state: party ? "Partide" : "Tek başına", large_image: MENU_ART, large_text: "Celeste Overlay", status_display_type: 0 };
+      a = { details: "Menüde", state: party ? "Partide" : "Tek başına", large_image: MENU_ART, large_text: tier && !streamer ? `${tier.name} · ${me!.rank.rr} RR` : "Valorant" };
     }
 
     const assetsObj = Object.fromEntries(
@@ -181,8 +182,8 @@ export function useDiscordPresence(snapNow: Snapshot, assetsNow: Assets | null, 
         .map(([k, v]) => [k, k.endsWith("_text") ? cut(v as string) : v]),
     );
     const activity = {
-      type: 5, // "Yarışıyor"
-      status_display_type: a.status_display_type,
+      type: 0, // "Celeste Overlay oynuyor"
+      status_display_type: 0, // başlık ve durum satırı her zaman "Celeste Overlay"; ayrıntılar alt satırlarda
       details: cut(String(a.details)),
       state: cut(String(a.state)),
       timestamps: { start: Math.floor(start / 1000) },

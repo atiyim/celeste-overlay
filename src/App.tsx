@@ -74,7 +74,7 @@ export function App() {
   const [hideAt, setHideAt] = useState<number | null>(null);
   const [askQuit, setAskQuit] = useState(false);
   const [assetsFailed, setAssetsFailed] = useState(false);
-  // Discord kartı ("Yarışıyor: Celeste Overlay"); ayarlardan kapatılabilir.
+  // Discord kartı ("Celeste Overlay oynuyor"); ayarlardan kapatılabilir.
   useDiscordPresence(snap, assets, theme.discord, theme.streamer);
   const updater = useUpdater();
   useUsagePing(updater.version);
