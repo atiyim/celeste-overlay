@@ -130,7 +130,8 @@ fn run(rx: std::sync::mpsc::Receiver<Option<Value>>) {
     let mut want: Option<Value> = None;
     let mut sent: Option<String> = None;
     let mut retry_at = Instant::now();
-    let mut last_send = Instant::now() - Duration::from_secs(60);
+    // Discord'un sınırı: 20 saniyede 5 güncelleme. Sınıra kadar anında gönderilir, sonra sıra beklenir.
+    let mut sends: std::collections::VecDeque<Instant> = std::collections::VecDeque::new();
     loop {
         match rx.recv_timeout(Duration::from_secs(10)) {
             Ok(a) => want = a,
@@ -159,13 +160,24 @@ fn run(rx: std::sync::mpsc::Receiver<Option<Value>>) {
         if key == sent {
             continue;
         }
-        // Discord'un sınırına takılmamak için iki güncelleme arasında en az 4 saniye.
-        let wait = Duration::from_secs(4).saturating_sub(last_send.elapsed());
-        if !wait.is_zero() {
+        while sends.front().is_some_and(|t| t.elapsed() >= Duration::from_secs(20)) {
+            sends.pop_front();
+        }
+        if sends.len() >= 5 {
+            let wait = Duration::from_secs(20).saturating_sub(sends[0].elapsed()) + Duration::from_millis(100);
             std::thread::sleep(wait);
+            sends.pop_front();
+            // Beklerken gelen en son durum gönderilir.
+            while let Ok(a) = rx.try_recv() {
+                want = a;
+            }
+        }
+        let key = want.as_ref().map(|v| v.to_string());
+        if key == sent {
+            continue;
         }
         let ok = conn.as_mut().map(|c| c.set_activity(&want).is_ok()).unwrap_or(false);
-        last_send = Instant::now();
+        sends.push_back(Instant::now());
         if ok {
             sent = key;
         } else {

@@ -10,10 +10,11 @@ import { Goal } from "./Goal";
 import { MatchCard } from "./MatchCard";
 import type { MyMatch } from "./types";
 import { cardOf, type FeedCard } from "./feed";
+import { QUEUE_NAMES } from "./queues";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
-const QUEUE: Record<string, string> = { competitive: "Rekabetçi", unrated: "Derecesiz", swiftplay: "Hızlı", premier: "Premier" };
+const QUEUE = QUEUE_NAMES;
 
 function ago(ms: number): string {
   const m = Math.max(0, Math.floor((Date.now() - ms) / 60000));

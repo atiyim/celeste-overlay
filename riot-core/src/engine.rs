@@ -1206,8 +1206,11 @@ impl Engine {
 
     /// Kendi Valorant durumun (çözülmüş presence). Riot Client kapalıysa ya da kayıt yoksa `None`.
     pub async fn my_presence(&self) -> Option<Value> {
-        let mut st = self.state.lock().await;
-        let s = self.session(&mut st).await.ok()?;
+        // Kilit yalnızca oturumu almak için tutulur: sık sorulan bu istek lobi okumasını bekletmesin.
+        let s = {
+            let mut st = self.state.lock().await;
+            self.session(&mut st).await.ok()?
+        };
         s.my_presence().await
     }
 

@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { QUEUE_NAMES } from "./queues";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import type { Assets } from "./assets";
@@ -13,7 +14,7 @@ import {
 } from "./feed";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
-const QUEUE: Record<string, string> = { competitive: "Rekabetçi", unrated: "Derecesiz", swiftplay: "Hızlı", premier: "Premier", deathmatch: "Ölüm maçı", spikerush: "Spike Rush" };
+const QUEUE = QUEUE_NAMES;
 const POST_MAX = 280, COMMENT_MAX = 200;
 const ROLE_COLORS = ["#a78bfa", "#34d399", "#38bdf8", "#fb7185", "#fbbf24", "#2dd4bf", "#f472b6", "#ededed"];
 

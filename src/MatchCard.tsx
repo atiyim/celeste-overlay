@@ -4,9 +4,10 @@ import type { Assets } from "./assets";
 import { lookup } from "./assets";
 import type { MyMatch } from "./types";
 import { tierColor } from "./LoadoutPanel";
+import { QUEUE_NAMES } from "./queues";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
-const QUEUE: Record<string, string> = { competitive: "Rekabetçi", unrated: "Derecesiz", swiftplay: "Hızlı", premier: "Premier" };
+const QUEUE = QUEUE_NAMES;
 const WIN = "#4ade80", LOSS = "#f87171", FG = "#ededed", FG2 = "#a3a3a3", FG3 = "#7e7e7e";
 const FONT = '"Geist Variable", system-ui, sans-serif';
 

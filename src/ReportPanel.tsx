@@ -7,13 +7,11 @@ import { trackerUrl } from "./profile";
 import { TAGS, type Seen, type TagId } from "./seen";
 import type { MatchReport, ReportPlayer } from "./types";
 import { Empty, NameLine, PanelHead } from "./ui";
+import { QUEUE_NAMES } from "./queues";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 const NOT_READY = "Maç kaydı henüz hazır değil.";
-const QUEUE: Record<string, string> = {
-  competitive: "Rekabetçi", unrated: "Derecesiz", swiftplay: "Hızlı oyun", premier: "Premier",
-  spikerush: "Spike Rush", deathmatch: "Ölüm maçı", hurm: "Takım ölüm maçı",
-};
+const QUEUE = QUEUE_NAMES;
 
 const acs = (p: ReportPlayer) => (p.rounds ? Math.round(p.score / p.rounds) : 0);
 const clock = (ms: number) => (ms ? new Date(ms).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "");
