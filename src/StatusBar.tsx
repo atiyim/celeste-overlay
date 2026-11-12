@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DISCORD_URL } from "./community";
 import { invoke } from "@tauri-apps/api/core";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
@@ -45,26 +45,38 @@ export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onTo
     if (next && inApp) { try { setHealth(await invoke<Health[]>("get_health")); } catch { setHealth([]); } }
   }, [open, inApp]);
 
+  // Esc ile kapanır.
+  useEffect(() => {
+    if (!open) return;
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [open]);
+
   return (
     <>
       {open && (
         <div className="hp" role="region" aria-label="Bağlantı ve özellik durumu">
-          <h4>Bağlantı</h4>
-          {items.map((i) => (
-            <div className="hr2" key={i.label}>
-              <i className={dot(i.ok)} />
-              <span><b>{i.label}</b><small>{i.hint}</small></span>
-            </div>
-          ))}
-          <h4 style={{ marginTop: 6 }}>Özellikler</h4>
-          {health === null ? <div className="hr2"><i className="dot wait" /><span><small>Yükleniyor…</small></span></div>
-            : health.length === 0 ? <div className="hr2"><i className="dot wait" /><span><small>Durum alınamadı</small></span></div>
-            : health.map((h) => (
-              <div className="hr2" key={h.id}>
-                <i className={cls(h.state)} />
-                <span><b>{h.label}</b><small>{h.detail}</small></span>
+          <div className="col">
+            <h4>Bağlantı</h4>
+            {items.map((i) => (
+              <div className="hr2" key={i.label}>
+                <i className={dot(i.ok)} />
+                <span><b>{i.label}</b><small>{i.hint}</small></span>
               </div>
             ))}
+          </div>
+          <div className="col">
+            <h4>Özellikler</h4>
+            {health === null ? <div className="hr2"><i className="dot wait" /><span><small>Yükleniyor…</small></span></div>
+              : health.length === 0 ? <div className="hr2"><i className="dot wait" /><span><small>Durum alınamadı</small></span></div>
+              : health.map((h) => (
+                <div className="hr2" key={h.id}>
+                  <i className={cls(h.state)} />
+                  <span><b>{h.label}</b><small>{h.detail}</small></span>
+                </div>
+              ))}
+          </div>
           <div className="cp">
             <span>Bir şey çalışmıyorsa kopyalayıp gönder. İsim ve kimlik içermez.</span>
             <button className="x" type="button" onClick={() => copyDiagnostics(version, items.map((i) => [i.label, i.ok]), onToast)}>Tanı bilgisini kopyala</button>

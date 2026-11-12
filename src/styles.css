@@ -1397,3 +1397,22 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 .gpb { display: inline-flex; gap: 6px; } .gpb i { width: 3px; height: 22px; border-radius: 3px; background: var(--pink); } .gpb i.soft { opacity: .5; }
 .gico { width: 28px; height: 28px; display: inline-grid; place-items: center; border-radius: 9px; color: var(--fg-2); background: var(--s1); border: 1px solid var(--line); }
 .herot { right: 46%; }
+
+/* ---------- 0.8.1: alt şerit düzeni, açılır bağlantı paneli, bildirim konumu ---------- */
+/* Panel akışın içinde değil, içeriğin üstünde açılır; pencere büyümez, aşağı kaymaz. */
+.hp { position: absolute; z-index: 30; left: 22px; bottom: 52px; align-self: auto; width: 600px; max-width: calc(100% - 44px); max-height: calc(100% - 76px); overflow-y: auto; margin: 0; padding: 12px 16px 12px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 22px; border-radius: 14px; background: #171330; border-color: var(--line-2); box-shadow: 0 18px 40px rgba(0, 0, 0, .55); }
+.hp h4 { grid-column: auto; }
+.hp .cp { grid-column: 1 / -1; }
+.hp .col { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fps .hp { animation: none; }
+
+/* Alt şerit: sol durum, ortada emek, sağda öneri. Hiçbiri üst üste binmez. */
+.sb { flex-wrap: nowrap; row-gap: 0; gap: 14px; padding-top: 6px; }
+.sb .sok, .sb .fbk { flex: none; white-space: nowrap; }
+.sb .credit { flex: 1 1 auto; min-width: 0; justify-content: center; flex-wrap: nowrap; gap: 14px; white-space: nowrap; }
+.sb .socd { display: none; }
+.sb .made { display: inline-flex; align-items: center; gap: 4px; color: var(--fg-3); }
+
+/* Bildirim alt şeridin üstünde, kenarlıkları temiz */
+.toast { bottom: 52px; z-index: 40; }
+@media (max-width: 980px) { .sb .socp { display: none; } }
