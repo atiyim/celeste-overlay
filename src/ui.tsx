@@ -71,7 +71,7 @@ export function Empty({ title, text, onRetry, tone }: { title?: string; text: Re
       <span className="empi" aria-hidden="true">
         {tone === "err"
           ? <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="8" r="6" /><path d="M8 5v3.5M8 11h.01" /></svg>
-          : <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="8" r="6" /><path d="M5.5 8h5" /></svg>}
+          : <img src="/celeste-mark.png" alt="" draggable={false} />}
       </span>
       <span className="empt">{title && <b>{title}</b>}<span>{text}</span></span>
       {onRetry && <button className="x" type="button" onClick={onRetry}>Tekrar dene</button>}

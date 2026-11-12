@@ -433,6 +433,7 @@ export function App() {
     <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}`} ref={rootRef} style={{ width }}>
       <header className="hd drag" onMouseDown={startDrag} title="Sürükleyerek taşı">
         <span className="hl">
+          <img className="mark" src="/celeste-mark.png" alt="" aria-hidden="true" draggable={false} />
           <h1 className="t">{mapName ?? "Celeste Overlay"}</h1>
           {theme.fps && <span className="fpsb" title="FPS modu açık: animasyonlar kapalı, maçta hemen gizlenir">FPS</span>}
           {mySide && (

@@ -49,7 +49,7 @@ export interface Theme {
 const ALL_ON = Object.fromEntries(COLS.map((c) => [c.id, true])) as Record<ColId, boolean>;
 
 export const DEFAULT_THEME: Theme = {
-  accent: "#38bdf8",
+  accent: "#b89cf5",
   alpha: 0.94,
   swapSides: false,
   autoHide: true,
@@ -62,7 +62,9 @@ export const DEFAULT_THEME: Theme = {
   discord: true,
   streamer: false,
 };
-export const ACCENTS = ["#38bdf8", "#a78bfa", "#34d399", "#fbbf24", "#fb7185", "#ededed"];
+/** Eski varsayılan vurgu: değiştirmemiş kullanıcılar yeni Celeste moruna geçer. */
+const OLD_DEFAULT_ACCENT = "#38bdf8";
+export const ACCENTS = ["#b89cf5", "#8fa8ff", "#f0a6ca", "#34d399", "#fbbf24", "#f1ecf8"];
 export const HIDE_AFTER_OPTIONS = [5, 10, 15, 30];
 /** FPS modunda overlay maç başladıktan en geç bu kadar saniye sonra gizlenir. */
 export const FPS_HIDE_AFTER = 5;
@@ -77,7 +79,7 @@ export function loadTheme(): Theme {
     const t = JSON.parse(localStorage.getItem(KEY) ?? "null") as Partial<Theme> | null;
     if (!t) return DEFAULT_THEME;
     return {
-      accent: typeof t.accent === "string" && /^#[0-9a-f]{6}$/i.test(t.accent) ? t.accent : DEFAULT_THEME.accent,
+      accent: typeof t.accent === "string" && /^#[0-9a-f]{6}$/i.test(t.accent) && t.accent.toLowerCase() !== OLD_DEFAULT_ACCENT ? t.accent : DEFAULT_THEME.accent,
       alpha: typeof t.alpha === "number" ? Math.min(1, Math.max(0.3, t.alpha)) : DEFAULT_THEME.alpha,
       swapSides: t.swapSides === true,
       autoHide: t.autoHide !== false,
