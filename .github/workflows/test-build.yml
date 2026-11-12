@@ -27,6 +27,9 @@ jobs:
       # Güncelleme imzası gerekmez: deneme kurulumu güncelleme dosyası üretmez.
       - name: Derle
         shell: bash
+        env:
+          # Uygulamadaki "Bu kurulumu doğrula" bu derlemeyi yayınlanmış sürümden ayırt etsin.
+          CELESTE_CHANNEL: deneme
         run: |
           echo '{"bundle":{"createUpdaterArtifacts":false}}' > "$RUNNER_TEMP/test.json"
           pnpm tauri build --bundles nsis --config "$RUNNER_TEMP/test.json"

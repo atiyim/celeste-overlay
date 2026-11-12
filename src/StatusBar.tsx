@@ -5,8 +5,9 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { Status } from "./types";
 import { Socials } from "./Socials";
 import { Icon } from "./icons";
+import { verifyInstall, verifyText, type InstallCheck } from "./verify";
 
-interface Props { status?: Status; inApp: boolean; assetsOk: boolean; assetsFailed: boolean; version: string; onToast: (t: string) => void; onOpen: (url: string) => void; onFeedback: () => void }
+interface Props { status?: Status; inApp: boolean; assetsOk: boolean; assetsFailed: boolean; version: string; onToast: (t: string) => void; onOpen: (url: string) => void; onFeedback: () => void; onTrust: () => void }
 interface Health { id: string; label: string; state: "ok" | "warn" | "fail" | "idle"; detail: string }
 type Dot = boolean | null;
 
@@ -24,7 +25,7 @@ export async function copyDiagnostics(version: string, conn: [string, Dot][], on
 }
 
 /* Alt şerit: tek bağlantı özeti, emeği geçenler ve öneri düğmesi. Özete tıklayınca özelliklerin son durumu ve tanı kopyalama düğmesi açılır. */
-export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onToast, onOpen, onFeedback }: Props) {
+export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onToast, onOpen, onFeedback, onTrust }: Props) {
   const [open, setOpen] = useState(false);
   const [health, setHealth] = useState<Health[] | null>(null);
 
@@ -37,6 +38,17 @@ export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onTo
   const dot = (ok: Dot) => (ok === null ? "dot wait" : ok ? "dot ok" : "dot bad");
   // Tek özet: hepsi tamamsa yeşil, biri yoksa kırmızı, beklenen varsa sarı.
   const sum: "ok" | "bad" | "wait" = items.some((i) => i.ok === false) ? "bad" : items.every((i) => i.ok === true) ? "ok" : "wait";
+
+  // Doğrula rozeti: tıklayınca parmak izi kontrol edilir; sonuç görününce tıklamak ayrıntıyı açar.
+  const [vr, setVr] = useState<InstallCheck | null>(null);
+  const [vbusy, setVbusy] = useState(false);
+  const verify = async () => {
+    if (vr) { onTrust(); return; }
+    setVbusy(true);
+    try { setVr(await verifyInstall()); } catch { onToast("Doğrulanamadı. İnternet bağlantını kontrol et."); }
+    setVbusy(false);
+  };
+  const vt = vr ? verifyText(vr) : null;
 
   const toggle = useCallback(async () => {
     const next = !open;
@@ -88,6 +100,11 @@ export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onTo
           <i className={sum === "ok" ? "dot ok" : sum === "bad" ? "dot bad" : "dot wait"} />
           {sum === "ok" ? "Her şey bağlı" : sum === "bad" ? `${items.find((i) => i.ok === false)?.label ?? "Bağlantı"} sorunlu` : "Bağlanılıyor"}
         </button>
+        {inApp && (
+          <button type="button" className={`vbadge ${vt?.tone ?? ""}`} disabled={vbusy} onClick={verify} title={vt ? `${vt.title}. Ayrıntı için tıkla.` : "Kurulum dosyanın parmak izini GitHub'daki yayınla karşılaştır"}>
+            <Icon name="shield" size={14} />{vbusy ? "Kontrol…" : vt ? vt.short : "Doğrula"}
+          </button>
+        )}
         <span className="credit">
           <Socials onOpen={onOpen} />
           <span className="made">Made by Claude &amp; <button type="button" className="ig" title="Instagram: @bneceleste" onClick={() => onOpen("https://www.instagram.com/bneceleste")}>bneceleste</button></span>

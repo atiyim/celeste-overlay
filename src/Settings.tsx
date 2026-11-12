@@ -80,7 +80,7 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
                 <h3 className="h2">Önizleme</h3>
                 <div className="prev" aria-hidden="true">
                   <div className="prevbg" />
-                  <div className="prevov" style={{ background: `rgba(15, 12, 26, ${theme.alpha})` }}>
+                  <div className="prevov" style={{ background: `rgba(14, 17, 24, ${theme.alpha})` }}>
                     <span className="prevtab">Oyuncular</span>
                     <span className="prevrow">
                       <i className="prevav" />

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { verifyInstall, verifyText, type InstallCheck } from "./verify";
 import { invoke } from "@tauri-apps/api/core";
 import type { NetEntry, NetReport } from "./net";
 import { mockNet } from "./mock";
@@ -46,31 +47,28 @@ function localData(): { label: string; n: number }[] {
   ];
 }
 
-interface InstallCheck { status: "ok" | "mismatch" | "unavailable"; own: string; matched?: string | null; url: string }
-
 /* "Bu kurulumu doğrula": çalışan dosyanın parmak izi GitHub'ın bu sürüm için yayınladığı listeyle karşılaştırılır. */
 function Verify() {
   const [st, setSt] = useState<{ kind: "idle" } | { kind: "busy" } | { kind: "done"; r: InstallCheck } | { kind: "error"; msg: string }>({ kind: "idle" });
   const run = async () => {
     if (!inTauri) { setSt({ kind: "error", msg: "Doğrulama yalnızca masaüstü uygulamasında çalışır." }); return; }
     setSt({ kind: "busy" });
-    try { setSt({ kind: "done", r: await invoke<InstallCheck>("verify_install") }); }
+    try { setSt({ kind: "done", r: await verifyInstall() }); }
     catch (e) { setSt({ kind: "error", msg: String(e) }); }
   };
   const r = st.kind === "done" ? st.r : null;
+  const t = r ? verifyText(r) : null;
   return (
-    <div className={`box verify${r?.status === "ok" ? " ok" : r?.status === "mismatch" ? " bad" : ""}`}>
+    <div className={`box verify${t?.tone === "ok" ? " ok" : t?.tone === "warn" ? " bad" : ""}`}>
       <Row
-        title={r?.status === "ok" ? "Bu kurulum doğrulandı" : r?.status === "mismatch" ? "Bu kurulum GitHub'daki dosyayla eşleşmedi" : "Bu kurulumu doğrula"}
+        title={t?.title ?? "Bu kurulumu doğrula"}
         desc={
-          r?.status === "ok" ? "Bilgisayarındaki uygulama dosyası, GitHub'ın açık koddan derleyip yayınladığı dosyayla birebir aynı."
-          : r?.status === "mismatch" ? "Kendin derlediysen ya da başka bir yerden indirdiysen bu normaldir. Emin değilsen uygulamayı GitHub'daki sürüm sayfasından yeniden kur."
-          : r?.status === "unavailable" ? "Bu sürüm, parmak izi yayınlanmaya başlamadan önce çıktı. Bir sonraki güncellemeden sonra doğrulayabilirsin."
+          t ? t.desc
           : st.kind === "error" ? <span className="err">{st.msg}</span>
           : "Uygulama kendi dosyasının parmak izini (SHA256) hesaplar ve GitHub'ın bu sürüm için yayınladığı parmak iziyle karşılaştırır."
         }
       >
-        <button className={r?.status === "ok" ? "x" : "x go"} type="button" disabled={st.kind === "busy"} onClick={run}>{st.kind === "busy" ? "Kontrol ediliyor…" : r ? "Tekrar kontrol et" : "Doğrula"}</button>
+        <button className={t?.tone === "ok" ? "x" : "x go"} type="button" disabled={st.kind === "busy"} onClick={run}>{st.kind === "busy" ? "Kontrol ediliyor…" : r ? "Tekrar kontrol et" : "Doğrula"}</button>
       </Row>
       {r && r.status !== "unavailable" && <p className="vhash"><span>Bu dosya</span><code>{r.own}</code></p>}
     </div>

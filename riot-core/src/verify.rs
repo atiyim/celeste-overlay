@@ -8,8 +8,11 @@ use sha2::{Digest, Sha256};
 #[derive(Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct InstallCheck {
-    /// "ok": GitHub'daki parmak iziyle birebir aynı · "mismatch": değil · "unavailable": bu sürüm için liste yok.
+    /// "ok": GitHub'daki parmak iziyle birebir aynı · "mismatch": değil · "unavailable": bu sürüm için liste yok ·
+    /// "unofficial": yayınlanmış kurulum değil (geliştirme ya da deneme derlemesi), karşılaştırma anlamsız.
     pub status: String,
+    /// "release", "dev" (geliştirme) ya da "deneme" (Actions deneme derlemesi).
+    pub channel: String,
     /// Çalışan dosyanın parmak izi (büyük harf).
     pub own: String,
     /// Eşleşen satırdaki dosya adı (varsa).
@@ -33,22 +36,27 @@ pub fn parse_sums(text: &str) -> Vec<(String, String)> {
         .collect()
 }
 
-pub async fn check_install(repo: &str, version: &str) -> Result<InstallCheck, String> {
+pub async fn check_install(repo: &str, version: &str, channel: &str) -> Result<InstallCheck, String> {
     let exe = std::env::current_exe().map_err(|e| format!("Uygulama dosyası bulunamadı: {e}"))?;
     let bytes = std::fs::read(&exe).map_err(|e| format!("Uygulama dosyası okunamadı: {e}"))?;
     let own = sha256_hex(&bytes);
     let url = format!("https://github.com/{repo}/releases/download/v{version}/SHA256SUMS.txt");
+    let channel = channel.to_string();
+    // Geliştirme ve deneme derlemeleri yayınlanan dosya değildir; GitHub'daki listeyle eşleşmemesi beklenir.
+    if channel != "release" {
+        return Ok(InstallCheck { status: "unofficial".into(), channel, own, matched: None, url });
+    }
     let http = reqwest::Client::builder().timeout(std::time::Duration::from_secs(15)).build().map_err(|e| e.to_string())?;
     let res = netlog::exec(&http, http.get(&url)).await.map_err(|_| "GitHub'a bağlanılamadı. İnternet bağlantını kontrol et.".to_string())?;
     if res.status().as_u16() == 404 {
-        return Ok(InstallCheck { status: "unavailable".into(), own, matched: None, url });
+        return Ok(InstallCheck { status: "unavailable".into(), channel, own, matched: None, url });
     }
     if !res.status().is_success() {
         return Err(format!("GitHub yanıt vermedi (HTTP {}).", res.status().as_u16()));
     }
     let text = res.text().await.map_err(|e| e.to_string())?;
     let matched = parse_sums(&text).into_iter().find(|(h, _)| *h == own).map(|(_, n)| n);
-    Ok(InstallCheck { status: if matched.is_some() { "ok" } else { "mismatch" }.into(), own, matched, url })
+    Ok(InstallCheck { status: if matched.is_some() { "ok" } else { "mismatch" }.into(), channel, own, matched, url })
 }
 
 #[cfg(test)]

@@ -699,7 +699,7 @@ export function App() {
         {!collapsed && guide && <Guide onDone={closeGuide} />}
         {!collapsed && !guide && content}
         </div>
-        {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} onFeedback={() => { setGuide(false); setCollapsed(false); go("feedback"); }} />}
+        {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} onFeedback={() => { setGuide(false); setCollapsed(false); go("feedback"); }} onTrust={() => go("trust")} />}
       </div>
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>

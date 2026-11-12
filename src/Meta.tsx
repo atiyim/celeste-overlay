@@ -117,17 +117,24 @@ export function Meta({ assets, currentMapId, onClose }: Props) {
 
       {tab === "agent" && (
         <>
-          <div className="agsel">
-            <label>Ajan
-              <select value={agent.a} onChange={(e) => setAgentSel(e.target.value)} aria-label="Ajan seç">
-                {ROLES.map(([id, l]) => (
-                  <optgroup key={id} label={l}>
-                    {data.agents.filter((a) => a.role === id).map((a) => <option key={a.a} value={a.a}>{up(a.a)}</option>)}
-                  </optgroup>
-                ))}
-              </select>
-            </label>
-            <span className="agsum"><AgentIcon icon={icon(agent.a)} name={agent.a} /><b>{up(agent.a)}</b><small>Tier {agent.tier} · %{agent.wr} kazanma · %{agent.pr} seçilme</small></span>
+          <div className="agpick">
+            <div className="agsum">
+              <AgentIcon icon={icon(agent.a)} name={agent.a} />
+              <span><b>{up(agent.a)}</b><small>Tier {agent.tier} · %{agent.wr} kazanma · %{agent.pr} seçilme</small></span>
+            </div>
+            {ROLES.map(([id, l]) => (
+              <div className="agrole" key={id}>
+                <span className="agrl">{l}</span>
+                <div className="agrid" role="listbox" aria-label={l}>
+                  {data.agents.filter((a) => a.role === id).map((a) => (
+                    <button key={a.a} type="button" role="option" aria-selected={a.a === agent.a} title={up(a.a)}
+                      className={a.a === agent.a ? "agb on" : "agb"} onClick={() => setAgentSel(a.a)}>
+                      <AgentIcon icon={icon(a.a)} name={a.a} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
           <div className="box pad">
             {byAgent.length === 0 && <p className="d none">Yeterli maç verisi yok.</p>}

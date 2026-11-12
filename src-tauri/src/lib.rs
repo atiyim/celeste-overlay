@@ -86,7 +86,9 @@ fn get_net_report() -> NetReport {
 #[tauri::command]
 async fn verify_install(app: AppHandle) -> Result<riot_core::verify::InstallCheck, String> {
     let version = app.package_info().version.to_string();
-    riot_core::verify::check_install("atiyim/celeste-overlay", &version).await
+    // Yayın kanalı: geliştirme (tauri dev), Actions deneme derlemesi ya da yayınlanmış sürüm.
+    let channel = if cfg!(debug_assertions) { "dev" } else { option_env!("CELESTE_CHANNEL").unwrap_or("release") };
+    riot_core::verify::check_install("atiyim/celeste-overlay", &version, channel).await
 }
 
 /// OBS tarayıcı kaynağını açar/kapatır; adresi döner.
