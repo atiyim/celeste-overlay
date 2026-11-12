@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ReactNode } from "react";
 
 /* Ortak arayüz parçaları: bütün paneller aynı başlığı, düğmeleri ve anahtarları kullanır. */
@@ -77,4 +78,11 @@ export function Empty({ title, text, onRetry, tone }: { title?: string; text: Re
       {onRetry && <button className="x" type="button" onClick={onRetry}>Tekrar dene</button>}
     </div>
   );
+}
+
+/** Ajan ikonu: resim yoksa ya da yüklenemezse adın baş harfi gösterilir; kutu hiçbir zaman boş kalmaz. */
+export function AgentIcon({ icon, name, className }: { icon?: string; name?: string; className?: string }) {
+  const [bad, setBad] = useState(false);
+  if (!icon || bad) return <span className={`${className ?? ""} aifb`} title={name}>{(name ?? "?").slice(0, 1).toUpperCase()}</span>;
+  return <img className={className} src={icon} alt={name ?? ""} loading="lazy" onError={() => setBad(true)} />;
 }

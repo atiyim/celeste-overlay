@@ -18,6 +18,11 @@ import { Guide } from "./Guide";
 import { Crosshairs } from "./CrosshairPanel";
 import { Settings } from "./Settings";
 import { StatusBar } from "./StatusBar";
+import { Device } from "./Device";
+import { Timers } from "./Timers";
+import { Search } from "./Search";
+import { TimerPill } from "./TimerPill";
+import { onTimerDone } from "./timers";
 import { AccountPanel } from "./AccountPanel";
 import { StorePanel } from "./StorePanel";
 import { StatsPanel } from "./StatsPanel";
@@ -48,7 +53,7 @@ export const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
 /* Bölümler: sol menüdeki gruplar ve içlerindeki alt sekmeler. */
 const PROFILE = [["stats", "İstatistik"], ["store", "Mağaza"], ["account", "Hesabım"]] as const;
-const TOOLS = [["chat", "Hızlı mesajlar"], ["cross", "Nişangah"]] as const;
+const TOOLS = [["chat", "Hızlı mesajlar"], ["cross", "Nişangah"], ["device", "Cihaz"], ["timers", "Sayaçlar"], ["search", "Oyuncu arama"]] as const;
 type ProfileView = (typeof PROFILE)[number][0];
 type ToolView = (typeof TOOLS)[number][0];
 type View = "roster" | "report" | "feed" | "feedback" | "trust" | "settings" | ProfileView | ToolView;
@@ -390,6 +395,7 @@ export function App() {
   });
 
   const showToast = (t: string) => { setToast(t); window.setTimeout(() => setToast(null), 1800); };
+  useEffect(() => { onTimerDone((t) => { setToast(`${t.name} bitti`); window.setTimeout(() => setToast(null), 3500); }); return () => onTimerDone(null); }, []);
   const copyName = async (name: string | null, label?: string) => {
     if (!name) { showToast("Bu oyuncunun ismi gizli, kopyalanacak bir şey yok"); return; }
     try {
@@ -548,7 +554,11 @@ export function App() {
     </Hub>
   ) : group === "tools" ? (
     <Hub title="Araçlar" tabs={TOOLS} active={view as ToolView} onPick={go}>
-      {view === "cross" ? <Crosshairs onCopy={copyName} onClose={() => go("roster")} /> : <QuickChat onCopy={copyName} onClose={() => go("roster")} />}
+      {view === "cross" ? <Crosshairs onCopy={copyName} onClose={() => go("roster")} />
+        : view === "device" ? <Device onCopy={copyName} onClose={() => go("roster")} />
+        : view === "timers" ? <Timers onClose={() => go("roster")} />
+        : view === "search" ? <Search assets={assets} seen={seen} onOpen={openTracker} onCopy={copyName} onClose={() => go("roster")} />
+        : <QuickChat onCopy={copyName} onClose={() => go("roster")} />}
     </Hub>
   ) : view === "trust" ? (
     <TrustPanel onToast={showToast} onOpen={openTracker} onClose={() => go("roster")} />
@@ -613,6 +623,7 @@ export function App() {
                 {mySide} · ilk yarı
               </span>
             )}
+            <TimerPill onOpen={() => go("timers")} />
             {theme.fps && <span className="fpsb" title="FPS modu açık: animasyonlar kapalı, maçta hemen gizlenir">FPS</span>}
           </span>
           <span className="hr" onMouseDown={noDrag}>

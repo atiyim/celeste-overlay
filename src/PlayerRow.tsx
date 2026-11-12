@@ -6,7 +6,7 @@ import type { ColId, Thresholds } from "./theme";
 import { tierColor } from "./LoadoutPanel";
 import { activityBadge, analyze, formBadge, isComp, modeName, styleBadge } from "./playstyle";
 import type { Player } from "./types";
-import { NameLine } from "./ui";
+import { AgentIcon, NameLine } from "./ui";
 import { agentPool, gunBadge, mapBadge, mmrBadge, poolBadge } from "./insights";
 import { partyInfo } from "./party";
 
@@ -83,9 +83,9 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
   const noLoadout = p.loadout.weapons.length === 0 && (p.loadout.allIds?.length ?? 0) === 0;
 
   const play = analyze(p);
-  // Satır sade kalsın: en önemli rozet görünür, kalanlar "+N" üstünde yazar. Önce maç içinde işe yarayanlar.
+  // Satır sade kalsın: en fazla iki rozet, üst üste, tam yazıyla. Önce maç içinde işe yarayanlar.
   const pool = agentPool(p);
-  const badges = [poolBadge(p, agent?.name), gunBadge(p), mapBadge(p, mapId, mapName), mmrBadge(p, (t) => assets.tiers.get(t)?.name), formBadge(p), styleBadge(play, th), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 3);
+  const badges = [poolBadge(p, agent?.name), gunBadge(p), mapBadge(p, mapId, mapName), mmrBadge(p, (t) => assets.tiers.get(t)?.name), formBadge(p), styleBadge(play, th), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 2);
   const party = cols.party && p.party ? partyInfo(p, lobby) : null;
 
   const stop = (fn: () => void) => (e: MouseEvent) => { e.stopPropagation(); fn(); };
@@ -101,7 +101,7 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
             title={`Parti ${p.party}: ${party.tip}`}
           />
         )}
-        <span className="agw">{agent ? <img className="agent" src={agent.icon} alt={agent.name} loading="lazy" /> : <i className="agent" />}</span>
+        <span className="agw"><AgentIcon className="agent" icon={agent?.icon} name={agent?.name} /></span>
         <span className="n">
           <NameLine name={name} />
           {(times > 0 || tag || sub) && (
@@ -137,7 +137,7 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
             <>
               <span className="chips">
                 {p.form.slice(0, 5).map((f, i) => (
-                  <span key={i} className={`${f.won ? "fdot win" : "fdot loss"}${isComp(f) ? "" : " alt"}`} title={`${modeName(f.queue)} · ${f.won ? "Galibiyet" : "Mağlubiyet"} · ${assets.maps.get(lookup(f.mapId)) ?? "?"} · ${assets.agents.get(lookup(f.agentId))?.name ?? "?"} · ${f.kills}/${f.deaths}/${f.assists}`} />
+                  <span key={i} className={`${f.won ? "fdot win" : "fdot loss"}${isComp(f) ? "" : " alt"}`} title={`${modeName(f.queue)} · ${f.won ? "Galibiyet" : "Mağlubiyet"} · ${assets.maps.get(lookup(f.mapId)) ?? "?"} · ${assets.agents.get(lookup(f.agentId))?.name ?? "?"} · ${f.kills}/${f.deaths}/${f.assists}`}>{f.won ? "W" : "L"}</span>
                 ))}
                 {p.formLoading && <span className="d">…</span>}
               </span>
@@ -170,7 +170,7 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
             const now = !!p.agentId && lookup(p.agentId) === lookup(a.agentId);
             return (
               <span key={a.agentId} className={now ? "pa now" : "pa"} title={`${ag?.name ?? "?"}: ${pool.n} maçın ${a.count} tanesi`}>
-                {ag ? <img src={ag.icon} alt={ag.name} loading="lazy" /> : <i />}
+                <AgentIcon icon={ag?.icon} name={ag?.name} />
                 <small>{a.count}</small>
               </span>
             );
@@ -179,8 +179,7 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
       )}
       {cols.badges && (
         <div className="bdg">
-          {badges[0] && <span className={`bd ${badges[0].tone}`} title={badges[0].tip}>{badges[0].text}</span>}
-          {badges.length > 1 && <span className="bd more" title={badges.slice(1).map((b) => `${b.text}: ${b.tip}`).join("\n")}>+{badges.length - 1}</span>}
+          {badges.map((b) => <span key={b.text} className={`bd ${b.tone}`} title={b.tip}>{b.text}</span>)}
         </div>
       )}
       {cols.tracker && (

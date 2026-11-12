@@ -100,7 +100,7 @@ export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets>
   const TIER_RANK: Record<string, number> = { Select: 1, Deluxe: 2, Premium: 3, Ultra: 4, Exclusive: 5 };
   for (const t of ctiers ?? []) a.contentTiers.set(k(t.uuid), { name: t.displayName, color: `#${String(t.highlightColor ?? "888888").slice(0, 6)}`, rank: TIER_RANK[t.devName] ?? 0, icon: t.displayIcon ?? undefined });
 
-  for (const x of agents) a.agents.set(k(x.uuid), { name: x.displayName, icon: x.displayIcon, role: x.role?.displayName, roleIcon: x.role?.displayIcon, portrait: x.fullPortrait ?? x.bustPortrait ?? undefined });
+  for (const x of agents) a.agents.set(k(x.uuid), { name: x.displayName, icon: x.displayIcon ?? x.displayIconSmall ?? x.killfeedPortrait ?? x.bustPortrait ?? "", role: x.role?.displayName, roleIcon: x.role?.displayIcon, portrait: x.fullPortrait ?? x.bustPortrait ?? undefined });
 
   /* Act adı: bağlı olduğu bölümle birlikte ("EPISODE 9 · ACT 2"). Ad gelmezse arayüz tarihe döner. */
   const seasonById = new Map<string, any>((seasons ?? []).map((s: any) => [k(s.uuid), s]));

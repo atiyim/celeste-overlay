@@ -1416,3 +1416,48 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 /* Bildirim alt şeridin üstünde, kenarlıkları temiz */
 .toast { bottom: 52px; z-index: 40; }
 @media (max-width: 980px) { .sb .socp { display: none; } }
+
+/* ---------- 0.8.2: okunur satır ---------- */
+.fdot { width: 17px; height: 17px; display: grid; place-items: center; font-size: 9.5px; font-weight: 700; line-height: 1; color: #1b1633; }
+.form .chips { gap: 4px; }
+.skin1 { align-items: center; gap: 8px; }
+.skin1 .th { flex: none; width: 56px; height: 24px; }
+.skn { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.25; font-size: 11.5px; overflow-wrap: anywhere; }
+.bdg { flex-direction: column; align-items: flex-start; gap: 4px; }
+.bdg .bd { max-width: 100%; }
+.aifb { display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--accent); background: var(--s3); }
+.pa .aifb { width: 22px; height: 22px; border-radius: 5px; }
+.agw .aifb { width: 40px; height: 40px; font-size: 16px; }
+
+/* ---------- 0.8.2: araçlar (cihaz, sayaç, arama) ---------- */
+.dv { display: grid; grid-template-columns: 1fr 1fr 1fr 1.3fr; gap: 12px; align-items: end; padding: 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--box); }
+.dv label { display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; color: var(--fg-3); }
+.dv input { box-sizing: border-box; width: 100%; padding: 7px 10px; font: inherit; font-size: 14px; color: var(--fg); background: var(--s1); border: 1px solid var(--line); border-radius: 8px; }
+.dv input:focus-visible { outline: 2px solid var(--focus); outline-offset: -1px; }
+.dvr { display: flex; flex-direction: column; gap: 2px; padding: 6px 12px; border-radius: 10px; background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.dvr small { font-size: 11px; color: var(--fg-3); }
+.dvr b { font-size: 18px; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
+.dvr em { font-style: normal; font-size: 11px; color: var(--fg-3); }
+.dv.conv { grid-template-columns: auto 1fr 1fr auto; }
+.dv .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.dvp { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+.dvp .mt { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 1px; padding: 4px 6px; margin: -4px -6px; border-radius: 6px; }
+.dvp .mt:hover { background: var(--s2); }
+.dvp .mt b { font-size: 13px; font-weight: 500; color: var(--fg); }
+.dvp .mt small { font-size: 11.5px; color: var(--fg-3); }
+.presets { display: inline-flex; gap: 6px; margin-left: 4px; }
+.tmr { display: grid; grid-template-columns: 120px 64px 1fr auto auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+.tmr .tn { font-size: 13px; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tmr .tt { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--accent); }
+.tmr.done .tt { color: var(--win); }
+.tb { display: block; height: 6px; border-radius: 999px; background: var(--s3); overflow: hidden; }
+.tb > i { display: block; height: 100%; border-radius: 999px; background: var(--accent); transition: width .25s linear; }
+.tmr.done .tb > i { background: var(--win); }
+.fps .tb > i { transition: none; }
+.tpill { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 999px; }
+.tpill:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.srow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+.srow .sn { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.srow .sn b { font-size: 13px; font-weight: 500; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srow .sn small { font-size: 11.5px; color: var(--fg-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srow .tg { flex: none; padding: 0 8px; font-size: 11px; line-height: 18px; border: 1px solid; border-radius: 999px; }

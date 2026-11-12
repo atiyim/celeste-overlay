@@ -10,11 +10,11 @@ export const COLS: ColDef[] = [
   { id: "rank", label: "Rank", px: 158 },
   { id: "peak", label: "Peak rank", px: 0, inline: true },
   { id: "wr", label: "Kazanma", px: 74 },
-  { id: "form", label: "Son 5 maç", px: 104 },
-  { id: "skins", label: "Vandal", px: 128 },
+  { id: "form", label: "Son 5 maç", px: 118 },
+  { id: "skins", label: "Vandal", px: 168 },
   { id: "party", label: "Parti çizgisi", px: 0, inline: true },
   { id: "pool", label: "Ajanlar", px: 84 },
-  { id: "badges", label: "Öne çıkan", px: 118 },
+  { id: "badges", label: "Öne çıkan", px: 132 },
   { id: "tracker", label: "Tracker düğmesi", px: 64 },
 ];
 
