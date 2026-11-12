@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { Status } from "./types";
 import { Socials } from "./Socials";
+import { Icon } from "./icons";
 
 interface Props { status?: Status; inApp: boolean; assetsOk: boolean; assetsFailed: boolean; version: string; onToast: (t: string) => void; onOpen: (url: string) => void; onFeedback: () => void }
 interface Health { id: string; label: string; state: "ok" | "warn" | "fail" | "idle"; detail: string }
@@ -22,7 +23,7 @@ export async function copyDiagnostics(version: string, conn: [string, Dot][], on
   } catch { onToast("Kopyalanamadı"); }
 }
 
-/* Alt şerit: dört bağlantı noktası. Tıklayınca özelliklerin son durumu ve tanı kopyalama düğmesi açılır. */
+/* Alt şerit: tek bağlantı özeti, emeği geçenler ve öneri düğmesi. Özete tıklayınca özelliklerin son durumu ve tanı kopyalama düğmesi açılır. */
 export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onToast, onOpen, onFeedback }: Props) {
   const [open, setOpen] = useState(false);
   const [health, setHealth] = useState<Health[] | null>(null);
@@ -34,6 +35,8 @@ export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onTo
     { label: "Görseller", ok: assetsOk ? true : assetsFailed ? false : null, hint: "valorant-api.com görselleri" },
   ];
   const dot = (ok: Dot) => (ok === null ? "dot wait" : ok ? "dot ok" : "dot bad");
+  // Tek özet: hepsi tamamsa yeşil, biri yoksa kırmızı, beklenen varsa sarı.
+  const sum: "ok" | "bad" | "wait" = items.some((i) => i.ok === false) ? "bad" : items.every((i) => i.ok === true) ? "ok" : "wait";
 
   const toggle = useCallback(async () => {
     const next = !open;
@@ -69,21 +72,17 @@ export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onTo
         </div>
       )}
       <div className="sb" aria-label="Bağlantı durumu">
+        <button type="button" className={`sok ${sum}`} aria-expanded={open} title="Bağlantı ayrıntıları" onClick={toggle}>
+          <i className={sum === "ok" ? "dot ok" : sum === "bad" ? "dot bad" : "dot wait"} />
+          {sum === "ok" ? "Her şey bağlı" : sum === "bad" ? `${items.find((i) => i.ok === false)?.label ?? "Bağlantı"} sorunlu` : "Bağlanılıyor"}
+        </button>
         <span className="credit">
           <Socials onOpen={onOpen} />
           <span className="made">Made by Claude &amp; <button type="button" className="ig" title="Instagram: @bneceleste" onClick={() => onOpen("https://www.instagram.com/bneceleste")}>bneceleste</button></span>
           <button type="button" className="ig" title="Topluluk: soru, hata bildirimi, öneri ve yeni sürümler" onClick={() => onOpen(DISCORD_URL)}>Discord</button>
-          <button type="button" className="fbk" title="Bir fikrini yaz ya da çalışmayan bir şeyi bildir; doğrudan yetkililere ulaşır" onClick={onFeedback}>
-            <i />Öneri / Hata bildir
-          </button>
         </span>
-        <button type="button" className="sbtn" aria-expanded={open} title="Ayrıntı için tıkla" onClick={toggle}>
-          {items.map((i) => (
-            <span key={i.label} className="si" title={i.hint}>
-              <i className={dot(i.ok)} />
-              {i.label}
-            </span>
-          ))}
+        <button type="button" className="fbk" title="Bir fikrini yaz ya da çalışmayan bir şeyi bildir; doğrudan yetkililere ulaşır" onClick={onFeedback}>
+          <Icon name="msg" size={14} />Öneri / Hata
         </button>
       </div>
     </>

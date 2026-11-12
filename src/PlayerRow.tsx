@@ -77,11 +77,16 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
     const slot = p.loadout.weapons.find((x) => lookup(x.weaponId) === weapon.id);
     return { weapon, skin: resolveSkin(assets, weapon, slot) };
   });
+  const vandal = thumbs[0];
+  const skinTip = thumbs.filter((t): t is NonNullable<typeof t> => !!t)
+    .map((t) => `${t.weapon.name}: ${t.skin.name}${t.skin.chromaName ? ` (${t.skin.chromaName})` : ""}`).join("\n");
+  const noLoadout = p.loadout.weapons.length === 0 && (p.loadout.allIds?.length ?? 0) === 0;
 
   const play = analyze(p);
-  // Satır sade kalsın: en önemli iki rozet. Önce maç içinde işe yarayanlar (silah alışkanlığı, bu harita).
+  // Satır sade kalsın: en önemli rozet görünür, kalanlar "+N" üstünde yazar. Önce maç içinde işe yarayanlar.
   const pool = agentPool(p);
-  const badges = [poolBadge(p, agent?.name), gunBadge(p), mapBadge(p, mapId, mapName), mmrBadge(p, (t) => assets.tiers.get(t)?.name), formBadge(p), styleBadge(play, th), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 2);
+  const badges = [poolBadge(p, agent?.name), gunBadge(p), mapBadge(p, mapId, mapName), mmrBadge(p, (t) => assets.tiers.get(t)?.name), formBadge(p), styleBadge(play, th), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 3);
+  const party = cols.party && p.party ? partyInfo(p, lobby) : null;
 
   const stop = (fn: () => void) => (e: MouseEvent) => { e.stopPropagation(); fn(); };
   const key = (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };
@@ -89,13 +94,20 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
   return (
     <div className={times ? "g r again" : "g r"} style={{ gridTemplateColumns: template, "--i": index } as React.CSSProperties} role="button" tabIndex={0} onClick={onOpen} onKeyDown={key}>
       <button className="who" type="button" onClick={stop(() => onCopy(anonymous ? label ?? null : p.name ?? null))} title={blur ? "Kullanıcı adını kopyala" : sub || "Kullanıcı adını kopyala"}>
-        {agent && <img className="agent" src={agent.icon} alt={agent.name} loading="lazy" />}
+        {party && (
+          <i
+            className={party.soft ? "pbar soft" : "pbar"}
+            style={{ "--pc": partyColor(p.party!) } as React.CSSProperties}
+            title={`Parti ${p.party}: ${party.tip}`}
+          />
+        )}
+        <span className="agw">{agent ? <img className="agent" src={agent.icon} alt={agent.name} loading="lazy" /> : <i className="agent" />}</span>
         <span className="n">
           <NameLine name={name} />
           {(times > 0 || tag || sub) && (
             <span className="sub2">
               {tag && <span className="tg" style={{ color: tag.color, borderColor: tag.color }}>{tag.label}</span>}
-              {times > 0 && <span className="rep" title={`Bu oyuncuyla ${times}. kez aynı maçtasın`}>{times}. kez</span>}
+              {times > 0 && <span className="rep" title={`Bu oyuncuyla ${times}. kez aynı maçtasın`}>{times}. kez aynı maçta</span>}
               {sub && <small className="pn">{sub}</small>}
             </span>
           )}
@@ -103,19 +115,20 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
       </button>
       {cols.rank && (
         <div className="tier">
-          {cur ? (
-            <>
-              <img src={cur.icon} alt="" />
-              <span className="n"><span style={{ color: tierColor(cur.color) }}>{cur.name}</span>{p.rank.current > 0 && <small>{p.rank.rr} RR</small>}</span>
-            </>
-          ) : "Derecesiz"}
+          {cur && p.rank.current > 0 ? <img src={cur.icon} alt="" /> : <i className="tier0" />}
+          <span className="n">
+            <span style={cur && p.rank.current > 0 ? { color: tierColor(cur.color) } : undefined}>{cur && p.rank.current > 0 ? cur.name : "Derecesiz"}</span>
+            <small>
+              {p.rank.current > 0 ? `${p.rank.rr} RR` : null}
+              {cols.peak && peak && r.peak > 0 ? <>{p.rank.current > 0 ? " · " : ""}Peak <span style={{ color: tierColor(peak.color) }}>{peak.name}</span></> : null}
+            </small>
+          </span>
         </div>
       )}
-      {cols.peak && <div className="tier d">{peak && r.peak > 0 ? <><img src={peak.icon} alt="" /><span style={{ color: tierColor(peak.color) }}>{peak.name}</span></> : "–"}</div>}
       {cols.wr && (
-        <div className="k" title={g > 0 ? `${w} galibiyet, ${g} maç (${scope}, rekabet)` : "Rekabet verisi yok"}>
-          {wr}
-          {g > 0 && <small>{g} maç</small>}
+        <div className="wrc" title={g > 0 ? `${w} galibiyet, ${g} maç (${scope}, rekabet)` : "Rekabet verisi yok"}>
+          <span>{wr}{g > 0 && <small>{g} maç</small>}</span>
+          {g > 0 && <i className="wbar"><i style={{ width: `${Math.round((100 * w) / g)}%` }} /></i>}
         </div>
       )}
       {cols.form && (
@@ -124,9 +137,7 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
             <>
               <span className="chips">
                 {p.form.slice(0, 5).map((f, i) => (
-                  <span key={i} className={`${f.won ? "fc win" : "fc loss"}${isComp(f) ? "" : " alt"}`} title={`${modeName(f.queue)} · ${f.won ? "Galibiyet" : "Mağlubiyet"} · ${assets.maps.get(lookup(f.mapId)) ?? "?"} · ${assets.agents.get(lookup(f.agentId))?.name ?? "?"} · ${f.kills}/${f.deaths}/${f.assists}`}>
-                    {f.won ? "W" : "L"}
-                  </span>
+                  <span key={i} className={`${f.won ? "fdot win" : "fdot loss"}${isComp(f) ? "" : " alt"}`} title={`${modeName(f.queue)} · ${f.won ? "Galibiyet" : "Mağlubiyet"} · ${assets.maps.get(lookup(f.mapId)) ?? "?"} · ${assets.agents.get(lookup(f.agentId))?.name ?? "?"} · ${f.kills}/${f.deaths}/${f.assists}`} />
                 ))}
                 {p.formLoading && <span className="d">…</span>}
               </span>
@@ -136,31 +147,20 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
         </div>
       )}
       {cols.skins && (
-        <div className="thumbs">
-          {p.loadout.weapons.length === 0 && (p.loadout.allIds?.length ?? 0) === 0 ? <span className="d">Oyun başlayınca görünür</span> : thumbs.map((t, i) =>
-            t ? (
+        <div className="skin1" title={noLoadout ? undefined : skinTip}>
+          {noLoadout ? <span className="d">Oyunda görünür</span> : vandal ? (
+            <>
               <img
-                key={i}
-                className={t.skin.isDefault ? "th dim" : t.skin.tier ? `th tr t${t.skin.tier.rank}` : "th"}
-                style={t.skin.tier && !t.skin.isDefault ? ({ "--tc": t.skin.tier.color } as React.CSSProperties) : undefined}
-                src={t.skin.image}
-                alt={`${t.weapon.name}: ${t.skin.name}`}
-                title={`${t.weapon.name}: ${t.skin.name}${t.skin.chromaName ? ` (${t.skin.chromaName})` : ""}${t.skin.tier && !t.skin.isDefault ? ` · ${t.skin.tier.name}` : ""}`}
+                className={vandal.skin.isDefault ? "th dim" : vandal.skin.tier ? `th tr t${vandal.skin.tier.rank}` : "th"}
+                style={vandal.skin.tier && !vandal.skin.isDefault ? ({ "--tc": vandal.skin.tier.color } as React.CSSProperties) : undefined}
+                src={vandal.skin.image}
+                alt=""
                 loading="lazy"
-                onError={(e) => { const el = e.currentTarget; if (el.dataset.fb !== "1" && t.weapon.icon) { el.dataset.fb = "1"; el.src = t.weapon.icon; } }}
+                onError={(e) => { const el = e.currentTarget; if (el.dataset.fb !== "1" && vandal.weapon.icon) { el.dataset.fb = "1"; el.src = vandal.weapon.icon; } }}
               />
-            ) : <span key={i} className="th" />,
-          )}
-        </div>
-      )}
-      {cols.party && (
-        <div>
-          {p.party ? (
-            <span
-              className={partyInfo(p, lobby).soft ? "p soft" : "p"}
-              title={partyInfo(p, lobby).tip}
-            >{p.party}</span>
-          ) : null}
+              <span className="skn">{vandal.skin.isDefault ? "Varsayılan" : shortSkin(vandal.skin.name, vandal.weapon.name)}</span>
+            </>
+          ) : <span className="d">–</span>}
         </div>
       )}
       {cols.pool && (
@@ -179,7 +179,8 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
       )}
       {cols.badges && (
         <div className="bdg">
-          {badges.map((b) => <span key={b.text} className={`bd ${b.tone}`} title={b.tip}>{b.text}</span>)}
+          {badges[0] && <span className={`bd ${badges[0].tone}`} title={badges[0].tip}>{badges[0].text}</span>}
+          {badges.length > 1 && <span className="bd more" title={badges.slice(1).map((b) => `${b.text}: ${b.tip}`).join("\n")}>+{badges.length - 1}</span>}
         </div>
       )}
       {cols.tracker && (
@@ -193,4 +194,14 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
       )}
     </div>
   );
+}
+
+/** Parti harfi → renk. Aynı partidekiler aynı renkte çizgiyle birleşir. */
+const PARTY_COLORS = ["#f0a6ca", "#8fb4ff", "#f6cf7a", "#7ee2b8", "#c39cff", "#ffb38a"];
+export const partyColor = (id: string) => PARTY_COLORS[Math.abs((id.toUpperCase().charCodeAt(0) || 65) - 65) % PARTY_COLORS.length];
+
+/** "Prime Vandal" → "Prime": silah adı tekrarlanmasın. */
+function shortSkin(skin: string, weapon: string) {
+  const s = skin.replace(new RegExp(`\\s*${weapon}\\s*$`, "i"), "").trim();
+  return s || skin;
 }

@@ -28,23 +28,35 @@ import { FeedbackPanel } from "./FeedbackPanel";
 import { FeedPanel } from "./FeedPanel";
 import { useDiscordPresence } from "./discordRpc";
 import { useFeedBadge, type FeedCard } from "./feed";
-import { alertOf, fmtDur, fmtRr, sessionOf, type Session } from "./tilt";
+import { alertOf, fmtRr, sessionOf, type Session } from "./tilt";
 import { useUpdater } from "./updater";
 import { Empty } from "./ui";
+import { Icon } from "./icons";
+import { Rail, type Group } from "./Rail";
+import { QuickMenu } from "./QuickMenu";
+import { Hub } from "./Hub";
+import { Waiting } from "./Waiting";
 import { WhatsNew } from "./WhatsNew";
 import { NoticeCard } from "./NoticeCard";
 import { useNotices, useUsagePing } from "./community";
-import { applyTheme, COLS, gridTemplate, hideOf, loadTheme, overlayWidth } from "./theme";
+import { applyTheme, gridCols, gridTemplate, hideOf, loadTheme, overlayWidth } from "./theme";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 // Pencere genişliği açık sütunlara göre hesaplanır; yükseklik içeriğe göre otomatik ayarlanır.
 const SIDE_QUEUES = ["competitive", "unrated", "swiftplay", "spikerush", "premier"];
 export const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
-const NAV = [
-  ["roster", "Oyuncular"], ["report", "Son maç"], ["store", "Mağaza"], ["account", "Hesabım"], ["stats", "İstatistik"], ["chat", "Sohbet"], ["cross", "Nişangah"], ["trust", "S.S.S & Panel"], ["settings", "Ayarlar"],
-] as const;
-type View = (typeof NAV)[number][0] | "feedback" | "feed";
+/* Bölümler: sol menüdeki gruplar ve içlerindeki alt sekmeler. */
+const PROFILE = [["stats", "İstatistik"], ["store", "Mağaza"], ["account", "Hesabım"]] as const;
+const TOOLS = [["chat", "Hızlı mesajlar"], ["cross", "Nişangah"]] as const;
+type ProfileView = (typeof PROFILE)[number][0];
+type ToolView = (typeof TOOLS)[number][0];
+type View = "roster" | "report" | "feed" | "feedback" | "trust" | "settings" | ProfileView | ToolView;
+const groupOf = (v: View): Group =>
+  PROFILE.some(([id]) => id === v) ? "profile" : TOOLS.some(([id]) => id === v) ? "tools" : v === "feedback" ? "roster" : (v as Group);
+const saved = <T extends string>(key: string, list: readonly (readonly [T, string])[], fallback: T): T => {
+  try { const v = localStorage.getItem(key) as T | null; return v && list.some(([id]) => id === v) ? v : fallback; } catch { return fallback; }
+};
 
 const PHASE_TEXT: Record<string, string> = {
   offline: "Valorant bekleniyor",
@@ -89,6 +101,11 @@ export function App() {
   const tiltTimers = useRef<number[]>([]);
   const tiltInit = useRef(false);
   const rootRef = useRef<HTMLElement>(null);
+  const lastProfile = useRef<ProfileView>(saved("overlay-profile-tab", PROFILE, "stats"));
+  const lastTool = useRef<ToolView>(saved("overlay-tool-tab", TOOLS, "chat"));
+  // Oyuncu ayrıntısı yandan açılan bir panelde: liste kısa kalırsa pencere panelin boyuna kadar uzar.
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const [drawerH, setDrawerH] = useState(0);
   const lastSize = useRef("");
   const autoHiddenRef = useRef(false);
   const manualKeep = useRef(false); // F2 ile elle açıldıysa bu maç boyunca otomatik gizleme yapma
@@ -104,6 +121,14 @@ export function App() {
   const idle = () => autoHiddenRef.current || document.hidden;
 
   useEffect(() => { applyTheme(theme); }, [theme]);
+  useEffect(() => {
+    const el = drawerRef.current;
+    if (!selected || !el) { setDrawerH(0); return; }
+    // İçeriğin kendi boyu ölçülür (panelin değil): yoksa pencere büyüdükçe ölçüm de büyür.
+    const ro = new ResizeObserver(() => setDrawerH(Math.ceil(el.offsetHeight) + 26));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [selected]);
 
   const retryAssets = () => {
     setAssetsFailed(false);
@@ -113,7 +138,7 @@ export function App() {
 
   useEffect(() => {
     if (!inTauri) {
-      if (assets) setSnap(mockSnapshot(assets));
+      if (assets) setSnap(location.hash === "#bos" ? { phase: "menu", players: [] } : mockSnapshot(assets));
       return;
     }
     let stop = false;
@@ -381,10 +406,6 @@ export function App() {
   const startDrag = (e: React.MouseEvent) => {
     if (inTauri && e.button === 0) getCurrentWindow().startDragging().catch(() => undefined);
   };
-  const stepZoom = (d: number) => {
-    const i = ZOOMS.indexOf(zoom);
-    setZoom(ZOOMS[Math.min(ZOOMS.length - 1, Math.max(0, (i < 0 ? 2 : i) + d))]);
-  };
   const noDrag = (e: React.MouseEvent) => e.stopPropagation();
   const myTeam = snap.players.find((p) => p.isSelf)?.team ?? snap.players[0]?.team;
   const allies = snap.players.filter((p) => p.team === myTeam);
@@ -428,241 +449,235 @@ export function App() {
   if (autoHidden) return null;
   // Menüler ve oyuncu ayrıntısı her zaman tam opaktır; saydamlık yalnızca oyuncu listesinde geçerlidir.
   const solid = !collapsed && (guide || view !== "roster" || !!active);
+  const group = groupOf(view);
+  const feedCount = feedNotes || feedNew;
+  const go = (v: View) => {
+    setSelected(null);
+    setView(v);
+    if (v === "feed") feedSeen();
+    if (PROFILE.some(([id]) => id === v)) { lastProfile.current = v as ProfileView; try { localStorage.setItem("overlay-profile-tab", v); } catch { /* depolama kapalı */ } }
+    if (TOOLS.some(([id]) => id === v)) { lastTool.current = v as ToolView; try { localStorage.setItem("overlay-tool-tab", v); } catch { /* depolama kapalı */ } }
+  };
+  const pickGroup = (g: Group) => go(g === "profile" ? lastProfile.current : g === "tools" ? lastTool.current : g);
+  const loading = <Empty text="Görseller yükleniyor…" />;
+  const sideText = (list: typeof allies) => sideOf(list[0]?.team);
 
-  return (
-    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}`} ref={rootRef} style={{ width }}>
-      <header className="hd drag" onMouseDown={startDrag} title="Sürükleyerek taşı">
-        <span className="hl">
-          <img className="mark" src="/celeste-mark.png" alt="" aria-hidden="true" draggable={false} />
-          <h1 className="t">{mapName ?? "Celeste Overlay"}</h1>
-          {theme.fps && <span className="fpsb" title="FPS modu açık: animasyonlar kapalı, maçta hemen gizlenir">FPS</span>}
-          {mySide && (
-            <span className={mySide === "Saldıran" ? "side atk" : "side def"} title="Takım rengine göre belirlenir; yalnızca ilk yarıda doğrudur">
-              {mySide} (ilk yarı)
+  // Lobi özeti: rakip ve takım özetleri, tekrar karşılaşılan oyuncu ve bugünkü seans tek satırda.
+  const again = snap.players
+    .filter((p) => !p.isSelf && (seen[p.puuid]?.n ?? 0) >= 2)
+    .sort((a, b) => (seen[b.puuid]?.n ?? 0) - (seen[a.puuid]?.n ?? 0))[0];
+  const againName = again ? (again.hiddenName ? seen[again.puuid]?.label ?? "Gizli bir oyuncu" : (again.name ?? "").split("#")[0]) : null;
+  const foeSum = teamSummary(enemies, snap.mapId), mySum = teamSummary(allies.filter((x) => !x.isSelf), snap.mapId);
+
+  const lobby = (
+    <>
+      {(foeSum.length > 0 || mySum.length > 0 || again || (sess && sess.games > 0 && theme.tilt.on)) && (
+        <div className="lchips" role="note" aria-label="Lobi özeti">
+          {foeSum.length > 0 && <span className="lchip foe" title="Rakip takım"><Icon name="link" size={14} /><b>Rakipte</b>{foeSum.join(" · ")}</span>}
+          {mySum.length > 0 && <span className="lchip ally" title="Senin takımın"><Icon name="users" size={14} /><b>Takımında</b>{mySum.join(" · ")}</span>}
+          {again && (
+            <span className="lchip again" title={`Bu oyuncuyla ${seen[again.puuid]?.n}. kez aynı maçtasın`}>
+              <Icon name="repeat" size={14} /><b className="pn">{againName}</b>ile {seen[again.puuid]?.n}. kez aynı maçtasın
             </span>
           )}
-        </span>
-        <span className="hr">
-          <span className="m">{PHASE_TEXT[snap.phase]}</span>
-          <span className="zoom" onMouseDown={noDrag}>
-            {!collapsed && (
-              <span className="pair" role="group" aria-label="Yazı boyutu">
-                <button type="button" onClick={() => stepZoom(-1)} aria-label="Küçült" title="Küçült">A−</button>
-                <button type="button" onClick={() => stepZoom(1)} aria-label="Büyüt" title="Büyüt">A+</button>
+          {sess && sess.games > 0 && theme.tilt.on && (
+            <span className="lchip" title="Bugünkü seansın">
+              <Icon name="moon" size={14} />Bu seans <b>{sess.wins}G {sess.losses}M</b>
+              <span className={sess.rr < 0 ? "neg" : sess.rr > 0 ? "pos" : ""}>{fmtRr(sess.rr)}</span>
+            </span>
+          )}
+        </div>
+      )}
+      <div className="g c" style={{ gridTemplateColumns: template }}>
+        <div>Oyuncu</div>
+        {gridCols(theme.cols).map((c) => <div key={c.id}>{c.id === "tracker" ? "" : c.label}</div>)}
+      </div>
+      {([["Takımın", allies, "ally"], ["Rakipler", enemies, "foe"]] as const).map(([title, list, kind]) =>
+        list.length ? (
+          <section key={title} className={`team ${kind}`}>
+            <div className="teamh">
+              <span className="teamn"><i />{title}{sideText(list) ? <small>{sideText(list)}</small> : null}</span>
+              {(() => {
+                const t = teamStats(list);
+                return (
+                  <span className="cmp" title="Ortalama rank ve son rekabet maçlarının ortalama K/D'si">
+                    Ortalama <b>{t.tier?.name ?? "–"}</b> · K/D <b>{t.kd != null ? t.kd.toFixed(2) : "–"}</b>
+                  </span>
+                );
+              })()}
+            </div>
+            {list.map((p, i) => (
+              <PlayerRow
+                key={p.puuid}
+                p={p}
+                index={i}
+                assets={assets!}
+                entry={seen[p.puuid]}
+                cols={theme.cols}
+                th={theme.th}
+                template={template}
+                blur={blur}
+                onOpen={() => setSelected(p.puuid)}
+                onCopy={copyName}
+                onTracker={openTracker}
+                mapId={snap.mapId}
+                mapName={mapName}
+                lobby={snap.players}
+              />
+            ))}
+          </section>
+        ) : null,
+      )}
+    </>
+  );
+
+  const content = view === "settings" ? (
+    <Settings updater={updater} onOpen={openTracker} onFeedback={() => go("feedback")} theme={theme} onChange={setTheme} onGuide={() => { setGuide(true); setView("roster"); }} zoom={zoom} onZoom={setZoom} zooms={ZOOMS} onToast={showToast} onClose={() => go("roster")} />
+  ) : view === "feed" ? (
+    assets ? <FeedPanel assets={assets} draft={feedDraft} onDraftUsed={() => setFeedDraft(null)} onToast={showToast} onClose={() => go("roster")} /> : loading
+  ) : view === "feedback" ? (
+    <FeedbackPanel version={updater.version} onOpen={openTracker} onClose={() => go("roster")} />
+  ) : view === "report" ? (
+    assets ? <ReportPanel assets={assets} matchId={lastMatch} seen={seen} onTag={(id, t) => setSeen(setTag(id, t))} onOpen={openTracker} onClose={() => go("roster")} /> : loading
+  ) : group === "profile" ? (
+    <Hub title="Profilim" tabs={PROFILE} active={view as ProfileView} onPick={go}>
+      {!assets ? loading
+        : view === "store" ? <StorePanel assets={assets} onClose={() => go("roster")} />
+        : view === "account" ? <AccountPanel assets={assets} onClose={() => go("roster")} />
+        : <StatsPanel assets={assets} onToast={showToast} onShare={(c) => { setFeedDraft(c); go("feed"); }} onClose={() => go("roster")} />}
+    </Hub>
+  ) : group === "tools" ? (
+    <Hub title="Araçlar" tabs={TOOLS} active={view as ToolView} onPick={go}>
+      {view === "cross" ? <Crosshairs onCopy={copyName} onClose={() => go("roster")} /> : <QuickChat onCopy={copyName} onClose={() => go("roster")} />}
+    </Hub>
+  ) : view === "trust" ? (
+    <TrustPanel onToast={showToast} onOpen={openTracker} onClose={() => go("roster")} />
+  ) : snap.players.length === 0 || !assets ? (
+    <Waiting
+      inApp={inTauri}
+      status={st}
+      phase={snap.phase}
+      assetsOk={!!assets}
+      assetsFailed={assetsFailed}
+      text={<>
+        {emptyText}
+        {st?.valorant && <small>Overlay oyunun arkasında kalıyorsa Valorant'ta Ekran Modu'nu Pencereli Tam Ekran yap.</small>}
+      </>}
+      onRetry={assetsFailed && !assets ? retryAssets : undefined}
+      sess={theme.tilt.on ? sess : null}
+      feedCount={feedCount}
+      feedNote={feedNotes > 0}
+      hasLastMatch={!!lastMatch}
+      onGo={go}
+    />
+  ) : (
+    <div className={active ? "lobbyw hasdrawer" : "lobbyw"} style={active && drawerH ? { minHeight: drawerH } : undefined}>
+      {lobby}
+      {active && (
+        <div className="drawerw">
+          <button type="button" className="dscrim" aria-label="Oyuncu ayrıntısını kapat" onClick={() => setSelected(null)} />
+          <aside className="drawer">
+            <div ref={drawerRef}>
+            <LoadoutPanel
+              p={active}
+              lobby={snap.players}
+              th={theme.th}
+              assets={assets}
+              mapId={snap.mapId}
+              entry={seen[active.puuid]}
+              onLabel={(l) => setSeen(setLabel(active.puuid, l))}
+              onTag={(t) => setSeen(setTag(active.puuid, t))}
+              onClose={() => setSelected(null)}
+              onCopy={copyName}
+            />
+            </div>
+          </aside>
+        </div>
+      )}
+    </div>
+  );
+
+  const phaseTone = snap.phase === "pregame" ? "go" : snap.phase === "ingame" ? "live" : snap.phase === "menu" ? "wait" : "off";
+
+  return (
+    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}${collapsed ? " mini" : ""}`} ref={rootRef} style={{ width }}>
+      {!collapsed && !guide && <Rail active={group} onPick={pickGroup} feedCount={feedCount} feedNote={feedNotes > 0} onDrag={startDrag} />}
+      <div className="ovm">
+        <header className="hd drag" onMouseDown={startDrag} title="Sürükleyerek taşı">
+          <span className="hl">
+            {(collapsed || guide) && <img className="mark" src="/celeste-mark.png" alt="" aria-hidden="true" draggable={false} />}
+            <h1 className="t">{mapName ?? "Celeste Overlay"}</h1>
+            <span className={`phase ${phaseTone}`}><i />{PHASE_TEXT[snap.phase]}</span>
+            {mySide && !collapsed && (
+              <span className={mySide === "Saldıran" ? "side atk" : "side def"} title="Takım rengine göre belirlenir; yalnızca ilk yarıda doğrudur">
+                {mySide} · ilk yarı
               </span>
             )}
+            {theme.fps && <span className="fpsb" title="FPS modu açık: animasyonlar kapalı, maçta hemen gizlenir">FPS</span>}
+          </span>
+          <span className="hr" onMouseDown={noDrag}>
             {!collapsed && (
-              <button
-                type="button"
-                className={protect ? "on" : ""}
-                aria-pressed={protect}
-                title="Açıkken overlay ekran kaydında ve yayında görünmez; sen oyunda görmeye devam edersin."
-                onClick={() => { setProtect(!protect); showToast(protect ? "Overlay kayıtta görünür" : "Overlay kayıtta gizli"); }}
-              >
-                {protect ? "Kayıtta gizli" : "Kayıtta gizle"}
-              </button>
+              <QuickMenu
+                protect={protect} onProtect={(v) => { setProtect(v); showToast(v ? "Overlay kayıtta gizli" : "Overlay kayıtta görünür"); }}
+                blur={blur} onBlur={(v) => { setBlur(v); showToast(v ? "İsimler bulanık" : "İsimler görünür"); }}
+                fps={theme.fps} onFps={(v) => setTheme({ ...theme, fps: v })}
+                zoom={zoom} zooms={ZOOMS} onZoom={setZoom}
+                onAll={() => go("settings")}
+              />
             )}
-            {!collapsed && (
-              <button
-                type="button"
-                className={blur ? "on" : ""}
-                aria-pressed={blur}
-                title="Açıkken oyuncu isimleri bulanık görünür. Video çekerken başkalarının kimliğini göstermemek için."
-                onClick={() => { setBlur(!blur); showToast(blur ? "İsimler görünür" : "İsimler bulanık"); }}
-              >
-                {blur ? "İsimler bulanık" : "Bulanıklaştır"}
-              </button>
-            )}
-            <button type="button" onClick={() => setCollapsed((c) => !c)} aria-expanded={!collapsed} title="Overlay küçülür; tamamen gizlemek ve geri getirmek için F2">
-              {collapsed ? "Göster" : "Gizle"}
+            <button type="button" className="ib" onClick={() => setCollapsed((c) => !c)} aria-expanded={!collapsed} aria-label={collapsed ? "Göster" : "Küçült"} title={collapsed ? "Göster" : "Küçült · tamamen gizlemek için F2"}>
+              <Icon name={collapsed ? "expand" : "minus"} size={17} />
             </button>
             {inTauri && (askQuit ? (
               <span className="quitask">
-                <small>Uygulama kapansın mı?</small>
-                <button type="button" className="danger" onClick={() => { exit(0).catch(() => undefined); }}>Evet, kapat</button>
+                <small>Kapatılsın mı?</small>
+                <button type="button" className="danger" onClick={() => { exit(0).catch(() => undefined); }}>Kapat</button>
                 <button type="button" onClick={() => setAskQuit(false)}>Vazgeç</button>
               </span>
             ) : (
-              <button type="button" className="quit" onClick={() => setAskQuit(true)} title="Celeste Overlay'i tamamen kapat" aria-label="Uygulamayı kapat">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M8 1.5v6" /><path d="M4.2 4a5.5 5.5 0 1 0 7.6 0" /></svg>
-                Kapat
+              <button type="button" className="ib" onClick={() => setAskQuit(true)} title="Celeste Overlay'i tamamen kapat" aria-label="Uygulamayı kapat">
+                <Icon name="power" size={17} />
               </button>
             ))}
           </span>
-        </span>
-      </header>
+        </header>
 
-      {hideAt && !autoHidden && !manualKeep.current && (
-        <div className="hidebar" role="status">
-          <span className="hbt">
-            <b>Maç başladı.</b> Overlay {Math.max(0, Math.ceil((hideAt - Date.now()) / 1000))} saniye sonra gizlenecek; uygulama kapanmıyor. Geri getirmek için <kbd>F2</kbd>.
-          </span>
-          <span className="hba">
-            <button type="button" onClick={() => { manualKeep.current = true; setHideAt(null); showToast("Bu maç boyunca açık kalacak"); }}>Bu maç açık kalsın</button>
-            <button type="button" onClick={() => { setAutoHidden(true); setHideAt(null); }}>Şimdi gizle</button>
-          </span>
-          <small className="hbs">Otomatik gizlemeyi Ayarlar › Overlay'den kapatabilirsin.</small>
-        </div>
-      )}
+        {hideAt && !autoHidden && !manualKeep.current && (
+          <div className="hidebar" role="status">
+            <span className="hbt">
+              <b>Maç başladı.</b> Overlay {Math.max(0, Math.ceil((hideAt - Date.now()) / 1000))} saniye sonra gizlenecek; uygulama kapanmıyor. Geri getirmek için <kbd>F2</kbd>.
+            </span>
+            <span className="hba">
+              <button type="button" onClick={() => { manualKeep.current = true; setHideAt(null); showToast("Bu maç boyunca açık kalacak"); }}>Bu maç açık kalsın</button>
+              <button type="button" onClick={() => { setAutoHidden(true); setHideAt(null); }}>Şimdi gizle</button>
+            </span>
+            <small className="hbs">Otomatik gizlemeyi Ayarlar › Overlay'den kapatabilirsin.</small>
+          </div>
+        )}
 
-      {updater.state.kind === "available" && !collapsed && (
-        <div className="upd" role="status">
-          <span><i className="pulse" />Yeni sürüm hazır: <b>{updater.state.version}</b></span>
-          <button className="trk" type="button" onClick={updater.install}>Güncelle ve yeniden başlat</button>
-        </div>
-      )}
-      {updater.state.kind === "downloading" && !collapsed && (
-        <div className="upd" role="status">Güncelleme indiriliyor {updater.state.pct != null ? `%${updater.state.pct}` : "…"}</div>
-      )}
+        {updater.state.kind === "available" && !collapsed && (
+          <div className="upd" role="status">
+            <span><i className="pulse" />Yeni sürüm hazır: <b>{updater.state.version}</b></span>
+            <button className="trk" type="button" onClick={updater.install}>Güncelle ve yeniden başlat</button>
+          </div>
+        )}
+        {updater.state.kind === "downloading" && !collapsed && (
+          <div className="upd" role="status">Güncelleme indiriliyor {updater.state.pct != null ? `%${updater.state.pct}` : "…"}</div>
+        )}
 
-      {tilt && tilt.key !== tiltAck && !collapsed && (
-        <div className="tilt" role="status">
-          <span>{tilt.text}</span>
-          <button className="x" type="button" onClick={ackTilt}>Tamam</button>
-        </div>
-      )}
+        {tilt && tilt.key !== tiltAck && !collapsed && (
+          <div className="tilt" role="status">
+            <span>{tilt.text}</span>
+            <button className="x" type="button" onClick={ackTilt}>Tamam</button>
+          </div>
+        )}
 
-      {!collapsed && !guide && (
-        <div className="navrow">
-          <nav className="nav" aria-label="Bölümler">
-            {NAV.map(([id, label]) => (
-              <button key={id} type="button" className={`${view === id ? "on" : ""}${id === "trust" ? " spot" : ""}`.trim()} onClick={() => { setSelected(null); setView(id); }}>
-                {label}
-              </button>
-            ))}
-          </nav>
-          <button type="button" className={view === "feed" ? "feedbtn on" : "feedbtn"} onClick={() => { setSelected(null); setView("feed"); feedSeen(); }} aria-label={feedNotes ? `Akış, ${feedNotes} yeni bildirim` : feedNew ? `Akış, ${feedNew} yeni paylaşım` : "Akış"}>
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" /></svg>
-            <span>Akış</span>
-            {feedNotes > 0 ? <b className="fnew note">{feedNotes > 9 ? "9+" : feedNotes} bildirim</b> : feedNew > 0 ? <b className="fnew">{feedNew > 9 ? "9+" : feedNew} yeni</b> : <i className="flive" aria-hidden="true" />}
-          </button>
-        </div>
-      )}
-
-      {!collapsed && !guide && sess && sess.games > 0 && theme.tilt.on && view === "roster" && (
-        <p className="mode sess">Bu seans · {sess.wins}G {sess.losses}M · <span className={sess.rr < 0 ? "neg" : sess.rr > 0 ? "pos" : ""}>{fmtRr(sess.rr)}</span> · {fmtDur(sess.minutes)}</p>
-      )}
-      {!collapsed && !guide && notices.length > 0 && <NoticeCard list={notices} onClose={clearNotices} />}
-      {!collapsed && !guide && view === "roster" && !active && <WhatsNew version={updater.version} />}
-      {!collapsed && guide && <Guide onDone={closeGuide} />}
-
-      {!collapsed && !guide && (
-        view === "settings" ? (
-          <Settings updater={updater} onOpen={openTracker} onFeedback={() => setView("feedback")} theme={theme} onChange={setTheme} onGuide={() => { setGuide(true); setView("roster"); }} zoom={zoom} onZoom={setZoom} zooms={ZOOMS} onToast={showToast} onClose={() => setView("roster")} />
-        ) : view === "feed" ? (
-          assets ? <FeedPanel assets={assets} draft={feedDraft} onDraftUsed={() => setFeedDraft(null)} onToast={showToast} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
-        ) : view === "feedback" ? (
-          <FeedbackPanel version={updater.version} onOpen={openTracker} onClose={() => setView("roster")} />
-        ) : view === "report" ? (
-          assets ? <ReportPanel assets={assets} matchId={lastMatch} seen={seen} onTag={(id, t) => setSeen(setTag(id, t))} onOpen={openTracker} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
-        ) : view === "store" ? (
-          assets ? <StorePanel assets={assets} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
-        ) : view === "account" ? (
-          assets ? <AccountPanel assets={assets} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
-        ) : view === "stats" ? (
-          assets ? <StatsPanel assets={assets} onToast={showToast} onShare={(c) => { setFeedDraft(c); setView("feed"); }} onClose={() => setView("roster")} /> : <p className="empty">Görseller yükleniyor…</p>
-        ) : view === "cross" ? (
-          <Crosshairs onCopy={copyName} onClose={() => setView("roster")} />
-        ) : view === "trust" ? (
-          <TrustPanel onToast={showToast} onOpen={openTracker} onClose={() => setView("roster")} />
-        ) : view === "chat" ? (
-          <QuickChat onCopy={copyName} onClose={() => setView("roster")} />
-        ) : active && assets ? (
-          <LoadoutPanel
-            p={active}
-            lobby={snap.players}
-            th={theme.th}
-            assets={assets}
-            mapId={snap.mapId}
-            entry={seen[active.puuid]}
-            onLabel={(l) => setSeen(setLabel(active.puuid, l))}
-            onTag={(t) => setSeen(setTag(active.puuid, t))}
-            onClose={() => setSelected(null)}
-            onCopy={copyName}
-          />
-        ) : snap.players.length === 0 || !assets ? (
-          <Empty
-            tone={assetsFailed || st?.fault ? "err" : undefined}
-            text={<>
-              {emptyText}
-              {st?.riotClient && !st.valorant && assets && <small>Mağaza ve İstatistik sekmeleri oyun kapalıyken de çalışır.</small>}
-              {st?.valorant && <small>Overlay oyunun arkasında kalıyorsa Valorant'ta Ekran Modu'nu Pencereli Tam Ekran yap.</small>}
-            </>}
-            onRetry={assetsFailed && !assets ? retryAssets : undefined}
-          />
-        ) : (
-          <>
-            {(() => {
-              const foe = teamSummary(enemies, snap.mapId), mine = teamSummary(allies.filter((x) => !x.isSelf), snap.mapId);
-              return foe.length || mine.length ? (
-                <div className="lobby" role="note" aria-label="Lobi özeti">
-                  {foe.length > 0 && <span className="lob foe"><b>Rakipte</b>{foe.map((t) => <i key={t}>{t}</i>)}</span>}
-                  {mine.length > 0 && <span className="lob ally"><b>Takımında</b>{mine.map((t) => <i key={t}>{t}</i>)}</span>}
-                </div>
-              ) : null;
-            })()}
-            <div className="g c" style={{ gridTemplateColumns: template }}>
-              <div>Oyuncu</div>
-              {COLS.filter((c) => theme.cols[c.id]).map((c) => (
-                <div key={c.id} className={c.id === "wr" ? "k" : undefined}>{c.id === "tracker" ? "" : c.label}</div>
-              ))}
-            </div>
-            {[["Takımın", allies], ["Rakipler", enemies]].map(([title, list]) =>
-              (list as typeof allies).length ? (
-                <section key={title as string}>
-                  <p className="s ts">
-                    <span>
-                      {title as string}
-                      {sideOf((list as typeof allies)[0]?.team) ? ` · ${sideOf((list as typeof allies)[0]?.team)}` : ""}
-                    </span>
-                    {(() => {
-                      const t = teamStats(list as typeof allies);
-                      return (
-                        <span className="cmp" title="Ortalama rank ve son 5 rekabet maçının ortalama K/D'si">
-                          Ortalama {t.tier?.name ?? "–"} · K/D {t.kd != null ? t.kd.toFixed(2) : "–"}
-                        </span>
-                      );
-                    })()}
-                  </p>
-                  {(list as typeof allies).map((p, i) => (
-                    <PlayerRow
-                      key={p.puuid}
-                      p={p}
-                      index={i}
-                      assets={assets}
-                      entry={seen[p.puuid]}
-                      cols={theme.cols}
-                      th={theme.th}
-                      template={template}
-                      blur={blur}
-                      onOpen={() => setSelected(p.puuid)}
-                      onCopy={copyName}
-                      onTracker={openTracker}
-                      mapId={snap.mapId}
-                      mapName={mapName}
-                      lobby={snap.players}
-                    />
-                  ))}
-                </section>
-              ) : null,
-            )}
-            <p className="mode">İsme tıkla: adı kopyala · Satıra tıkla: ayrıntılar · Başlığı sürükle: taşı</p>
-            {snap.players.some((x) => x.form.some((f) => (f.queue ?? "").toLowerCase() !== "competitive")) && (
-              <p className="mode legend">
-                <span className="fc win">W</span>Rekabet
-                <span className="fc win alt">W</span>Diğer mod · üstüne gelince mod, harita ve ajan görünür
-              </p>
-            )}
-            {snap.players.some((x) => x.party) && (
-              <p className="mode legend">
-                <span className="p mini">A</span>Aynı parti
-                <span className="d">· üstüne gelince nereden bilindiği görünür</span>
-              </p>
-            )}
-          </>
-        )
-      )}
-      {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} onFeedback={() => { setSelected(null); setGuide(false); setCollapsed(false); setView("feedback"); }} />}
+        {!collapsed && !guide && notices.length > 0 && <NoticeCard list={notices} onClose={clearNotices} />}
+        {!collapsed && !guide && view === "roster" && !active && <WhatsNew version={updater.version} />}
+        {!collapsed && guide && <Guide onDone={closeGuide} />}
+        {!collapsed && !guide && content}
+        {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} onFeedback={() => { setGuide(false); setCollapsed(false); go("feedback"); }} />}
+      </div>
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
   );

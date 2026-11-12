@@ -106,7 +106,7 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
                       </label>
                     </span>
                   </Row>
-                  <Row title="Yazı boyutu" desc="Bütün overlay'i büyütür ya da küçültür. Üstteki A− ve A+ ile aynı ayar.">
+                  <Row title="Yazı boyutu" desc="Bütün overlay'i büyütür ya da küçültür. Hızlı ayarlar'daki yazı boyutuyla aynı ayar.">
                     <span className="seg" role="group" aria-label="Yazı boyutu">
                       {zooms.map((z) => (
                         <button key={z} type="button" className={z === zoom ? "on" : ""} aria-pressed={z === zoom} onClick={() => onZoom(z)}>%{Math.round(z * 100)}</button>
@@ -204,7 +204,7 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
                 <h3 className="h2">Görünen sütunlar<span className="hv">Kapattığın sütun kadar overlay daralır</span></h3>
                 <div className="colstrip" aria-hidden="true">
                   <span className="cs main">Oyuncu</span>
-                  {COLS.filter((c) => theme.cols[c.id]).map((c) => <span key={c.id} className="cs" style={{ flexGrow: c.px }}>{c.id === "tracker" ? "Tracker" : c.label}</span>)}
+                  {COLS.filter((c) => theme.cols[c.id] && !c.inline).map((c) => <span key={c.id} className="cs" style={{ flexGrow: c.px }}>{c.id === "tracker" ? "Tracker" : c.label}</span>)}
                 </div>
                 <div className="colgrid">
                   <span className="colc lock" title="Oyuncu sütunu her zaman açık">

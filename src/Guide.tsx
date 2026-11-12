@@ -1,3 +1,4 @@
+import { Icon } from "./icons";
 import { useState, type ReactNode } from "react";
 
 /* İlk açılış rehberi: 5 adım. Ayarlar'dan tekrar açılabilir. */
@@ -27,7 +28,7 @@ const STEPS: { title: string; lead: string; body: ReactNode }[] = [
         { sample: <span className="gdot ok" />, title: "Oyuna dokunmaz", text: "Oyuna tuş göndermez, oyun dosyalarını değiştirmez. Yalnızca okur." },
         { sample: <span className="gdot ok" />, title: "Veriler sende kalır", text: "Etiketler ve notlar yalnızca bu bilgisayarda saklanır." },
         { sample: <span className="gdot ok" />, title: "Gizli isimler gizli kalır", text: "İsmini gizleyen oyuncunun adı gösterilmez." },
-        { sample: <span className="gdot ok" />, title: "Kanıtı içinde", text: "S.S.S & Panel sekmesi uygulamanın attığı her isteği canlı gösterir." },
+        { sample: <span className="gdot ok" />, title: "Kanıtı içinde", text: "Sol menüdeki S.S.S bölümü uygulamanın attığı her isteği canlı gösterir." },
       ]} />
     ),
   },
@@ -46,7 +47,7 @@ const STEPS: { title: string; lead: string; body: ReactNode }[] = [
           ))}
         </div>
         <Items items={[
-          { sample: <span className="gdots"><i className="ok" /><i className="ok" /><i className="ok" /></span>, title: "Sağ alttaki noktalar", text: "Bağlantı durumunu gösterir. Birine tıklarsan neyin çalışmadığını görürsün." },
+          { sample: <span className="gdots"><i className="ok" /></span>, title: "Sol alttaki durum", text: "\"Her şey bağlı\" yazıyorsa sorun yok. Tıklarsan neyin çalışmadığını görürsün." },
           { sample: <span className="gsoft">Oyun başlayınca görünür</span>, title: "Kaplamalar", text: "Rakip kaplamaları ancak oyun başlayınca Riot tarafından paylaşılır." },
           { sample: <span className="gsoft">Pencereli Tam Ekran</span>, title: "Overlay görünmüyorsa", text: "Valorant'ta Ayarlar → Video → Ekran Modu'nu Pencereli Tam Ekran yap. Tam ekranda overlay oyunun arkasında kalır." },
         ]} />
@@ -59,10 +60,10 @@ const STEPS: { title: string; lead: string; body: ReactNode }[] = [
     body: (
       <Items items={[
         { sample: <span className="grank">Platin 2<small>41 RR</small></span>, title: "Rank ve Peak", text: "Şu anki rank ve gördüğü en yüksek rank." },
-        { sample: <span className="gwl"><i className="w">W</i><i className="w">W</i><i className="l">L</i><i className="w">W</i><i className="l">L</i></span>, title: "Son 5 rekabet", text: "Yeşil galibiyet, kırmızı mağlubiyet. Yalnızca rekabet maçları sayılır." },
-        { sample: <span className="gpair"><i className="p">A</i><i className="p soft">B</i></span>, title: "Parti", text: "Düz çerçeve: Riot'a göre aynı partide. Kesik çerçeve: son maçlarda sık birlikte oynadılar." },
-        { sample: <span className="rep">3. kez</span>, title: "Tekrar karşılaşma", text: "Bu oyuncuyla daha önce aynı maçtaydın. Satır renkli işaretlenir." },
-        { sample: <span className="bd pos">Formda +72 RR</span>, title: "Rozetler", text: "Ölçülen verilerden çıkar. Eşikleri Ayarlar'dan değiştirebilirsin." },
+        { sample: <span className="gsq"><i className="w" /><i className="w" /><i className="l" /><i className="w alt" /><i className="l" /></span>, title: "Son 5 maç", text: "Yeşil galibiyet, pembe mağlubiyet. Soluk kareler rekabet dışı modlar; üstüne gelince mod, harita ve ajan görünür." },
+        { sample: <span className="gpb"><i /><i className="soft" /></span>, title: "Parti", text: "Avatarın solundaki aynı renk çizgi aynı partiyi gösterir. Soluk çizgi: son maçlarda sık birlikte oynadılar." },
+        { sample: <span className="rep">3. kez aynı maçta</span>, title: "Tekrar karşılaşma", text: "Bu oyuncuyla daha önce aynı maçtaydın. Satır hafif renkli işaretlenir." },
+        { sample: <span className="bd pos">Formda +72 RR</span>, title: "Öne çıkan", text: "Ölçülen verilerden çıkar. Birden fazlaysa \"+1\" üstüne gelince görünür. Eşikler Ayarlar'da." },
       ]} />
     ),
   },
@@ -72,29 +73,25 @@ const STEPS: { title: string; lead: string; body: ReactNode }[] = [
     body: (
       <Items items={[
         { sample: <Key>F2</Key>, title: "Göster / gizle", text: "Overlay'i anında gizler ya da öne getirir." },
-        { sample: <span className="gdrag">Haven</span>, title: "Taşı", text: "Üstteki başlık şeridinden sürükle." },
-        { sample: <span className="gbtns"><i>A−</i><i>A+</i></span>, title: "Yazı boyutu", text: "Küçültür veya büyütür. Ayarlar'da yüzde olarak da seçebilirsin." },
-        { sample: <span className="gbtns"><i>Kayıtta gizle</i></span>, title: "Kayıt ve yayın", text: "Açıkken overlay kayıtta görünmez, sen oyunda görmeye devam edersin." },
-        { sample: <span className="gbtns"><i>Bulanıklaştır</i></span>, title: "İsimleri bulanıklaştır", text: "Video çekerken başkalarının kimliğini göstermemek için isimleri bulanık yapar." },
-        { sample: <span className="gbtns"><i>Gizle</i></span>, title: "Şeride küçült", text: "Başlık dışında her şeyi kapatır. Maç başlayınca kendiliğinden de gizlenir." },
+        { sample: <span className="gdrag">Haven</span>, title: "Taşı", text: "Başlıktan ya da sol menünün boş yerinden tutup sürükle." },
+        { sample: <span className="gico"><Icon name="sliders" size={15} /></span>, title: "Hızlı ayarlar", text: "Sağ üstteki düğme: kayıtta gizle, isimleri bulanıklaştır, FPS modu ve yazı boyutu." },
+        { sample: <span className="gico"><Icon name="minus" size={15} /></span>, title: "Küçült", text: "Başlık dışında her şeyi kapatır. Maç başlayınca kendiliğinden de gizlenir." },
       ]} />
     ),
   },
   {
     title: "Diğer bölümler",
-    lead: "Üstteki sekmelerle gezinirsin. Hazırsan başlayalım.",
+    lead: "Soldaki menüyle gezinirsin. Hazırsan başlayalım.",
     body: (
       <div className="gtabs">
         {[
-          ["Oyuncular", "Lobi listesi"],
+          ["Lobi", "Maçtaki oyuncular"],
           ["Son maç", "Bitmiş maçın raporu"],
-          ["Mağaza", "Günlük ve gece mağazası"],
-          ["Hesabım", "Bakiye, görevler, envanter"],
-          ["İstatistik", "Kendi rekabet verilerin"],
-          ["Sohbet", "Hızlı mesajlarını kopyala"],
-          ["Nişangah", "Hazır nişangah kodları"],
-          ["S.S.S & Panel", "Sorular ve canlı ağ kaydı"],
-          ["Ayarlar", "Renk, eşikler, Tilt koruyucu"],
+          ["Profilim", "İstatistik, mağaza, hesabın"],
+          ["Akış", "Topluluğun paylaşımları"],
+          ["Araçlar", "Hızlı mesajlar, nişangahlar"],
+          ["S.S.S", "Sorular ve canlı ağ kaydı"],
+          ["Ayarlar", "Renk, sütunlar, Tilt koruyucu"],
         ].map(([a, b], i) => (
           <div className="gtab" key={a} style={{ animationDelay: `${i * 45}ms` }}><b>{a}</b><small>{b}</small></div>
         ))}

@@ -2,19 +2,20 @@ import { DEFAULT_TILT, TILT_HOURS, TILT_LOSSES, TILT_RR, type TiltCfg } from "./
 
 /* Kullanıcı ayarları (görünüm, taraf bilgisi, otomatik gizleme, sütunlar). Yalnızca bu bilgisayarda saklanır. */
 export type ColId = "rank" | "peak" | "wr" | "form" | "skins" | "party" | "pool" | "badges" | "tracker";
-export interface ColDef { id: ColId; label: string; px: number }
+/** inline: kendi sütunu yok, başka bir hücrenin içinde gösterilir (peak rank hücresinde, parti avatarın yanındaki çizgide). */
+export interface ColDef { id: ColId; label: string; px: number; inline?: boolean }
 
 // "Oyuncu" sütunu her zaman açıktır ve kalan genişliği alır.
 export const COLS: ColDef[] = [
-  { id: "rank", label: "Rank", px: 140 },
-  { id: "peak", label: "Peak", px: 140 },
-  { id: "wr", label: "Kazanma", px: 60 },
-  { id: "form", label: "Son maçlar", px: 120 },
-  { id: "skins", label: "Kaplamalar", px: 172 },
-  { id: "party", label: "Parti", px: 28 },
-  { id: "pool", label: "Ajanlar", px: 100 },
-  { id: "badges", label: "Rozetler", px: 190 },
-  { id: "tracker", label: "Tracker düğmesi", px: 56 },
+  { id: "rank", label: "Rank", px: 158 },
+  { id: "peak", label: "Peak rank", px: 0, inline: true },
+  { id: "wr", label: "Kazanma", px: 74 },
+  { id: "form", label: "Son 5 maç", px: 104 },
+  { id: "skins", label: "Vandal", px: 128 },
+  { id: "party", label: "Parti çizgisi", px: 0, inline: true },
+  { id: "pool", label: "Ajanlar", px: 84 },
+  { id: "badges", label: "Öne çıkan", px: 118 },
+  { id: "tracker", label: "Tracker düğmesi", px: 64 },
 ];
 
 /* Rozet eşikleri. Rozetler yalnızca ölçülen değerler bu sınırları aşınca çıkar. */
@@ -113,11 +114,15 @@ export function applyTheme(t: Theme) {
   try { localStorage.setItem(KEY, JSON.stringify(t)); } catch { /* depolama dolu */ }
 }
 
+/** Tabloda kendi sütunu olan açık sütunlar (sırasıyla). */
+export const gridCols = (cols: Record<ColId, boolean>) => COLS.filter((c) => cols[c.id] && !c.inline);
+
 export const gridTemplate = (cols: Record<ColId, boolean>) =>
-  ["minmax(0, 1fr)", ...COLS.filter((c) => cols[c.id]).map((c) => `${c.px}px`)].join(" ");
+  ["minmax(0, 1fr)", ...gridCols(cols).map((c) => `${c.px}px`)].join(" ");
 
 /* Açık sütunlara göre pencere genişliği (CSS px). */
+/* Sol menü 64, kenar boşlukları 44, takım kartı ve satır iç boşlukları 32, oyuncu sütunu en az 210. */
 export function overlayWidth(cols: Record<ColId, boolean>): number {
-  const on = COLS.filter((c) => cols[c.id]);
-  return Math.max(720, 48 + 190 + on.reduce((a, c) => a + c.px, 0) + 12 * on.length);
+  const on = gridCols(cols);
+  return Math.max(820, 64 + 44 + 32 + 210 + on.reduce((a, c) => a + c.px, 0) + 12 * on.length);
 }
