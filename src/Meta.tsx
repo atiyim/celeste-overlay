@@ -40,6 +40,11 @@ export function Meta({ assets, currentMapId, onClose }: Props) {
   const mapSel = map ?? curData ?? dataMaps[0] ?? "";
   const [agentSel, setAgentSel] = useState<string>("");
 
+  const mapArt = (name: string) => {
+    if (!assets) return "";
+    for (const [u, n] of assets.maps) if (norm(n) === norm(name)) return assets.mapArt.get(u) ?? "";
+    return "";
+  };
   const icon = (n: string) => [...(assets?.agents.values() ?? [])].find((x) => norm(x.name) === norm(n))?.icon;
 
   if (failed || !data) {
@@ -107,7 +112,10 @@ export function Meta({ assets, currentMapId, onClose }: Props) {
             <button type="button" className={role === "all" ? "x on" : "x"} onClick={() => setRole("all")}>Tüm roller</button>
             {ROLES.map(([id, l]) => <button key={id} type="button" className={role === id ? "x on" : "x"} onClick={() => setRole(id)}>{l}</button>)}
           </div>
-          <div className="box pad">
+          <div className="mapban" key={mapSel} style={{ backgroundImage: mapArt(mapSel) ? `url(${mapArt(mapSel)})` : undefined }}>
+            <span>{up(mapSel)}</span>
+          </div>
+          <div className="box pad mapres" key={`r-${mapSel}`}>
             {byMap.length === 0 && <p className="d none">Bu harita için yeterli maç verisi yok.</p>}
             {byMap.map(({ a, m }, i) => <MapLine key={a.a} n={i + 1} name={up(a.a)} icon={icon(a.a) ?? ""} wr={m[1]} matches={m[0]} pr={m[2]} />)}
             <small className="tsrc">Haritada en az {MIN_MATCHES} maçı olan ajanlar gösterilir; azı gürültülü olur. Kazanma oranı %50'nin üstü iyi, altı zayıf demektir.</small>

@@ -1539,3 +1539,10 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 .x { padding-inline: 12px; }
 .x.go { padding-inline: 16px; }
 .callout, .notice { padding: 12px 16px; }
+
+/* harita başlık bandı */
+.mapban { position: relative; height: 78px; border-radius: 12px; border: 1px solid var(--line); background: var(--s1) center 40% / cover no-repeat; overflow: hidden; display: flex; align-items: flex-end; animation: mbIn .6s ease both; }
+.mapban::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10,13,20,.85), rgba(10,13,20,.15) 70%), linear-gradient(0deg, rgba(10,13,20,.7), transparent 60%); }
+.mapban span { position: relative; z-index: 1; padding: 10px 16px; font-size: 15px; font-weight: 600; letter-spacing: .12em; color: #fff; }
+.mapres { animation: mbIn .6s ease .35s both; }
+@keyframes mbIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
