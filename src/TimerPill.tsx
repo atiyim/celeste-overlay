@@ -1,5 +1,5 @@
 import { Icon } from "./icons";
-import { clock, useTimers } from "./timers";
+import { clock, useTimers } from "./timerStore";
 
 /* Başlıkta çalışan sayaç varsa en yakın biten gösterilir; tıklayınca sayaç sayfası açılır. */
 export function TimerPill({ onOpen }: { onOpen: () => void }) {

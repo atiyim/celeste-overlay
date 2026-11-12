@@ -23,7 +23,7 @@ import { Timers } from "./Timers";
 import { Search } from "./Search";
 import { Meta } from "./Meta";
 import { TimerPill } from "./TimerPill";
-import { onTimerDone } from "./timers";
+import { onTimerDone } from "./timerStore";
 import { AccountPanel } from "./AccountPanel";
 import { StorePanel } from "./StorePanel";
 import { StatsPanel } from "./StatsPanel";

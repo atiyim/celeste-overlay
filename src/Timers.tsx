@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PanelHead } from "./ui";
-import { addTimer, clock, parseDuration, removeTimer, restartTimer, setSound, soundOn, useTimers } from "./timers";
+import { addTimer, clock, parseDuration, removeTimer, restartTimer, setSound, soundOn, useTimers } from "./timerStore";
 
 const PRESETS = [["30 sn", 30], ["45 sn", 45], ["1 dk", 60], ["2 dk", 120]] as const;
 
