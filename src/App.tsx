@@ -21,6 +21,7 @@ import { StatusBar } from "./StatusBar";
 import { Device } from "./Device";
 import { Timers } from "./Timers";
 import { Search } from "./Search";
+import { Meta } from "./Meta";
 import { TimerPill } from "./TimerPill";
 import { onTimerDone } from "./timers";
 import { AccountPanel } from "./AccountPanel";
@@ -53,7 +54,7 @@ export const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
 /* Bölümler: sol menüdeki gruplar ve içlerindeki alt sekmeler. */
 const PROFILE = [["stats", "İstatistik"], ["store", "Mağaza"], ["account", "Hesabım"]] as const;
-const TOOLS = [["chat", "Hızlı mesajlar"], ["cross", "Nişangah"], ["device", "Cihaz"], ["timers", "Sayaçlar"], ["search", "Oyuncu arama"]] as const;
+const TOOLS = [["chat", "Hızlı mesajlar"], ["cross", "Nişangah"], ["device", "Cihaz"], ["timers", "Sayaçlar"], ["search", "Oyuncu arama"], ["meta", "Harita metası"]] as const;
 type ProfileView = (typeof PROFILE)[number][0];
 type ToolView = (typeof TOOLS)[number][0];
 type View = "roster" | "report" | "feed" | "feedback" | "trust" | "settings" | ProfileView | ToolView;
@@ -557,6 +558,7 @@ export function App() {
       {view === "cross" ? <Crosshairs onCopy={copyName} onClose={() => go("roster")} />
         : view === "device" ? <Device onCopy={copyName} onClose={() => go("roster")} />
         : view === "timers" ? <Timers onClose={() => go("roster")} />
+        : view === "meta" ? <Meta assets={assets} currentMapId={snap.mapId} onClose={() => go("roster")} />
         : view === "search" ? <Search assets={assets} seen={seen} onOpen={openTracker} onCopy={copyName} onClose={() => go("roster")} />
         : <QuickChat onCopy={copyName} onClose={() => go("roster")} />}
     </Hub>
