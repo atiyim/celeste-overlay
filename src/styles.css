@@ -1469,3 +1469,8 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 .ta { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-2); }
 .ta img, .ta .aifb { width: 28px; height: 28px; border-radius: 8px; }
 .tsrc { display: block; margin-top: 8px; font-size: 11px; color: var(--fg-3); }
+.note-s { margin: 0; font-size: 12px; color: var(--fg-3); }
+.tn2 { display: flex; flex-direction: column; line-height: 1.2; }
+.tn2 small { font-size: 10.5px; color: var(--fg-3); }
+.tierr.tF > b { background: #6b6482; }
+.tl { gap: 8px 14px; }
