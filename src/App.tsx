@@ -23,7 +23,8 @@ import { Timers } from "./Timers";
 import { Search } from "./Search";
 import { Meta } from "./Meta";
 import { TimerPill } from "./TimerPill";
-import { onTimerDone } from "./timerStore";
+import { onTimerDone, startSpike, useSpikeKey } from "./timerStore";
+import { register, unregister } from "@tauri-apps/plugin-global-shortcut";
 import { AccountPanel } from "./AccountPanel";
 import { StorePanel } from "./StorePanel";
 import { StatsPanel } from "./StatsPanel";
@@ -54,7 +55,7 @@ export const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
 /* Bölümler: sol menüdeki gruplar ve içlerindeki alt sekmeler. */
 const PROFILE = [["stats", "İstatistik"], ["store", "Mağaza"], ["account", "Hesabım"]] as const;
-const TOOLS = [["chat", "Hızlı mesajlar"], ["cross", "Nişangah"], ["device", "Cihaz"], ["timers", "Sayaçlar"], ["search", "Oyuncu arama"], ["meta", "Harita metası"]] as const;
+const TOOLS = [["chat", "Hızlı mesajlar"], ["cross", "Nişangah"], ["device", "DPI/eDPI"], ["timers", "Sayaçlar"], ["search", "Oyuncu arama"], ["meta", "Meta"]] as const;
 type ProfileView = (typeof PROFILE)[number][0];
 type ToolView = (typeof TOOLS)[number][0];
 type View = "roster" | "report" | "feed" | "feedback" | "trust" | "settings" | ProfileView | ToolView;
@@ -396,6 +397,13 @@ export function App() {
   });
 
   const showToast = (t: string) => { setToast(t); window.setTimeout(() => setToast(null), 1800); };
+  // Spike sayacı için atanmış genel kısayol (oyunun üstündeyken de çalışır).
+  const spikeKey = useSpikeKey();
+  useEffect(() => {
+    if (!inTauri || !spikeKey) return;
+    register(spikeKey, (e) => { if (e.state === "Pressed") startSpike(); }).catch(() => showToast("Spike tuşu kaydedilemedi, başka bir program kullanıyor olabilir"));
+    return () => { unregister(spikeKey).catch(() => undefined); };
+  }, [spikeKey]);
   useEffect(() => { onTimerDone((t) => { setToast(`${t.name} bitti`); window.setTimeout(() => setToast(null), 3500); }); return () => onTimerDone(null); }, []);
   const copyName = async (name: string | null, label?: string) => {
     if (!name) { showToast("Bu oyuncunun ismi gizli, kopyalanacak bir şey yok"); return; }
@@ -612,7 +620,7 @@ export function App() {
   const phaseTone = snap.phase === "pregame" ? "go" : snap.phase === "ingame" ? "live" : snap.phase === "menu" ? "wait" : "off";
 
   return (
-    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}${collapsed ? " mini" : ""}`} ref={rootRef} style={{ width }}>
+    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}${collapsed ? " mini" : ""}`} ref={rootRef} style={{ width, maxHeight: Math.max(360, Math.floor(((window.screen?.availHeight ?? 1000) - 24) / zoom)) }}>
       {!collapsed && !guide && <Rail active={group} onPick={pickGroup} feedCount={feedCount} feedNote={feedNotes > 0} onDrag={startDrag} />}
       <div className="ovm">
         <header className="hd drag" onMouseDown={startDrag} title="Sürükleyerek taşı">
@@ -685,10 +693,12 @@ export function App() {
           </div>
         )}
 
+        <div className="obody">
         {!collapsed && !guide && notices.length > 0 && <NoticeCard list={notices} onClose={clearNotices} />}
         {!collapsed && !guide && view === "roster" && !active && <WhatsNew version={updater.version} />}
         {!collapsed && guide && <Guide onDone={closeGuide} />}
         {!collapsed && !guide && content}
+        </div>
         {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} onFeedback={() => { setGuide(false); setCollapsed(false); go("feedback"); }} />}
       </div>
       {toast && <div className="toast" role="status">{toast}</div>}

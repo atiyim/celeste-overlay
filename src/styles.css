@@ -1461,16 +1461,52 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 .srow .sn b { font-size: 13px; font-weight: 500; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .srow .sn small { font-size: 11.5px; color: var(--fg-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .srow .tg { flex: none; padding: 0 8px; font-size: 11px; line-height: 18px; border: 1px solid; border-radius: 999px; }
+
+/* ---------- 0.8.3: kaydırma, spike ---------- */
+.ov { min-height: 0; grid-template-rows: minmax(0, 1fr); }
+.ovm { min-height: 0; max-height: inherit; }
+.obody { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; overflow-x: hidden; padding-right: 4px; margin-right: -4px; scrollbar-width: thin; scrollbar-color: #3a3160 transparent; }
+.obody::-webkit-scrollbar { width: 8px; }
+.obody::-webkit-scrollbar-thumb { background: #3a3160; border-radius: 999px; }
+.obody::-webkit-scrollbar-track { background: transparent; }
+.obody > * { flex: none; }
+.spk { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--loss) 30%, var(--line)); border-radius: var(--r); background: color-mix(in srgb, var(--loss) 6%, var(--box)); }
+.spk .spi { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.spk .spi b { font-size: 13px; font-weight: 500; color: var(--fg); }
+.spk .spi small { font-size: 11.5px; color: var(--fg-3); }
+.spkey { display: inline-flex; align-items: center; gap: 8px; }
+.spkey kbd { min-width: 54px; text-align: center; padding: 3px 10px; font: inherit; font-size: 12px; color: var(--fg); background: var(--s2); border: 1px solid var(--line-2); border-radius: 7px; }
+
+/* ---------- Meta ---------- */
 .metam { display: flex; flex-wrap: wrap; gap: 6px; }
-.tierr { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
-.tierr > b { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; font-size: 14px; color: var(--on-accent); background: var(--accent); }
-.tierr.tS > b { background: var(--gold); } .tierr.tA > b { background: var(--win); } .tierr.tB > b { background: var(--teal); } .tierr.tC > b { background: var(--violet); } .tierr.tD > b { background: var(--loss); }
-.tl { display: flex; flex-wrap: wrap; gap: 10px; }
-.ta { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-2); }
-.ta img, .ta .aifb { width: 28px; height: 28px; border-radius: 8px; }
-.tsrc { display: block; margin-top: 8px; font-size: 11px; color: var(--fg-3); }
 .note-s { margin: 0; font-size: 12px; color: var(--fg-3); }
-.tn2 { display: flex; flex-direction: column; line-height: 1.2; }
-.tn2 small { font-size: 10.5px; color: var(--fg-3); }
-.tierr.tF > b { background: #6b6482; }
-.tl { gap: 8px 14px; }
+.rgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.rcard { padding: 12px 14px 8px; border: 1px solid var(--line); border-radius: var(--r); background: var(--box); }
+.rcard h3 { margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-2); }
+.trow { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; padding: 8px 0; border-top: 1px solid var(--line-soft); }
+.trow > i { display: grid; place-items: center; width: 28px; height: 28px; margin-top: 4px; border-radius: 9px; font-style: normal; font-size: 13px; font-weight: 700; color: var(--on-accent); background: var(--accent); }
+.trow.tS > i { background: var(--gold); } .trow.tA > i { background: var(--win); } .trow.tB > i { background: var(--teal); } .trow.tC > i { background: var(--violet); } .trow.tD > i { background: var(--loss); } .trow.tF > i { background: #6b6482; color: #fff; }
+.tgrid { display: flex; flex-wrap: wrap; gap: 8px; }
+.mt2 { display: grid; grid-template-columns: 34px auto; grid-template-rows: auto auto; column-gap: 8px; align-items: center; padding: 4px 10px 4px 4px; border-radius: 11px; background: var(--s2); box-shadow: inset 0 0 0 1px var(--line); }
+.mt2 > img, .mt2 > .aifb { grid-row: 1 / 3; width: 34px; height: 34px; border-radius: 9px; }
+.mt2 b { font-size: 11.5px; font-weight: 600; letter-spacing: .03em; color: var(--fg); line-height: 1.1; align-self: end; }
+.mt2 small { font-size: 11px; color: var(--fg-3); font-variant-numeric: tabular-nums; align-self: start; }
+.mline { display: grid; grid-template-columns: 24px 30px 110px 1fr 56px 84px; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+.mline em { font-style: normal; font-size: 12px; color: var(--fg-3); text-align: right; font-variant-numeric: tabular-nums; }
+.mline .mlic { width: 28px; height: 28px; border-radius: 8px; }
+.mline > b { font-size: 12.5px; font-weight: 600; letter-spacing: .03em; color: var(--fg); }
+.mline strong { font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; }
+.mline small { font-size: 11px; color: var(--fg-3); text-align: right; font-variant-numeric: tabular-nums; }
+.mbar { display: block; height: 6px; border-radius: 999px; background: var(--s3); overflow: hidden; }
+.mbar > i { display: block; height: 100%; border-radius: 999px; background: var(--fg-3); }
+.mline.good .mbar > i { background: var(--win); } .mline.good strong { color: var(--win); }
+.mline.bad .mbar > i { background: var(--loss); } .mline.bad strong { color: var(--loss); }
+.agsel { display: flex; align-items: flex-end; gap: 16px; }
+.agsel label { display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; color: var(--fg-3); }
+.agsel select { padding: 7px 10px; font: inherit; font-size: 13px; color: var(--fg); background: var(--s1); border: 1px solid var(--line); border-radius: 8px; min-width: 180px; }
+.agsum { display: inline-flex; align-items: center; gap: 10px; }
+.agsum img, .agsum .aifb { width: 34px; height: 34px; border-radius: 9px; }
+.agsum b { font-size: 13px; letter-spacing: .03em; color: var(--fg); }
+.agsum small { font-size: 11.5px; color: var(--fg-3); }
+.tsrc { display: block; margin-top: 8px; font-size: 11px; color: var(--fg-3); }
+@media (max-width: 1100px) { .rgrid { grid-template-columns: 1fr; } }

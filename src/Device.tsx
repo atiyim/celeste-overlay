@@ -54,8 +54,8 @@ export function Device({ onCopy, onClose }: Props) {
   const text = (p: Profile) => `${p.name}: ${p.dpi} DPI · ${p.sens} duyarlılık · eDPI ${fmt(p.dpi * p.sens)}${p.crosshair ? ` · ${p.crosshair}` : ""}`;
 
   return (
-    <div className="panel" role="dialog" aria-label="Cihaz kontrolü">
-      <PanelHead title="Cihaz kontrolü" sub="DPI ve oyun içi duyarlılığından eDPI ile 360° dönüş mesafeni hesapla." onClose={onClose} />
+    <div className="panel" role="dialog" aria-label="DPI/eDPI">
+      <PanelHead title="DPI / eDPI" sub="DPI ve oyun içi duyarlılığından eDPI ile 360° dönüş mesafeni hesapla." onClose={onClose} />
 
       <div className="dv">
         <label>DPI<input inputMode="decimal" value={dpi} onChange={(e) => setDpi(e.target.value)} onKeyDown={(e) => e.stopPropagation()} aria-label="DPI" /></label>

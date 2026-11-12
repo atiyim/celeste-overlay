@@ -54,6 +54,32 @@ export function restartTimer(id: number) {
   run(); emit();
 }
 export function removeTimer(id: number) { list = list.filter((t) => t.id !== id); emit(); }
+/* Spike: Valorant'ta spike 45 saniyede patlar. Oyundan plant bilgisi okunmaz; sayaç senin bastığın tuşla ya da düğmeyle başlar. */
+export const SPIKE_NAME = "Spike";
+export const SPIKE_SECONDS = 45;
+const SPIKE_KEY = "overlay-spike-key";
+let spikeKey = (() => { try { return localStorage.getItem(SPIKE_KEY) ?? ""; } catch { return ""; } })();
+const keySubs = new Set<() => void>();
+export function startSpike() {
+  list = list.filter((t) => t.name !== SPIKE_NAME);
+  addTimer(SPIKE_NAME, SPIKE_SECONDS);
+}
+export function setSpikeKey(k: string) {
+  spikeKey = k;
+  try { localStorage.setItem(SPIKE_KEY, k); } catch { /* depolama kapalı */ }
+  keySubs.forEach((f) => f());
+}
+export function useSpikeKey(): string {
+  return useSyncExternalStore((f) => { keySubs.add(f); return () => { keySubs.delete(f); }; }, () => spikeKey);
+}
+/** Basılan tuşu global kısayol biçimine çevirir ("Control+Shift+F6"). Desteklenmeyen tuşta null. F2 overlay'e ayrılmıştır. */
+export function accelFromEvent(e: KeyboardEvent): string | null {
+  const c = e.code;
+  const key = /^Key([A-Z])$/.exec(c)?.[1] ?? /^Digit(\d)$/.exec(c)?.[1] ?? (/^F([1-9]|1[0-9]|2[0-4])$/.test(c) ? c : null);
+  if (!key || key === "F2" && !e.ctrlKey && !e.altKey && !e.shiftKey) return null;
+  return [e.ctrlKey && "Control", e.altKey && "Alt", e.shiftKey && "Shift", key].filter(Boolean).join("+");
+}
+
 export function onTimerDone(fn: ((t: Timer) => void) | null) { alertFn = fn; }
 
 export function useTimers(): Timer[] {

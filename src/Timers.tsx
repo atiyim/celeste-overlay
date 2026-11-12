@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PanelHead } from "./ui";
-import { addTimer, clock, parseDuration, removeTimer, restartTimer, setSound, soundOn, useTimers } from "./timerStore";
+import { accelFromEvent, addTimer, clock, parseDuration, removeTimer, restartTimer, setSound, setSpikeKey, SPIKE_SECONDS, soundOn, startSpike, useSpikeKey, useTimers } from "./timerStore";
 
 const PRESETS = [["30 sn", 30], ["45 sn", 45], ["1 dk", 60], ["2 dk", 120]] as const;
 
@@ -9,7 +9,23 @@ export function Timers({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
   const [dur, setDur] = useState("");
   const [sound, setSnd] = useState(soundOn);
+  const spikeKey = useSpikeKey();
+  const [capture, setCapture] = useState(false);
   const secs = parseDuration(dur);
+
+  // "Tuş ata": basılan sonraki tuş kısayol olur. Esc vazgeçer.
+  useEffect(() => {
+    if (!capture) return;
+    const on = (e: KeyboardEvent) => {
+      e.preventDefault(); e.stopPropagation();
+      if (e.key === "Escape") { setCapture(false); return; }
+      if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
+      const a = accelFromEvent(e);
+      if (a) { setSpikeKey(a); setCapture(false); }
+    };
+    window.addEventListener("keydown", on, true);
+    return () => window.removeEventListener("keydown", on, true);
+  }, [capture]);
   const now = Date.now();
 
   const add = () => { if (!secs) return; addTimer(name, secs); setDur(""); };
@@ -22,6 +38,16 @@ export function Timers({ onClose }: { onClose: () => void }) {
         actions={<button className={sound ? "x on" : "x"} type="button" aria-pressed={sound} onClick={() => { setSound(!sound); setSnd(!sound); }}>Ses {sound ? "açık" : "kapalı"}</button>}
         onClose={onClose}
       />
+
+      <div className="spk">
+        <span className="spi"><b>Spike patlama sayacı</b><small>{SPIKE_SECONDS} saniye. Spike kurulunca tuşa bas ya da Başlat'a tıkla; oyundan otomatik okunmaz.</small></span>
+        <button className="x go" type="button" onClick={startSpike}>Başlat</button>
+        <span className="spkey">
+          <kbd>{capture ? "Bir tuşa bas…" : spikeKey ? spikeKey.replace("Control", "Ctrl") : "Atanmadı"}</kbd>
+          <button className={capture ? "x on" : "x"} type="button" onClick={() => setCapture((c) => !c)}>{capture ? "Vazgeç" : "Tuş ata"}</button>
+          {spikeKey && !capture && <button className="x" type="button" onClick={() => setSpikeKey("")}>Kaldır</button>}
+        </span>
+      </div>
 
       <div className="note">
         <input className="short" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.stopPropagation()} placeholder="Ad (ör. Ult)" aria-label="Sayaç adı" />
