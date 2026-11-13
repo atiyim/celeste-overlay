@@ -657,7 +657,7 @@ export function App() {
         : <QuickChat onCopy={copyName} onClose={() => go("roster")} />}
     </Hub>
   ) : view === "premium" ? (
-    <PremiumPanel theme={theme} onChange={setTheme} onOpen={openTracker} onToast={showToast} onClose={() => go("roster")} />
+    <PremiumPanel theme={theme} onChange={setTheme} onOpen={openTracker} onToast={showToast} onClose={() => go("roster")} onGo={(v) => go(v)} />
   ) : view === "trust" ? (
     <TrustPanel onToast={showToast} onOpen={openTracker} onClose={() => go("roster")} />
   ) : snap.players.length === 0 || !assets ? (

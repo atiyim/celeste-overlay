@@ -20,9 +20,9 @@ const LIVE = new Set<ItemId>(["fx:accent", "fx:glow", "fx:plate"]);
 
 interface AdminCfg { req: Record<string, number>; discord: Record<string, string>; guildRoles: { id: string; name: string; color: string }[]; roles: { id: number; name: string; color: string; icon?: string }[] }
 
-interface Props { theme: Theme; onChange: (t: Theme) => void; onOpen: (url: string) => void; onToast: (t: string) => void; onClose: () => void }
+interface Props { theme: Theme; onChange: (t: Theme) => void; onOpen: (url: string) => void; onToast: (t: string) => void; onClose: () => void; onGo: (v: "feed" | "feedback") => void }
 
-export function PremiumPanel({ theme, onChange, onOpen, onToast, onClose }: Props) {
+export function PremiumPanel({ theme, onChange, onOpen, onToast, onClose, onGo }: Props) {
   const me = useMe();
   const cfg = usePremiumCfg();
   const pv = usePreview();
@@ -124,6 +124,10 @@ export function PremiumPanel({ theme, onChange, onOpen, onToast, onClose }: Prop
           <small>CELESTE</small>
           <b>Premium</b>
           <span>{prem ? <>Rolün aktif · <em>{open}/{ALL.length}</em> özellik açık</> : "Temalar, lobi plakası, Akış isim stili ve Discord rolü. Hepsini önizleyebilirsin."}</span>
+          <span className="prnote">
+            VIP etiketi, uygulamadaki <button className="lnk" type="button" onClick={() => onGo("feed")}>Akış</button> sekmesini aktif kullanan,{" "}
+            <button className="lnk" type="button" onClick={() => onGo("feedback")}>hata bildiren ve öneri yapan</button> kullanıcılara rastgele verilir.
+          </span>
         </div>
         <div className="prs">
           {prem && me ? <Roles roles={me.roles} /> : <span className="prno">{me ? "Bu hesapta rol yok" : "Rolün henüz denetlenmedi"}</span>}
