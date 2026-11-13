@@ -2164,3 +2164,6 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 .wled input { flex: 1; min-width: 0; }
 .wlio { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .wlsnd { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-2); cursor: pointer; }
+
+/* Tam ekran: Akış listesi sabit 560px'te kalmasın, boş alanı doldursun */
+.ov.fullw .flist { max-height: max(360px, calc(100vh - 400px)); }
