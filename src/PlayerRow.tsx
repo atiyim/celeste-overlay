@@ -51,7 +51,7 @@ export const Moon = () => <span className="cmoon" title="Celeste Overlay kullan�
 
 export function MoreBadges({ list }: { list: Badge[] }) {
   if (!list.length) return null;
-  return <span className="bd more" title={list.map((b) => `${b.text}: ${b.tip}`).join("\n\n")}>+{list.length}</span>;
+  return <span className="bd bmore" title={list.map((b) => `${b.text}: ${b.tip}`).join("\n\n")}>+{list.length}</span>;
 }
 
 /** Son 5 maç: harfsiz noktalar; rekabet dışı modlar soluk. */

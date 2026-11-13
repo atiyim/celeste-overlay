@@ -1322,7 +1322,7 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 
 .bdg { gap: 5px; }
 .bd { padding: 0 9px; font-size: 11px; line-height: 21px; border-radius: 999px; }
-.bd.more { flex: none; padding: 0 7px; color: var(--fg-3); background: transparent; border-color: var(--line-2); cursor: help; }
+.bd.bmore { flex: none; padding: 0 7px; color: var(--fg-3); background: transparent; border-color: var(--line-2); cursor: help; }
 
 .trk { border-radius: 999px; padding: 3px 10px; }
 
@@ -2235,3 +2235,8 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 .fupbar span { position: relative; display: grid; place-items: center; height: 100%; font-size: 12.5px; font-weight: 600; color: var(--fg); }
 @keyframes fupind { from { transform: translateX(-60%); } to { transform: translateX(160%); } }
 .fupe { font-size: 12px !important; color: var(--loss) !important; }
+/* "+N" rozet sayacı: rozetle aynı satırda, aynı yükseklikte */
+.bd.bmore { display: inline-flex; align-items: center; margin: 0; align-self: stretch; height: auto; box-sizing: border-box; font-size: 11px; font-weight: 600; border-radius: 999px; }
+.bdg { display: flex; align-items: center; gap: 6px; min-width: 0; transition: opacity .15s; }
+/* Satırın üzerine gelince Tracker düğmesi rozetlerin yerine geçer (üst üste binmez) */
+.r:has(> .qa):hover .bdg, .r:has(> .qa):focus-within .bdg { opacity: 0; }
