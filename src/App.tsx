@@ -12,6 +12,8 @@ import { mockSnapshot } from "./mock";
 import { recordSeen, setLabel, setTag, type Seen } from "./seen";
 import type { MyStats, Snapshot } from "./types";
 import { PlayerRow } from "./PlayerRow";
+import { PlayerCard } from "./PlayerCard";
+import { groupParties } from "./playerView";
 import { LoadoutPanel } from "./LoadoutPanel";
 import { QuickChat } from "./QuickChat";
 import { Guide } from "./Guide";
@@ -128,7 +130,7 @@ export function App() {
   fullRef.current = full;
   const prevPos = useRef<PhysicalPosition | null>(null);
   const scr = window.screen as Screen & { availLeft?: number; availTop?: number };
-  const width = full ? Math.floor(scr.availWidth / zoom) : overlayWidth(theme.cols);
+  const width = full ? Math.floor(scr.availWidth / zoom) : overlayWidth(theme.cols, theme.layout);
   const fullH = Math.floor(scr.availHeight / zoom);
   const toggleFull = async () => {
     const next = !full;
@@ -553,6 +555,19 @@ export function App() {
   const againName = again ? (again.hiddenName ? seen[again.puuid]?.label ?? "Gizli bir oyuncu" : (again.name ?? "").split("#")[0]) : null;
   const foeSum = teamSummary(enemies, snap.mapId), mySum = teamSummary(allies.filter((x) => !x.isSelf), snap.mapId);
 
+  const cards = theme.layout === "cards";
+  // Lobinin en yüksek rankı (eşitlikte hepsi).
+  const maxTier = Math.max(0, ...snap.players.map((p) => p.rank.current));
+  const topIds = new Set(maxTier > 0 ? snap.players.filter((p) => p.rank.current === maxTier).map((p) => p.puuid) : []);
+  // Rakip takımın ortalama rankı seninkinden kaç kademe farklı (yalnızca ölçülen ranklardan).
+  const rankGap = (() => {
+    const avg = (l: typeof allies) => { const r = l.filter((p) => p.rank.current > 0); return r.length >= 3 ? r.reduce((a, p) => a + p.rank.current, 0) / r.length : null; };
+    const a = avg(allies), e = avg(enemies);
+    if (a == null || e == null) return null;
+    const d = Math.round(e - a);
+    if (d === 0) return { text: "Denk", tone: "eq" };
+    return { text: `${Math.abs(d)} kademe ${d > 0 ? "üstte" : "altta"}`, tone: d > 0 ? "up" : "down" };
+  })();
   const lobby = (
     <>
       {(foeSum.length > 0 || mySum.length > 0 || again || (sess && sess.games > 0 && theme.tilt.on)) && (
@@ -572,45 +587,40 @@ export function App() {
           )}
         </div>
       )}
-      <div className="g c" style={{ gridTemplateColumns: template }}>
-        <div>Oyuncu</div>
-        {gridCols(theme.cols).map((c) => <div key={c.id}>{c.id === "tracker" ? "" : c.label}</div>)}
-      </div>
+      {!cards && (
+        <div className="g c" style={{ gridTemplateColumns: template }}>
+          <div>Oyuncu</div>
+          {gridCols(theme.cols).map((c) => <div key={c.id}>{c.id === "tracker" ? "" : c.label}</div>)}
+        </div>
+      )}
       {([["Takımın", allies, "ally"], ["Rakipler", enemies, "foe"]] as const).map(([title, list, kind]) =>
         list.length ? (
-          <section key={title} className={`team ${kind}`}>
+          <section key={title} className={`team ${kind}${cards ? " cards" : ""}`}>
             <div className="teamh">
               <span className="teamn"><i />{title}{sideText(list) ? <small>{sideText(list)}</small> : null}</span>
               {(() => {
                 const t = teamStats(list);
+                const gap = kind === "foe" ? rankGap : null;
                 return (
                   <span className="cmp" title="Ortalama rank ve son rekabet maçlarının ortalama K/D'si">
+                    {gap && <span className={`rgap ${gap.tone}`}>{gap.text}</span>}
                     Ortalama <b>{t.tier?.name ?? "–"}</b> · K/D <b>{t.kd != null ? t.kd.toFixed(2) : "–"}</b>
                   </span>
                 );
               })()}
             </div>
-            {list.map((p, i) => (
-              <PlayerRow
-                key={p.puuid}
-                p={p}
-                index={i}
-                assets={assets!}
-                entry={seen[p.puuid]}
-                cols={theme.cols}
-                th={theme.th}
-                template={template}
-                blur={blur}
-                onOpen={() => setSelected(p.puuid)}
-                onCopy={copyName}
-                onTracker={openTracker}
-                mapId={snap.mapId}
-                mapName={mapName}
-                lobby={snap.players}
-                roles={theme.showRoles ? (p.isSelf ? (prem ? me!.roles : undefined) : lobbyRoles.get(p.puuid)) : undefined}
-                plate={theme.showRoles ? (p.isSelf ? (can("fx:plate") ? (fxColor(me?.roles, "fx:plate", pcfg) ?? SAMPLE) : undefined) : rolesUnlock(lobbyRoles.get(p.puuid), "fx:plate", pcfg) ? fxColor(lobbyRoles.get(p.puuid), "fx:plate", pcfg) : undefined) : undefined}
-              />
-            ))}
+            <div className={cards ? "pcgrid" : "rows"}>
+            {groupParties(list).map((p) => {
+              const props = {
+                p, index: list.indexOf(p), assets: assets!, entry: seen[p.puuid], cols: theme.cols, th: theme.th,
+                onOpen: () => setSelected(p.puuid), onCopy: copyName, onTracker: openTracker,
+                mapId: snap.mapId, mapName, lobby: snap.players, top: topIds.has(p.puuid),
+                roles: theme.showRoles ? (p.isSelf ? (prem ? me!.roles : undefined) : lobbyRoles.get(p.puuid)) : undefined,
+                plate: theme.showRoles ? (p.isSelf ? (can("fx:plate") ? (fxColor(me?.roles, "fx:plate", pcfg) ?? SAMPLE) : undefined) : rolesUnlock(lobbyRoles.get(p.puuid), "fx:plate", pcfg) ? fxColor(lobbyRoles.get(p.puuid), "fx:plate", pcfg) : undefined) : undefined,
+              };
+              return cards ? <PlayerCard key={p.puuid} {...props} /> : <PlayerRow key={p.puuid} {...props} template={template} blur={blur} />;
+            })}
+            </div>
           </section>
         ) : null,
       )}
@@ -682,6 +692,7 @@ export function App() {
               onTag={(t) => setSeen(setTag(active.puuid, t))}
               onClose={() => setSelected(null)}
               onCopy={copyName}
+              onTracker={openTracker}
             />
             </div>
           </aside>

@@ -204,7 +204,18 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
           {sec === "table" && (
             <>
               <section>
-                <h3 className="h2">Görünen sütunlar<span className="hv">Kapattığın sütun kadar overlay daralır</span></h3>
+                <h3 className="h2">Düzen</h3>
+                <div className="lyt" role="group" aria-label="Lobi düzeni">
+                  {([["list", "Liste", "Sade satırlar, sütunları sen seçersin"], ["cards", "Kartlar", "Ajan seçim ekranı gibi, her oyuncuya bir kart"]] as const).map(([id, name, desc]) => (
+                    <button key={id} type="button" className={theme.layout === id ? "lyc on" : "lyc"} aria-pressed={theme.layout === id} onClick={() => set({ layout: id })}>
+                      <span className={`lyp ${id}`} aria-hidden="true">{id === "list" ? <><i /><i /><i /><i /></> : <><i /><i /><i /><i /><i /></>}</span>
+                      <b>{name}</b><small>{desc}</small>
+                    </button>
+                  ))}
+                </div>
+              </section>
+              <section className={theme.layout === "cards" ? "dim" : ""}>
+                <h3 className="h2">Görünen sütunlar<span className="hv">{theme.layout === "cards" ? "Kartlarda yalnızca rank, peak ve parti ayarı geçerli" : "Kapattığın sütun kadar overlay daralır"}</span></h3>
                 <div className="colstrip" aria-hidden="true">
                   <span className="cs main">Oyuncu</span>
                   {COLS.filter((c) => theme.cols[c.id] && !c.inline).map((c) => <span key={c.id} className="cs" style={{ flexGrow: c.px }}>{c.id === "tracker" ? "Tracker" : c.label}</span>)}

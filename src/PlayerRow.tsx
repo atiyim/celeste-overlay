@@ -1,18 +1,20 @@
 import type { KeyboardEvent, MouseEvent } from "react";
 import type { Assets } from "./assets";
-import { lookup, resolveSkin } from "./assets";
-import { TAGS, type Entry } from "./seen";
+import { lookup } from "./assets";
+import type { Entry } from "./seen";
 import type { ColId, Thresholds } from "./theme";
 import { tierColor } from "./LoadoutPanel";
-import { activityBadge, analyze, formBadge, isComp, modeName, styleBadge } from "./playstyle";
+import { isComp, modeName } from "./playstyle";
 import type { Player } from "./types";
 import { AgentIcon, NameLine } from "./ui";
-import { agentPool, gunBadge, mapBadge, mmrBadge, poolBadge } from "./insights";
 import { partyInfo } from "./party";
 import { Roles } from "./RoleBadge";
 import type { Role } from "./feed";
+import { Icon } from "./icons";
+import { partyColor, playerView, shortSkin } from "./playerView";
+import type { Badge } from "./playstyle";
 
-interface Props {
+export interface RowProps {
   p: Player;
   index: number;
   assets: Assets;
@@ -31,154 +33,109 @@ interface Props {
   roles?: Role[];
   /** Premium isim plakası rengi (rolü bu özelliği açıyorsa). */
   plate?: string;
+  /** Lobinin en yüksek rankı. */
+  top?: boolean;
 }
 
-// Satırda kaplaması gösterilecek silahlar (kimlikle bulunur, olmazsa isim/kategoriyle).
-const THUMBS = [
-  { id: "9c82e19d-4575-0200-1a81-3eacf00cf872", name: "Vandal" },
-  { id: "ee8e8d15-496b-07ac-e5f6-8fae5d4c7b1a", name: "Phantom" },
-  { id: "a03b24d3-4319-996d-0f8c-94bbfba1dfc7", name: "Operator" },
-  { id: "2f59173c-4bed-b6c3-2191-dea9b58be9c7", name: "Melee", category: "Melee" },
-];
+/** Rozet: yalnızca iyi/kötü renkli; diğerleri nötr, anlamı küçük bir renk noktasıyla. */
+export function BadgePill({ b }: { b: Badge }) {
+  const tone = b.tone === "pos" || b.tone === "neg" ? b.tone : `bdn ${b.tone}`;
+  return <span className={`bd ${tone}`} title={b.tip}>{b.text}</span>;
+}
+export function MoreBadges({ list }: { list: Badge[] }) {
+  if (!list.length) return null;
+  return <span className="bd more" title={list.map((b) => `${b.text}: ${b.tip}`).join("\n\n")}>+{list.length}</span>;
+}
 
-export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles, plate }: Props) {
-  const agent = assets.agents.get(lookup(p.agentId));
-  const cur = assets.tiers.get(p.rank.current);
-  const peak = assets.tiers.get(p.rank.peak);
-  const anonymous = p.hiddenName && !p.isSelf;
-  const label = entry?.label;
-  const tag = TAGS.find((t) => t.id === entry?.tag);
-  const name = anonymous ? label ?? `Oyuncu ${index + 1}` : p.name ?? "…";
+/** Son 5 maç: harfsiz noktalar; rekabet dışı modlar soluk. */
+export function FormDots({ p, assets }: { p: Player; assets: Assets }) {
+  if (!p.form.length) return <span className="d">{p.formLoading ? "…" : "–"}</span>;
+  return (
+    <span className="fdots">
+      {p.form.slice(0, 5).map((f, i) => (
+        <i key={i} className={`${f.won ? "w" : "l"}${isComp(f) ? "" : " alt"}`} title={`${modeName(f.queue)} · ${f.won ? "Galibiyet" : "Mağlubiyet"} · ${assets.maps.get(lookup(f.mapId)) ?? "?"} · ${assets.agents.get(lookup(f.agentId))?.name ?? "?"} · ${f.kills}/${f.deaths}/${f.assists}`} />
+      ))}
+    </span>
+  );
+}
 
-  // Önceki karşılaşma: şimdiki maç history'nin sonundadır, bir öncekine bak.
-  const prev = entry && entry.history.length >= 2 ? entry.history[entry.history.length - 2] : undefined;
-  const prevText = prev
-    ? "Geçen: " + [assets.maps.get(lookup(prev.mapId)), assets.agents.get(lookup(prev.agentId))?.name, prev.side === "ally" ? "takım" : "rakip", !anonymous && prev.name && prev.name !== p.name ? `adı: ${prev.name}` : null].filter(Boolean).join(" · ")
-    : null;
-  const times = !p.isSelf && entry && entry.n >= 2 ? entry.n : 0; // bu oyuncuyla kaçıncı karşılaşma
-
-  // Tracker bağlantısı: görünen isim ya da (gizli isimlilerde) kullanıcının kendi yazdığı not, "isim#etiket" biçimindeyse.
-  const trackerName = anonymous ? (label && label.includes("#") ? label : null) : p.name ?? null;
-  const trackerUrl =
-    trackerName && trackerName.includes("#")
-      ? `https://tracker.gg/valorant/profile/riot/${encodeURIComponent(trackerName)}/overview`
-      : null;
-
-  const sub = [
-    anonymous ? (label ? "İsim gizli, kendi notun" : "İsim gizli") : null,
-    prevText,
-    p.level != null ? `Seviye ${p.level}` : null,
-  ].filter(Boolean).join(" · ");
-
-  // Kazanma oranı rekabet verisinden gelir; son act'te maç yoksa toplam rekabet oranı gösterilir.
-  const r = p.rank;
-  const [w, g, scope] = r.games > 0 ? [r.wins, r.games, "son act"] : [r.totalWins, r.totalGames, "tüm act'ler"];
-  const wr = g > 0 ? `%${Math.round((100 * w) / g)}` : "–";
-
-  const thumbs = THUMBS.map((t) => {
-    const weapon = assets.weapons.find((x) => x.id === t.id)
-      ?? assets.weapons.find((x) => x.name === t.name)
-      ?? (t.category ? assets.weapons.find((x) => x.category === t.category) : undefined);
-    if (!weapon) return null;
-    const slot = p.loadout.weapons.find((x) => lookup(x.weaponId) === weapon.id);
-    return { weapon, skin: resolveSkin(assets, weapon, slot) };
-  });
-  const vandal = thumbs[0];
-  const skinTip = thumbs.filter((t): t is NonNullable<typeof t> => !!t)
-    .map((t) => `${t.weapon.name}: ${t.skin.name}${t.skin.chromaName ? ` (${t.skin.chromaName})` : ""}`).join("\n");
-  const noLoadout = p.loadout.weapons.length === 0 && (p.loadout.allIds?.length ?? 0) === 0;
-
-  const play = analyze(p);
-  // Satır sade kalsın: en fazla iki rozet, üst üste, tam yazıyla. Önce maç içinde işe yarayanlar.
-  const pool = agentPool(p);
-  const badges = [poolBadge(p, agent?.name), gunBadge(p), mapBadge(p, mapId, mapName), mmrBadge(p, (t) => assets.tiers.get(t)?.name), formBadge(p), styleBadge(play, th), activityBadge(p)].filter((b): b is NonNullable<typeof b> => !!b).slice(0, 2);
+export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles, plate, top }: RowProps) {
+  const v = playerView(p, { assets, entry, th, mapId, mapName, index });
   const party = cols.party && p.party ? partyInfo(p, lobby) : null;
+  const sub = [v.anonymous ? (v.label ? "İsim gizli, kendi notun" : "İsim gizli") : null, v.prevText, p.level != null ? `Seviye ${p.level}` : null].filter(Boolean).join(" · ");
 
   const stop = (fn: () => void) => (e: MouseEvent) => { e.stopPropagation(); fn(); };
   const key = (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };
 
   return (
-    <div className={times ? "g r again" : "g r"} style={{ gridTemplateColumns: template, "--i": index } as React.CSSProperties} role="button" tabIndex={0} onClick={onOpen} onKeyDown={key}>
-      <button className={plate ? "who plate" : "who"} style={plate ? ({ "--pl": plate } as React.CSSProperties) : undefined} type="button" onClick={stop(() => onCopy(anonymous ? label ?? null : p.name ?? null))} title={blur ? "Kullanıcı adını kopyala" : sub || "Kullanıcı adını kopyala"}>
-        {party && (
-          <i
-            className={party.soft ? "pbar soft" : "pbar"}
-            style={{ "--pc": partyColor(p.party!) } as React.CSSProperties}
-            title={`Parti ${p.party}: ${party.tip}`}
-          />
-        )}
-        <span className="agw"><AgentIcon className="agent" icon={agent?.icon} name={agent?.name} /></span>
+    <div className={`g r${v.times ? " again" : ""}${party ? " inparty" : ""}`} style={{ gridTemplateColumns: template, "--i": index, ...(party ? { "--pc": partyColor(p.party!) } : {}) } as React.CSSProperties} role="button" tabIndex={0} onClick={onOpen} onKeyDown={key}>
+      <div className={plate ? "who plate" : "who"} style={plate ? ({ "--pl": plate } as React.CSSProperties) : undefined} title={blur ? undefined : sub || undefined}>
+        {party && <i className={party.soft ? "pbar soft" : "pbar"} title={`Parti ${p.party}: ${party.tip}`} />}
+        <span className="agw"><AgentIcon className="agent" icon={v.agent?.icon} name={v.agent?.name} /></span>
         <span className="n">
-          <NameLine name={name} />
-          {(times > 0 || tag || sub || !!roles?.length) && (
-            <span className="sub2">
-              {roles && roles.length > 0 && <Roles roles={roles} compact />}
-              {tag && <span className="tg" style={{ color: tag.color, borderColor: tag.color }}>{tag.label}</span>}
-              {times > 0 && <span className="rep" title={`Bu oyuncuyla ${times}. kez aynı maçtasın`}>{times}. kez aynı maçta</span>}
-              {sub && <small className="pn">{sub}</small>}
-            </span>
-          )}
+          {v.copyName
+            ? <button type="button" className="nmc" title="Adı kopyala" onClick={stop(() => onCopy(v.copyName))}><NameLine name={v.name} /></button>
+            : <NameLine name={v.name} />}
+          <span className="sub2">
+            {roles && roles.length > 0 && <Roles roles={roles} compact />}
+            {v.tag && <span className="tg" style={{ color: v.tag.color, borderColor: v.tag.color }}>{v.tag.label}</span>}
+            {v.times > 0 && <span className="rep" title={`Bu oyuncuyla ${v.times}. kez aynı maçtasın`}>{v.times}. kez</span>}
+            {party && <span className="pchip">Parti {p.party}</span>}
+            <small className="pn">{[v.agent?.name, v.anonymous ? "İsim gizli" : p.level != null ? `Sv. ${p.level}` : null].filter(Boolean).join(" · ")}</small>
+          </span>
         </span>
-      </button>
+      </div>
       {cols.rank && (
         <div className="tier">
-          {cur && p.rank.current > 0
-            ? <span className="tico" style={{ "--tc": cur.color, "--rr": `${Math.min(100, p.rank.rr)}%` } as React.CSSProperties}><img src={cur.icon} alt="" /></span>
+          {v.cur
+            ? <span className="tico" style={{ "--tc": v.cur.color, "--rr": `${Math.min(100, p.rank.rr)}%` } as React.CSSProperties}><img src={v.cur.icon} alt="" /></span>
             : <i className="tier0" />}
           <span className="n">
-            <span style={cur && p.rank.current > 0 ? { color: tierColor(cur.color) } : undefined}>{cur && p.rank.current > 0 ? cur.name : "Derecesiz"}</span>
+            <span className="rkn">
+              <span style={v.cur ? { color: tierColor(v.cur.color) } : undefined}>{v.cur ? v.cur.name : "Derecesiz"}</span>
+              {top && <span className="ltop" title="Lobinin en yüksek rankı"><Icon name="crown" size={12} /></span>}
+            </span>
             <small>
-              {p.rank.current > 0 ? `${p.rank.rr} RR` : null}
-              {cols.peak && peak && r.peak > 0 ? <>{p.rank.current > 0 ? " · " : ""}Peak <span style={{ color: tierColor(peak.color) }}>{peak.name}</span></> : null}
+              {v.cur ? `${p.rank.rr} RR` : "Rekabet verisi yok"}
+              {cols.peak && v.peakUp && <span className="pk" title={`Zirve: ${v.peakUp.name}`}> · <Icon name="collapse" size={10} /> <span style={{ color: tierColor(v.peakUp.color) }}>{v.peakUp.name}</span></span>}
             </small>
           </span>
         </div>
       )}
-      {cols.wr && (
-        <div className="wrc" title={g > 0 ? `${w} galibiyet, ${g} maç (${scope}, rekabet)` : "Rekabet verisi yok"}>
-          <span>{wr}{g > 0 && <small>{g} maç</small>}</span>
-          {g > 0 && <i className="wbar"><i style={{ width: `${Math.round((100 * w) / g)}%` }} /></i>}
-        </div>
-      )}
       {cols.form && (
-        <div className="form">
-          {p.form.length > 0 ? (
-            <>
-              <span className="chips">
-                {p.form.slice(0, 5).map((f, i) => (
-                  <span key={i} className={`${f.won ? "fdot win" : "fdot loss"}${isComp(f) ? "" : " alt"}`} title={`${modeName(f.queue)} · ${f.won ? "Galibiyet" : "Mağlubiyet"} · ${assets.maps.get(lookup(f.mapId)) ?? "?"} · ${assets.agents.get(lookup(f.agentId))?.name ?? "?"} · ${f.kills}/${f.deaths}/${f.assists}`}>{f.won ? "W" : "L"}</span>
-                ))}
-                {p.formLoading && <span className="d">…</span>}
-              </span>
-              {p.kd != null && <small title="Son rekabet maçlarının K/D'si">K/D {p.kd.toFixed(2)}</small>}
-            </>
-          ) : p.formLoading ? <span className="d">…</span> : <span className="d">–</span>}
+        <div className="lfm" title={v.g > 0 ? `${v.w} galibiyet, ${v.g} maç (${v.scope}, rekabet)` : "Rekabet verisi yok"}>
+          <span className="fl">
+            {cols.wr && <b>{v.wrPct != null ? `%${v.wrPct}` : "–"}</b>}
+            {p.kd != null && <small title="Son rekabet maçlarının K/D'si">K/D {p.kd.toFixed(2)}</small>}
+            {cols.wr && v.g > 0 && <small>{v.g} maç</small>}
+          </span>
+          <FormDots p={p} assets={assets} />
         </div>
       )}
       {cols.skins && (
-        <div className="skin1" title={noLoadout ? undefined : skinTip}>
-          {noLoadout ? <span className="d">Oyunda görünür</span> : vandal ? (
+        <div className="skin1" title={v.noLoadout ? undefined : v.skinTip}>
+          {v.noLoadout ? <span className="d">Oyunda görünür</span> : v.vandal ? (
             <>
               <img
-                className={vandal.skin.isDefault ? "th dim" : vandal.skin.tier ? `th tr t${vandal.skin.tier.rank}` : "th"}
-                style={vandal.skin.tier && !vandal.skin.isDefault ? ({ "--tc": vandal.skin.tier.color } as React.CSSProperties) : undefined}
-                src={vandal.skin.image}
+                className={v.vandal.skin.isDefault ? "th dim" : v.vandal.skin.tier ? `th tr t${v.vandal.skin.tier.rank}` : "th"}
+                style={v.vandal.skin.tier && !v.vandal.skin.isDefault ? ({ "--tc": v.vandal.skin.tier.color } as React.CSSProperties) : undefined}
+                src={v.vandal.skin.image}
                 alt=""
                 loading="lazy"
-                onError={(e) => { const el = e.currentTarget; if (el.dataset.fb !== "1" && vandal.weapon.icon) { el.dataset.fb = "1"; el.src = vandal.weapon.icon; } }}
+                onError={(e) => { const el = e.currentTarget; if (el.dataset.fb !== "1" && v.vandal!.weapon.icon) { el.dataset.fb = "1"; el.src = v.vandal!.weapon.icon; } }}
               />
-              <span className="skn">{vandal.skin.isDefault ? "Varsayılan" : shortSkin(vandal.skin.name, vandal.weapon.name)}</span>
+              <span className="skn">{v.vandal.skin.isDefault ? "Varsayılan" : shortSkin(v.vandal.skin.name, v.vandal.weapon.name)}</span>
             </>
           ) : <span className="d">–</span>}
         </div>
       )}
       {cols.pool && (
-        <div className="pool" title={pool ? `Son ${pool.n} maçında oynadığı ajanlar (ölüm maçı hariç)` : undefined}>
-          {pool ? pool.top.map((a) => {
+        <div className="pool" title={v.pool ? `Son ${v.pool.n} maçında oynadığı ajanlar (ölüm maçı hariç)` : undefined}>
+          {v.pool ? v.pool.top.map((a) => {
             const ag = assets.agents.get(lookup(a.agentId));
             const now = !!p.agentId && lookup(p.agentId) === lookup(a.agentId);
             return (
-              <span key={a.agentId} className={now ? "pa now" : "pa"} title={`${ag?.name ?? "?"}: ${pool.n} maçın ${a.count} tanesi`}>
+              <span key={a.agentId} className={now ? "pa now" : "pa"} title={`${ag?.name ?? "?"}: ${v.pool!.n} maçın ${a.count} tanesi`}>
                 <AgentIcon icon={ag?.icon} name={ag?.name} />
                 <small>{a.count}</small>
               </span>
@@ -188,28 +145,20 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
       )}
       {cols.badges && (
         <div className="bdg">
-          {badges.map((b) => <span key={b.text} className={`bd ${b.tone}`} title={b.tip}>{b.text}</span>)}
+          {v.badges[0] && <BadgePill b={v.badges[0]} />}
+          <MoreBadges list={v.badges.slice(1)} />
         </div>
+      )}
+      {v.trackerUrl && !cols.tracker && (
+        <span className="qa">
+          <button type="button" className="qb" title="Tracker.gg'de aç" aria-label="Tracker.gg'de aç" onClick={stop(() => onTracker(v.trackerUrl!))}><Icon name="link" size={14} /><span>Tracker</span></button>
+        </span>
       )}
       {cols.tracker && (
         <div>
-          {trackerUrl && (
-            <button className="trk" type="button" title="Tracker.gg'de aç" onClick={stop(() => onTracker(trackerUrl))}>
-              Tracker
-            </button>
-          )}
+          {v.trackerUrl && <button className="trk" type="button" title="Tracker.gg'de aç" onClick={stop(() => onTracker(v.trackerUrl!))}>Tracker</button>}
         </div>
       )}
     </div>
   );
-}
-
-/** Parti harfi → renk. Aynı partidekiler aynı renkte çizgiyle birleşir. */
-const PARTY_COLORS = ["#f0a6ca", "#8fb4ff", "#f6cf7a", "#7ee2b8", "#c39cff", "#ffb38a"];
-export const partyColor = (id: string) => PARTY_COLORS[Math.abs((id.toUpperCase().charCodeAt(0) || 65) - 65) % PARTY_COLORS.length];
-
-/** "Prime Vandal" → "Prime": silah adı tekrarlanmasın. */
-function shortSkin(skin: string, weapon: string) {
-  const s = skin.replace(new RegExp(`\\s*${weapon}\\s*$`, "i"), "").trim();
-  return s || skin;
 }

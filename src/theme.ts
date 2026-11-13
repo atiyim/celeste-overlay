@@ -7,14 +7,14 @@ export interface ColDef { id: ColId; label: string; px: number; inline?: boolean
 
 // "Oyuncu" sütunu her zaman açıktır ve kalan genişliği alır.
 export const COLS: ColDef[] = [
-  { id: "rank", label: "Rank", px: 158 },
+  { id: "rank", label: "Rank", px: 156 },
   { id: "peak", label: "Peak rank", px: 0, inline: true },
-  { id: "wr", label: "Kazanma", px: 74 },
-  { id: "form", label: "Son 5 maç", px: 118 },
+  { id: "wr", label: "Kazanma oranı", px: 0, inline: true },
+  { id: "form", label: "Form", px: 150 },
   { id: "skins", label: "Vandal", px: 168 },
-  { id: "party", label: "Parti çizgisi", px: 0, inline: true },
+  { id: "party", label: "Parti", px: 0, inline: true },
   { id: "pool", label: "Ajanlar", px: 84 },
-  { id: "badges", label: "Öne çıkan", px: 132 },
+  { id: "badges", label: "Öne çıkan", px: 150 },
   { id: "tracker", label: "Tracker düğmesi", px: 64 },
 ];
 
@@ -53,9 +53,16 @@ export interface Theme {
   vipFx: boolean;
   /** Lobide diğer Celeste kullanıcılarının rol rozetini göster. */
   showRoles: boolean;
+  /** Lobi düzeni: sade liste ya da oyuncu kartları. */
+  layout: "list" | "cards";
+  /** Ayar şeması sürümü (yeni varsayılanları bir kez uygulamak için). */
+  v: number;
 }
+/** v2: lobi sadeleşti; Vandal, Ajanlar ve Tracker sütunları varsayılan olarak kapalı (Ayarlar'dan açılır). */
+const THEME_V = 2;
+const V2_OFF: ColId[] = ["skins", "pool", "tracker"];
 
-const ALL_ON = Object.fromEntries(COLS.map((c) => [c.id, true])) as Record<ColId, boolean>;
+const ALL_ON = Object.fromEntries(COLS.map((c) => [c.id, !V2_OFF.includes(c.id)])) as Record<ColId, boolean>;
 
 export const DEFAULT_THEME: Theme = {
   accent: "#8b9cff",
@@ -74,6 +81,8 @@ export const DEFAULT_THEME: Theme = {
   roleAccent: false,
   vipFx: true,
   showRoles: true,
+  layout: "list",
+  v: THEME_V,
 };
 /** Eski varsayılan vurgu: değiştirmemiş kullanıcılar yeni Celeste moruna geçer. */
 const OLD_DEFAULT_ACCENTS = ["#38bdf8", "#b89cf5"];
@@ -97,7 +106,7 @@ export function loadTheme(): Theme {
       swapSides: t.swapSides === true,
       autoHide: t.autoHide !== false,
       hideAfter: HIDE_AFTER_OPTIONS.includes(t.hideAfter as number) ? (t.hideAfter as number) : DEFAULT_THEME.hideAfter,
-      cols: { ...ALL_ON, ...(t.cols ?? {}) },
+      cols: t.v === THEME_V ? { ...ALL_ON, ...(t.cols ?? {}) } : { ...ALL_ON, ...(t.cols ?? {}), ...Object.fromEntries(V2_OFF.map((c) => [c, false])) },
       th: Object.fromEntries(
         (Object.keys(DEFAULT_TH) as (keyof Thresholds)[]).map((k) => {
           const v = (t.th as Partial<Thresholds> | undefined)?.[k];
@@ -118,6 +127,8 @@ export function loadTheme(): Theme {
       roleAccent: t.roleAccent === true,
       vipFx: t.vipFx !== false,
       showRoles: t.showRoles !== false,
+      layout: t.layout === "cards" ? "cards" : "list",
+      v: THEME_V,
     };
   } catch { return DEFAULT_THEME; }
 }
@@ -138,7 +149,8 @@ export const gridTemplate = (cols: Record<ColId, boolean>) =>
 
 /* Açık sütunlara göre pencere genişliği (CSS px). */
 /* Sol menü 64, kenar boşlukları 44, takım kartı ve satır iç boşlukları 32, oyuncu sütunu en az 210. */
-export function overlayWidth(cols: Record<ColId, boolean>): number {
+export function overlayWidth(cols: Record<ColId, boolean>, layout: Theme["layout"] = "list"): number {
+  if (layout === "cards") return 1100; // 5 kart × ~190 + menü ve boşluklar
   const on = gridCols(cols);
   return Math.max(820, 64 + 44 + 32 + 210 + on.reduce((a, c) => a + c.px, 0) + 12 * on.length);
 }

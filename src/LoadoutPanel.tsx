@@ -59,6 +59,7 @@ interface PanelProps {
   onTag: (tag: TagId | null) => void;
   onClose: () => void;
   onCopy: (n: string | null) => void;
+  onTracker?: (url: string) => void;
 }
 
 const None = ({ text = "Oyun bu bilgiyi göndermedi" }: { text?: string }) => <p className="d none">{text}</p>;
@@ -112,7 +113,7 @@ function BucketRows({ list, total, limit }: { list: Bucket[]; total: number; lim
   );
 }
 
-export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, onLabel, onTag, onClose, onCopy }: PanelProps) {
+export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, onLabel, onTag, onClose, onCopy, onTracker }: PanelProps) {
   const [draft, setDraft] = useState(entry?.label ?? "");
   const [tab, setTab] = useState<Tab>("guns");
   const [premier, setPremier] = useState<PremierTeam | null | "loading" | "error">("loading");
@@ -188,6 +189,8 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
   useEffect(() => setActsOpen(false), [p.puuid]);
   const mapName = assets.maps.get(lookup(mapId));
   const sign = (n: number) => `${n > 0 ? "+" : ""}${n}`;
+  const trackerName = anonymous ? (entry?.label?.includes("#") ? entry.label : null) : p.name ?? null;
+  const trackerUrl = trackerName?.includes("#") ? `https://tracker.gg/valorant/profile/riot/${encodeURIComponent(trackerName)}/overview` : null;
 
   return (
     <div className="panel" role="dialog" aria-label="Oyuncu ayrıntısı">
@@ -228,6 +231,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
               ))}
             </span>
           )}
+          {onTracker && trackerUrl && <button className="trk" type="button" title="Tracker.gg'de aç" onClick={() => onTracker(trackerUrl)}>Tracker</button>}
           <CloseButton onClick={onClose} />
         </div>
       </div>
