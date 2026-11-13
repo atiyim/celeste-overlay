@@ -1836,9 +1836,9 @@ html[data-skin="aurora"] .ovm::before { content: ""; position: absolute; left: 0
 
 /* Rol efekti: kendi rolünün renginde ince parıltı (yalnızca profil kartların) */
 html[data-vip] .dhero, html[data-vip] .rankc { border-color: color-mix(in srgb, var(--vip) 38%, var(--line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--vip) 14%, transparent), 0 18px 50px -26px var(--vip); }
-html[data-vip] .dhero::before { background: linear-gradient(105deg, transparent 40%, color-mix(in srgb, var(--vip) 15%, transparent) 50%, transparent 60%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05); clip-path: inset(0 round var(--rad)); transform: translateX(-120%); animation: vipsheen 9s ease-in-out infinite; }
-@keyframes vipsheen { 0%, 55% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
+html[data-vip] .dhero::before { background: linear-gradient(105deg, transparent 42%, color-mix(in srgb, var(--vip) 16%, transparent) 50%, transparent 58%) no-repeat;
+  background-size: 260% 100%; background-position: 160% 0; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05); animation: vipsheen 9s ease-in-out infinite; }
+@keyframes vipsheen { 0%, 55% { background-position: 160% 0; } 85%, 100% { background-position: -60% 0; } }
 html[data-vip] .tico { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 28%, transparent); }
 .froles.cp .frole.adm::after { display: none; }
 .froles.cp { margin-right: 2px; }
@@ -1889,3 +1889,111 @@ html.fps[data-skin] .ovm::before, html.fps[data-vip] .dhero::before { display: n
 .pvt { display: flex; flex-direction: column; gap: 1px; margin-right: 8px; }
 .pvt b { font-size: 12.5px; color: var(--accent); }
 .pvt small { font-size: 11px; color: var(--fg-3); }
+
+/* ================= 0.9.3: Premium sekmesi ================= */
+
+/* Ajan kartları: yan kartlarda portre büyük ve kırpılı (fullPortrait tuvali geniş olduğu için) */
+.dside .dmini .mport { top: -8%; bottom: auto; right: -40%; height: 200%; width: auto; max-width: none; object-position: center top; opacity: .95;
+  -webkit-mask-image: linear-gradient(to left, #000 50%, transparent 92%); mask-image: linear-gradient(to left, #000 50%, transparent 92%); }
+
+/* Sol menü: Premium simgesi altın */
+.ri.prem { color: #c9a868; }
+.ri.prem:hover { color: #f0d79c; background: rgba(230, 194, 122, .08); }
+.ri.prem.on { color: #f0d79c; background: rgba(230, 194, 122, .14); box-shadow: inset 0 0 0 1px rgba(230, 194, 122, .38), 0 0 18px -6px rgba(230, 194, 122, .7); }
+.ri.prem svg { filter: drop-shadow(0 0 6px rgba(230, 194, 122, .35)); }
+
+/* Başlık kartı */
+.prh { position: relative; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 20px 22px; margin-top: 4px; overflow: hidden; border-radius: 18px;
+  border: 1px solid rgba(230, 194, 122, .28); background: radial-gradient(90% 140% at 0% 0%, rgba(230, 194, 122, .16), transparent 55%), radial-gradient(60% 120% at 100% 100%, rgba(167, 139, 250, .10), transparent 60%), linear-gradient(160deg, var(--card-hi, #1a1f2b), var(--card, #131824)); }
+.prh::after { content: ""; position: absolute; left: 24px; right: 24px; top: 0; height: 1px; background: linear-gradient(90deg, transparent, #e6c27a, transparent); opacity: .7; }
+.prc { flex: none; width: 56px; height: 56px; display: grid; place-items: center; border-radius: 16px; color: #1a1205;
+  background: linear-gradient(145deg, #f7e2a8, #c99a45); box-shadow: 0 0 0 1px rgba(255, 255, 255, .25) inset, 0 12px 30px -10px rgba(230, 194, 122, .75); }
+.prt { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 220px; }
+.prt small { font-size: 10px; font-weight: 700; letter-spacing: .32em; color: #c9a868; }
+.prt b { font-size: 30px; line-height: 1.05; font-weight: 800; letter-spacing: -.01em; background: linear-gradient(180deg, #fff3d0, #d6ad5c); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.prt span { margin-top: 4px; font-size: 12.5px; color: var(--fg-2); }
+.prt em { font-style: normal; font-weight: 700; color: #f0d79c; }
+.prs { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.prb { display: flex; gap: 8px; }
+.prno { font-size: 12px; color: var(--fg-3); }
+
+/* Efekt kartları (tema kartlarıyla aynı dil) */
+.pfgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin: 4px 0 6px; }
+.pfc { display: flex; flex-direction: column; gap: 12px; padding: 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--card, var(--s1)); transition: border-color .15s, transform .15s; }
+.pfc:hover { transform: translateY(-2px); border-color: var(--line-2); }
+.pfc.on { border-color: color-mix(in srgb, var(--fx) 45%, var(--line)); }
+.pfv { position: relative; height: 124px; display: grid; place-items: center; padding: 10px; overflow: hidden; border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--fx) 22%, var(--line)); background: radial-gradient(120% 70% at 50% 125%, color-mix(in srgb, var(--fx) 18%, transparent), transparent 70%), #0b0e15; }
+.pseen { display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; font-size: 11px; color: color-mix(in srgb, var(--fx) 70%, var(--fg-2)); }
+.plk { display: inline-flex; align-items: center; gap: 6px; margin-right: auto; font-size: 11.5px; color: var(--fg-3); min-width: 0; }
+.plk .froles { margin: 0; }
+.pon { display: inline-flex; align-items: center; gap: 5px; margin-right: auto; font-size: 11.5px; font-weight: 700; color: var(--fx, var(--accent)); }
+.skc .pon { color: var(--accent); }
+.pst { margin-right: auto; font-size: 11.5px; color: var(--fg-3); }
+.preq { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--fg-3); }
+.preq select, .pdr select { flex: 1; min-width: 0; padding: 6px 8px; font: inherit; font-size: 12px; color: var(--fg); background: var(--s2); border: 1px solid var(--line-2); border-radius: 8px; }
+
+/* Önizleme parçaları */
+.pva { flex: none; width: 18px; height: 18px; border-radius: 6px; background: linear-gradient(145deg, #3a4157, #252b3b); }
+.pvl { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.pvr { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; background: rgba(255, 255, 255, .03); border: 1px solid var(--line); }
+.pvr.fx { border-color: color-mix(in srgb, var(--fx) 40%, transparent); background: linear-gradient(90deg, color-mix(in srgb, var(--fx) 26%, transparent), color-mix(in srgb, var(--fx) 4%, transparent) 70%); }
+.pvn { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+.pvn b { font-size: 11.5px; font-weight: 600; color: var(--fg-2); }
+.pvr.fx .pvn b { color: #fff; }
+.pvn em { padding: 0 5px; font-size: 8.5px; font-style: normal; font-weight: 800; line-height: 13px; border-radius: 4px; color: #140d00; background: var(--fx); }
+.pvk { width: 34px; height: 5px; border-radius: 3px; background: var(--line-2); }
+.pvp { display: flex; flex-direction: column; gap: 7px; width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, .02); }
+.pvp.framed { border-color: color-mix(in srgb, var(--fx) 50%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--fx) 10%, transparent), transparent 70%); box-shadow: 0 10px 30px -16px var(--fx); }
+.pvh { display: flex; align-items: center; gap: 7px; }
+.pvh b { font-size: 12px; font-weight: 700; color: var(--fg); }
+.pvh small { margin-left: auto; font-size: 10px; color: var(--fg-3); }
+.pvtx { height: 5px; border-radius: 3px; background: var(--line-2); }
+.pvtx.s { width: 60%; }
+.pvnm, .fwho.nfx .nm { background: linear-gradient(100deg, var(--fx, var(--nc)) 20%, color-mix(in srgb, var(--fx, var(--nc)) 40%, #fff) 50%, var(--fx, var(--nc)) 80%); background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent !important; font-weight: 800; animation: namefx 4.5s linear infinite; }
+.fwho.nfx .nm { --fx: var(--nc); }
+@keyframes namefx { from { background-position: 110% 0; } to { background-position: -110% 0; } }
+.pvg { position: relative; display: flex; flex-direction: column; gap: 3px; width: 100%; padding: 12px 14px; overflow: hidden; border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--fx) 40%, var(--line)); background: linear-gradient(160deg, #1a2030, #121722); box-shadow: 0 0 0 1px color-mix(in srgb, var(--fx) 14%, transparent), 0 14px 34px -18px var(--fx); }
+.pvg::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 40%, color-mix(in srgb, var(--fx) 22%, transparent) 50%, transparent 60%) no-repeat; background-size: 260% 100%; animation: vipsheen 5s ease-in-out infinite; }
+.pvg small { font-size: 7.5px; letter-spacing: .14em; color: var(--fg-3); }
+.pvg b { font-size: 18px; font-weight: 800; line-height: 1.1; color: var(--fx); }
+.pvc { display: flex; align-items: center; gap: 14px; }
+.pvtabs { display: flex; flex-direction: column; gap: 5px; }
+.pvtabs i { width: 46px; height: 9px; border-radius: 5px; background: var(--line-2); }
+.pvtabs i.on { background: color-mix(in srgb, var(--fx) 30%, transparent); box-shadow: inset 0 0 0 1px var(--fx); }
+.pvring svg { width: 52px; height: 52px; transform: rotate(-90deg); }
+.pvring circle { fill: none; stroke: rgba(255, 255, 255, .08); stroke-width: 4; }
+.pvring circle.a { stroke: var(--fx); stroke-linecap: round; stroke-dasharray: 60 100; }
+.pvbtn { padding: 6px 12px; font-size: 11px; font-weight: 700; border-radius: 8px; color: #140d00; background: var(--fx); }
+.pvd { display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 4px 6px; }
+.pvd small { font-size: 8.5px; font-weight: 700; letter-spacing: .06em; color: #80848e; }
+.pvdm { display: flex; align-items: center; gap: 7px; }
+.pvdm .pva { border-radius: 50%; }
+.pvdm b { font-size: 11.5px; font-weight: 600; color: var(--fx); }
+.pvdm.off b { color: #b5bac1; } .pvdm.off { opacity: .6; }
+
+/* Akış: Premium isim stili ve paylaşım çerçevesi (başkalarının ekranında da) */
+.fpost.pfx { border-color: color-mix(in srgb, var(--pc) 40%, transparent); background: linear-gradient(180deg, color-mix(in srgb, var(--pc) 7%, transparent), transparent 60%), var(--s1);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--pc) 7%, transparent), 0 8px 30px -20px color-mix(in srgb, var(--pc) 70%, transparent); }
+
+/* Lobi: Premium isim plakası */
+.who.plate::before { content: ""; position: absolute; left: -6px; top: -3px; bottom: -3px; right: 8%; z-index: -1; pointer-events: none; border-radius: 10px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pl) 24%, transparent), color-mix(in srgb, var(--pl) 6%, transparent) 65%, transparent);
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--pl) 75%, transparent); }
+.who.plate { isolation: isolate; }
+.who.plate .nl { color: #fff; }
+
+/* Yönetici: Discord eşleme */
+.pdm { display: flex; flex-direction: column; gap: 10px; }
+.pdr { display: flex; align-items: center; gap: 10px; }
+.pdr .froles { min-width: 120px; }
+.pdr > svg { color: var(--fg-3); flex: none; }
+.pdn { margin: 0; font-size: 11.5px; line-height: 1.5; color: var(--fg-3); }
+
+/* FPS modu ve azaltılmış hareket: Premium animasyonları durur */
+html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none; }
+@media (prefers-reduced-motion: reduce) { .pvnm, .fwho.nfx .nm, .pvg::before { animation: none; } }
+.pdm { padding: 14px 16px; }
+.pdr select { flex: 0 1 320px; }

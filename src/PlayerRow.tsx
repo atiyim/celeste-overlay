@@ -29,6 +29,8 @@ interface Props {
   lobby: Player[];
   /** Celeste rolleri (kendi rolün ya da lobideki diğer Celeste kullanıcılarının). */
   roles?: Role[];
+  /** Premium isim plakası rengi (rolü bu özelliği açıyorsa). */
+  plate?: string;
 }
 
 // Satırda kaplaması gösterilecek silahlar (kimlikle bulunur, olmazsa isim/kategoriyle).
@@ -39,7 +41,7 @@ const THUMBS = [
   { id: "2f59173c-4bed-b6c3-2191-dea9b58be9c7", name: "Melee", category: "Melee" },
 ];
 
-export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles }: Props) {
+export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles, plate }: Props) {
   const agent = assets.agents.get(lookup(p.agentId));
   const cur = assets.tiers.get(p.rank.current);
   const peak = assets.tiers.get(p.rank.peak);
@@ -97,7 +99,7 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
 
   return (
     <div className={times ? "g r again" : "g r"} style={{ gridTemplateColumns: template, "--i": index } as React.CSSProperties} role="button" tabIndex={0} onClick={onOpen} onKeyDown={key}>
-      <button className="who" type="button" onClick={stop(() => onCopy(anonymous ? label ?? null : p.name ?? null))} title={blur ? "Kullanıcı adını kopyala" : sub || "Kullanıcı adını kopyala"}>
+      <button className={plate ? "who plate" : "who"} style={plate ? ({ "--pl": plate } as React.CSSProperties) : undefined} type="button" onClick={stop(() => onCopy(anonymous ? label ?? null : p.name ?? null))} title={blur ? "Kullanıcı adını kopyala" : sub || "Kullanıcı adını kopyala"}>
         {party && (
           <i
             className={party.soft ? "pbar soft" : "pbar"}

@@ -47,9 +47,10 @@ import { WhatsNew } from "./WhatsNew";
 import { NoticeCard } from "./NoticeCard";
 import { useNotices, useUsagePing } from "./community";
 import { PreviewBar } from "./PreviewBar";
+import { PremiumPanel } from "./PremiumPanel";
 import { Roles } from "./RoleBadge";
 import { useLobbyRoles } from "./roleLookup";
-import { applyLook, isPremium, roleColor, useMe, usePreview } from "./vip";
+import { SAMPLE, applyLook, fxColor, isPremium, rolesUnlock, loadPremiumCfg, unlocked, useMe, usePremiumCfg, usePreview, type ItemId } from "./vip";
 import { currentMe, login } from "./feed";
 import { applyTheme, gridCols, gridTemplate, hideOf, loadTheme, overlayWidth } from "./theme";
 
@@ -63,7 +64,7 @@ const PROFILE = [["stats", "İstatistik"], ["store", "Mağaza"], ["account", "He
 const TOOLS = [["chat", "Hızlı mesajlar"], ["cross", "Nişangah"], ["device", "DPI/eDPI"], ["timers", "Sayaçlar"], ["search", "Oyuncu arama"], ["meta", "Meta"]] as const;
 type ProfileView = (typeof PROFILE)[number][0];
 type ToolView = (typeof TOOLS)[number][0];
-type View = "roster" | "report" | "feed" | "feedback" | "trust" | "settings" | ProfileView | ToolView;
+type View = "roster" | "report" | "feed" | "feedback" | "premium" | "trust" | "settings" | ProfileView | ToolView;
 const groupOf = (v: View): Group =>
   PROFILE.some(([id]) => id === v) ? "profile" : TOOLS.some(([id]) => id === v) ? "tools" : v === "feedback" ? "roster" : (v as Group);
 const saved = <T extends string>(key: string, list: readonly (readonly [T, string])[], fallback: T): T => {
@@ -161,15 +162,21 @@ export function App() {
   const idle = () => autoHiddenRef.current || document.hidden;
 
   useEffect(() => { applyTheme(theme); }, [theme]);
-  // Premium görünüm: tema, vurgu rengi ve rol efekti. Önizleme sırasında kilitli tema da uygulanır.
+  // Premium görünüm: tema, vurgu rengi ve rol efekti. Her biri yöneticinin seçtiği role bağlı olabilir.
+  // Önizleme sırasında kilitli özellik de 15 sn uygulanır (rengi yoksa örnek altın renkle).
   const me = useMe();
   const prem = isPremium(me);
+  const pcfg = usePremiumCfg();
   const pv = usePreview();
-  const rc = prem ? roleColor(me) : undefined;
-  const skinId = pv?.id ?? (prem ? theme.skin : "");
+  const can = (id: ItemId) => pv?.id === id || unlocked(me, id, pcfg);
+  const pvSkin = pv?.id.startsWith("skin:") ? pv.id.slice(5) : null;
+  const skinId = pvSkin ?? (theme.skin && unlocked(me, `skin:${theme.skin}`, pcfg) ? theme.skin : "");
+  const accentRc = pv?.id === "fx:accent" ? (fxColor(me?.roles, "fx:accent", pcfg) ?? SAMPLE) : theme.roleAccent && unlocked(me, "fx:accent", pcfg) ? fxColor(me?.roles, "fx:accent", pcfg) : undefined;
+  const glowRc = pv?.id === "fx:glow" ? (fxColor(me?.roles, "fx:glow", pcfg) ?? SAMPLE) : theme.vipFx && unlocked(me, "fx:glow", pcfg) ? fxColor(me?.roles, "fx:glow", pcfg) : undefined;
   useEffect(() => {
-    applyLook({ skin: skinId, accent: prem && theme.roleAccent && rc ? rc : theme.accent, vipColor: prem && theme.vipFx ? rc : undefined });
-  }, [skinId, prem, rc, theme]);
+    applyLook({ skin: skinId, accent: accentRc ?? theme.accent, vipColor: glowRc });
+  }, [skinId, accentRc, glowRc, theme.accent]);
+  useEffect(() => { void loadPremiumCfg(); }, [me]);
   // Rolü olan biri önceden Akış'a girdiyse oturum açılışta tazelenir (rol değişmiş olabilir). Yalnızca eski oturumu olanlar için.
   useEffect(() => {
     if (!inTauri || !currentMe()) return;
@@ -601,6 +608,7 @@ export function App() {
                 mapName={mapName}
                 lobby={snap.players}
                 roles={theme.showRoles ? (p.isSelf ? (prem ? me!.roles : undefined) : lobbyRoles.get(p.puuid)) : undefined}
+                plate={theme.showRoles ? (p.isSelf ? (can("fx:plate") ? (fxColor(me?.roles, "fx:plate", pcfg) ?? SAMPLE) : undefined) : rolesUnlock(lobbyRoles.get(p.puuid), "fx:plate", pcfg) ? fxColor(lobbyRoles.get(p.puuid), "fx:plate", pcfg) : undefined) : undefined}
               />
             ))}
           </section>
@@ -633,6 +641,8 @@ export function App() {
         : view === "search" ? <Search assets={assets} seen={seen} onOpen={openTracker} onCopy={copyName} onClose={() => go("roster")} />
         : <QuickChat onCopy={copyName} onClose={() => go("roster")} />}
     </Hub>
+  ) : view === "premium" ? (
+    <PremiumPanel theme={theme} onChange={setTheme} onOpen={openTracker} onToast={showToast} onClose={() => go("roster")} />
   ) : view === "trust" ? (
     <TrustPanel onToast={showToast} onOpen={openTracker} onClose={() => go("roster")} />
   ) : snap.players.length === 0 || !assets ? (
@@ -696,7 +706,7 @@ export function App() {
                 {mySide} · ilk yarı
               </span>
             )}
-            {prem && theme.vipFx && me && <Roles roles={me.roles} compact />}
+            {prem && me && <Roles roles={me.roles} compact />}
             <TimerPill onOpen={() => go("timers")} />
             {theme.fps && <span className="fpsb" title="FPS modu açık: animasyonlar kapalı, maçta hemen gizlenir">FPS</span>}
           </span>

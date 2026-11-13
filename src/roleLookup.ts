@@ -26,7 +26,7 @@ function clean(list: unknown): Role[] {
   return list.slice(0, 3).flatMap((r): Role[] => {
     const x = r as Partial<Role>;
     if (typeof x?.name !== "string" || typeof x.color !== "string" || !/^#[0-9a-f]{6}$/i.test(x.color)) return [];
-    return [{ name: x.name.slice(0, 24), color: x.color, admin: x.admin === true, glow: x.glow === true, icon: typeof x.icon === "string" && x.icon in ROLE_ICON_PATHS ? x.icon : undefined }];
+    return [{ ...(Number.isInteger(x.id) && x.id! > 0 ? { id: x.id } : {}), name: x.name.slice(0, 24), color: x.color, admin: x.admin === true, glow: x.glow === true, icon: typeof x.icon === "string" && x.icon in ROLE_ICON_PATHS ? x.icon : undefined }];
   });
 }
 

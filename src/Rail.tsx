@@ -3,7 +3,7 @@ import { Icon, type IconName } from "./icons";
 
 /* Sol menü: bölümler gruplanmış simgeler. Üstüne gelince adı görünür.
    Boş alanından tutup pencere sürüklenebilir. */
-export type Group = "roster" | "report" | "profile" | "feed" | "tools" | "trust" | "settings";
+export type Group = "roster" | "report" | "profile" | "feed" | "tools" | "premium" | "trust" | "settings";
 
 interface Item { id: Group; label: string; icon: IconName }
 const TOP: Item[] = [
@@ -12,6 +12,7 @@ const TOP: Item[] = [
   { id: "profile", label: "Profilim", icon: "user" },
   { id: "feed", label: "Akış", icon: "msg" },
   { id: "tools", label: "Araçlar", icon: "spark" },
+  { id: "premium", label: "Premium", icon: "crown" },
 ];
 const BOTTOM: Item[] = [
   { id: "trust", label: "S.S.S ve güven", icon: "help" },
@@ -35,7 +36,7 @@ export function Rail({ active, onPick, feedCount, feedNote, onDrag }: Props) {
       <button
         key={it.id}
         type="button"
-        className={active === it.id ? "ri on" : "ri"}
+        className={`ri${active === it.id ? " on" : ""}${it.id === "premium" ? " prem" : ""}`}
         aria-current={active === it.id ? "page" : undefined}
         aria-label={label}
         onClick={() => onPick(it.id)}

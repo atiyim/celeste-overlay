@@ -34,7 +34,7 @@ export const REACTS = [["fire", "🔥"], ["skull", "💀"], ["lol", "😂"], ["c
 export interface Comment { id: number; riot: string; text: string; created: number; mine: boolean; roles: Role[] }
 export interface RoleDef { id: number; name: string; color: string; icon?: string; glow?: boolean; members: { puuid: string; riot: string }[] }
 export interface AdminList { posts: Post[]; comments: (Comment & { post: number; reports: number; hidden: boolean })[]; bans: { riot: string; at: number }[]; roles: RoleDef[]; adminColor?: string }
-export interface Me { session: string; riot: string; puuid: string; verifiedName: boolean; admin: boolean; banned: boolean; roles: Role[] }
+export interface Me { session: string; riot: string; puuid: string; verifiedName: boolean; admin: boolean; banned: boolean; roles: Role[]; discord?: boolean }
 
 /** `rank`: şu anki rankın; maçın kendi rank bilgisi yoksa (derecesiz, tam gaz…) o gösterilir. */
 export function cardOf(m: MyMatch, assets?: Assets, rank?: number): FeedCard {
@@ -104,6 +104,13 @@ export const feedLike = (post: number) => send<{ liked: boolean; likes: number }
 export const feedReport = (target: string) => send<{ ok: true }>("report", { target });
 export const feedDelete = (target: string) => send<{ ok: true }>("delete", { target });
 export const feedAdmin = <T = { ok: true }>(action: string, extra: object = {}) => send<T>("admin", { action, ...extra });
+/** Discord bağlama: start → tarayıcıda açılacak bağlantı; unlink → kaldırır; boş → durum. */
+export async function feedLink(action?: "start" | "unlink"): Promise<{ linked: boolean; url?: string }> {
+  const r = await send<{ linked: boolean; url?: string }>("link", action ? { action } : {});
+  if (me && me.discord !== r.linked) { me = { ...me, discord: r.linked }; notifyMe(); try { localStorage.setItem(SESSION_KEY, JSON.stringify(me)); } catch { /* depolama kapalı */ } }
+  return r;
+}
+export const premiumInfo = () => getJson<{ req: Record<string, number>; roles: { id: number; name: string; color: string; icon?: string }[] }>(`${API}/premium`);
 
 export function ago(ms: number): string {
   const m = Math.max(0, Math.floor((Date.now() - ms) / 60000));

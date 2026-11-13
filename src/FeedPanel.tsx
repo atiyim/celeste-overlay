@@ -9,9 +9,10 @@ import type { MyStats } from "./types";
 import { Empty, NameLine, PanelHead } from "./ui";
 import { ROLE_ICON_NAMES, ROLE_ICON_PATHS, RoleIcon } from "./roleIcons";
 import { Roles, adminOf, ink } from "./RoleBadge";
+import { fxColor, rolesUnlock, usePremiumCfg, type ItemId, type PremiumCfg } from "./vip";
 import {
   ago, cardOf, currentMe, feedAdmin, feedComment, feedComments, feedDelete, feedLike, feedList, feedNotes, feedPost, feedProfile, feedReact, feedReport, login,
-  REACTS, type AdminList, type Clip, type Comment, type FeedCard, type Me, type Note, type Post, type Profile, type RoleDef, type Tab,
+  REACTS, type AdminList, type Clip, type Comment, type FeedCard, type Me, type Note, type Post, type Profile, type Role, type RoleDef, type Tab,
 } from "./feed";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
@@ -45,10 +46,12 @@ function RichText({ text, className }: { text: string; className?: string }) {
 }
 
 /** Tıklanabilir isim (profili açar). */
-function Who({ riot }: { riot: string }) {
+function Who({ riot, fx }: { riot: string; fx?: string }) {
   const open = useContext(OpenProfile);
-  return <button type="button" className="fwho" onClick={() => open(riot)} title="Profili aç"><NameLine name={riot} /></button>;
+  return <button type="button" className={fx ? "fwho nfx" : "fwho"} style={fx ? ({ "--nc": fx } as React.CSSProperties) : undefined} onClick={() => open(riot)} title="Profili aç"><NameLine name={riot} /></button>;
 }
+/** Premium: rolü bu özelliği açan yazarın efekt rengi (yöneticinin kendi stili ayrıdır). */
+const fxOf = (roles: Role[], item: ItemId, c: PremiumCfg) => (!adminOf(roles) && rolesUnlock(roles, item, c) ? fxColor(roles, item, c) : undefined);
 
 const CLIP_NAME: Record<Clip["kind"], string> = { youtube: "YouTube", tiktok: "TikTok", medal: "Medal", twitch: "Twitch" };
 function ClipView({ clip }: { clip: Clip }) {
@@ -284,12 +287,13 @@ function Comments({ post, canWrite, onToast, onCount }: { post: Post; canWrite: 
     try { await fn(); onToast(ok); await load(); } catch (e) { onToast((e as Error).message); }
   };
 
+  const pcfg = usePremiumCfg();
   return (
     <div className="fcom">
       {err && <small className="neg">{err}</small>}
       {list?.map((c) => (
         <div className={adminOf(c.roles) ? "fcm1 adm" : "fcm1"} key={c.id} style={adminOf(c.roles) ? ({ "--adm": adminOf(c.roles)!.color } as React.CSSProperties) : undefined}>
-          <div className="fcmh"><Who riot={c.riot} /><Roles roles={c.roles} /><small className="d">{ago(c.created)}</small>
+          <div className="fcmh"><Who riot={c.riot} fx={fxOf(c.roles, "fx:name", pcfg)} /><Roles roles={c.roles} /><small className="d">{ago(c.created)}</small>
             <span className="sp" />
             {c.mine && <button className="lnk" type="button" onClick={() => act(() => feedDelete(`c:${c.id}`), "Yorum silindi")}>Sil</button>}
             {!c.mine && !adm.on && canWrite && <button className="lnk" type="button" onClick={() => act(() => feedReport(`c:${c.id}`), "Bildirildi, teşekkürler")}>Bildir</button>}
@@ -328,13 +332,15 @@ function PostView({ p, assets, canWrite, onToast, onChanged }: { p: Post; assets
     try { await fn(); onToast(ok); onChanged(); } catch (e) { onToast((e as Error).message); }
   };
 
+  const pcfg = usePremiumCfg();
+  const postFx = fxOf(p.roles, "fx:post", pcfg);
   return (
-    <article className={`fpost${adminOf(p.roles) ? " adm" : ""}${p.pinned ? " pinned" : ""}`} style={adminOf(p.roles) ? ({ "--adm": adminOf(p.roles)!.color } as React.CSSProperties) : undefined}>
+    <article className={`fpost${adminOf(p.roles) ? " adm" : postFx ? " pfx" : ""}${p.pinned ? " pinned" : ""}`} style={adminOf(p.roles) ? ({ "--adm": adminOf(p.roles)!.color } as React.CSSProperties) : postFx ? ({ "--pc": postFx } as React.CSSProperties) : undefined}>
       {p.pinned && (
         <div className="fpin"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M10.5 1.5 14.5 5.5 12 6.5 9.5 9l.5 3.5-1 1L6 10.5 2.5 14l-.5-.5L5.5 10 2.5 7l1-1L7 6.5 9.5 4z" /></svg>Sabitlenmiş paylaşım</div>
       )}
       <header className="fph">
-        <Who riot={p.riot} />
+        <Who riot={p.riot} fx={fxOf(p.roles, "fx:name", pcfg)} />
         <Roles roles={p.roles} />
         <small className="d">{ago(p.created)}</small>
         {p.hidden && <span className="bd neg">Gizli · {p.reports} bildirim</span>}

@@ -43,6 +43,9 @@
           "url": "https://celeste-feed.celestimbenim.workers.dev/discord/oneri"
         },
         {
+          "url": "https://celeste-feed.celestimbenim.workers.dev/auth/overlay?t=*"
+        },
+        {
           "url": "https://discord.gg/celestevlr"
         },
         {
