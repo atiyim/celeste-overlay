@@ -2,7 +2,7 @@ import type { KeyboardEvent } from "react";
 import { tierColor } from "./LoadoutPanel";
 import { Roles } from "./RoleBadge";
 import { Icon, type IconName } from "./icons";
-import { lookup, type Assets } from "./assets";
+import { lookup, type Assets, type Tier } from "./assets";
 import { AgentIcon, NameLine } from "./ui";
 import { partyColor, playerView } from "./playerView";
 import { BadgePill, Moon, type RowProps } from "./PlayerRow";
@@ -21,12 +21,14 @@ const share = (a: number | null, b: number | null) => (a == null || b == null ||
 export function teamNumbers(list: Player[]) {
   const ranked = list.filter((p) => p.rank.current > 0);
   const kds = list.filter((p) => p.kd != null);
-  let w = 0, g = 0;
+  let w = 0, g = 0, fw = 0, fg = 0;
+  for (const p of list) for (const f of p.form.slice(0, 5)) { fg++; if (f.won) fw++; }
   for (const p of list) { const r = p.rank; if (r.games > 0) { w += r.wins; g += r.games; } else { w += r.totalWins; g += r.totalGames; } }
   return {
     tier: ranked.length ? ranked.reduce((a, p) => a + p.rank.current, 0) / ranked.length : null,
     kd: kds.length ? kds.reduce((a, p) => a + (p.kd ?? 0), 0) / kds.length : null,
     wr: g > 0 ? (100 * w) / g : null,
+    form: fg > 0 ? (100 * fw) / fg : null,
   };
 }
 
@@ -88,7 +90,21 @@ function Agents({ list, assets }: { list: Player[]; assets: Assets }) {
   );
 }
 
-const SideIcon = ({ side }: { side?: string | null }) => (side ? <span className="vssi" title={side}><Icon name={/savun/i.test(side) ? "shield" : "bolt"} size={12} /></span> : null);
+function Team({ kind, title, side, tier, list, assets }: { kind: "ally" | "foe"; title: string; side?: string | null; tier?: Tier; list: Player[]; assets: Assets }) {
+  return (
+    <div className={`vstn ${kind}`}>
+      {tier ? <img className="vstr" src={tier.icon} alt="" /> : <i className="vstr none" />}
+      <span className="vstt">
+        <b>{title}</b>
+        <small>
+          {side && <Icon name={/savun/i.test(side) ? "shield" : "bolt"} size={12} />}
+          {[side, tier?.name].filter(Boolean).join(" · ") || "Derecesiz"}
+        </small>
+      </span>
+      <Agents list={list} assets={assets} />
+    </div>
+  );
+}
 
 export function Versus({ allies, enemies, cell, assets, mapId, mapName, allySide, foeSide }: {
   allies: Player[]; enemies: Player[]; cell: (p: Player, list: Player[]) => CellProps;
@@ -97,41 +113,34 @@ export function Versus({ allies, enemies, cell, assets, mapId, mapName, allySide
   const a = teamNumbers(allies), e = teamNumbers(enemies);
   const tier = (t: number | null) => (t ? assets.tiers.get(Math.round(t)) : undefined);
   const art = mapId ? assets.mapArt.get(lookup(mapId)) : undefined;
-  const ta = tier(a.tier), te = tier(e.tier);
-  const stats: (Stat & { icon: IconName; li?: string; ri?: string })[] = [
-    { label: "Ortalama rank", icon: "crown", li: ta?.icon, ri: te?.icon, left: ta?.name ?? "–", right: te?.name ?? "–", share: share(a.tier, e.tier) },
+  const pct = (n: number | null) => (n != null ? `%${Math.round(n)}` : "–");
+  const stats: (Stat & { icon: IconName })[] = [
     { label: "K/D", icon: "target", left: a.kd != null ? a.kd.toFixed(2) : "–", right: e.kd != null ? e.kd.toFixed(2) : "–", share: share(a.kd, e.kd) },
-    { label: "Kazanma", icon: "chart", left: a.wr != null ? `%${Math.round(a.wr)}` : "–", right: e.wr != null ? `%${Math.round(e.wr)}` : "–", share: share(a.wr, e.wr) },
+    { label: "Kazanma", icon: "chart", left: pct(a.wr), right: pct(e.wr), share: share(a.wr, e.wr) },
+    { label: "Son maçlar", icon: "bolt", left: pct(a.form), right: pct(e.form), share: share(a.form, e.form) },
   ];
   return (
     <div className="vs">
       <div className="vsh">
         {art && <span className="vshbg" style={{ backgroundImage: `url(${art})` }} aria-hidden="true" />}
         <div className="vst">
-          <span className="vstn ally">
-            <Agents list={allies} assets={assets} />
-            <span className="vstt"><b><i />Takımın</b>{allySide ? <small><SideIcon side={allySide} />{allySide}</small> : null}</span>
-          </span>
-          <span className="vsvs"><small>{mapName ?? ""}</small><b aria-hidden="true">VS</b></span>
-          <span className="vstn foe">
-            <span className="vstt"><b>Rakipler<i /></b>{foeSide ? <small>{foeSide}<SideIcon side={foeSide} /></small> : null}</span>
-            <Agents list={enemies} assets={assets} />
-          </span>
+          <Team kind="ally" title="Takımın" side={allySide} tier={tier(a.tier)} list={allies} assets={assets} />
+          <span className="vsvs"><b aria-hidden="true">VS</b>{mapName && <small>{mapName}</small>}</span>
+          <Team kind="foe" title="Rakipler" side={foeSide} tier={tier(e.tier)} list={enemies} assets={assets} />
         </div>
-        {stats.map((s) => (
-          <div className="vsm" key={s.label}>
-            <span className={`vsv l${s.share != null && s.share > 50 ? " lead" : ""}`}>{s.li && <img src={s.li} alt="" />}<b>{s.left}</b></span>
-            <span className="vsmid">
-              <span className="vsml"><Icon name={s.icon} size={11} />{s.label}</span>
-              <span className="vstug" role="img" aria-label={`${s.label}: ${s.left} - ${s.right}`}>
-                <i className="lf" style={{ width: `${s.share ?? 50}%` }} />
-                <i className="rt" style={{ width: `${s.share != null ? 100 - s.share : 50}%` }} />
-                <em style={{ left: `${s.share ?? 50}%` }} />
-              </span>
-            </span>
-            <span className={`vsv r${s.share != null && s.share < 50 ? " lead" : ""}`}><b>{s.right}</b>{s.ri && <img src={s.ri} alt="" />}</span>
-          </div>
-        ))}
+        <div className="vsk">
+          {stats.map((s) => {
+            const lead = s.share == null || s.share === 50 ? "" : s.share > 50 ? "l" : "r";
+            return (
+              <div className="vsm" key={s.label} role="img" aria-label={`${s.label}: takımın ${s.left}, rakipler ${s.right}`}>
+                <b className={lead === "l" ? "lead" : ""}>{s.left}</b>
+                <span className="vsml"><Icon name={s.icon} size={12} />{s.label}</span>
+                <b className={lead === "r" ? "lead" : ""}>{s.right}</b>
+                <span className="vstug"><i className="lf" style={{ flexGrow: s.share ?? 50 }} /><i className="rt" style={{ flexGrow: s.share != null ? 100 - s.share : 50 }} /></span>
+              </div>
+            );
+          })}
+        </div>
       </div>
       <div className="vsg">
         <div className="vscol"><span className="vsct ally"><i />Takımın</span>{allies.map((p) => <Cell key={p.puuid} {...cell(p, allies)} side="ally" />)}</div>
