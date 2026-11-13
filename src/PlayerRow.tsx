@@ -9,6 +9,8 @@ import type { Player } from "./types";
 import { AgentIcon, NameLine } from "./ui";
 import { agentPool, gunBadge, mapBadge, mmrBadge, poolBadge } from "./insights";
 import { partyInfo } from "./party";
+import { Roles } from "./RoleBadge";
+import type { Role } from "./feed";
 
 interface Props {
   p: Player;
@@ -25,6 +27,8 @@ interface Props {
   mapId?: string | null;
   mapName?: string;
   lobby: Player[];
+  /** Celeste rolleri (kendi rolün ya da lobideki diğer Celeste kullanıcılarının). */
+  roles?: Role[];
 }
 
 // Satırda kaplaması gösterilecek silahlar (kimlikle bulunur, olmazsa isim/kategoriyle).
@@ -35,7 +39,7 @@ const THUMBS = [
   { id: "2f59173c-4bed-b6c3-2191-dea9b58be9c7", name: "Melee", category: "Melee" },
 ];
 
-export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker, mapId, mapName, lobby }: Props) {
+export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles }: Props) {
   const agent = assets.agents.get(lookup(p.agentId));
   const cur = assets.tiers.get(p.rank.current);
   const peak = assets.tiers.get(p.rank.peak);
@@ -104,8 +108,9 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
         <span className="agw"><AgentIcon className="agent" icon={agent?.icon} name={agent?.name} /></span>
         <span className="n">
           <NameLine name={name} />
-          {(times > 0 || tag || sub) && (
+          {(times > 0 || tag || sub || !!roles?.length) && (
             <span className="sub2">
+              {roles && roles.length > 0 && <Roles roles={roles} compact />}
               {tag && <span className="tg" style={{ color: tag.color, borderColor: tag.color }}>{tag.label}</span>}
               {times > 0 && <span className="rep" title={`Bu oyuncuyla ${times}. kez aynı maçtasın`}>{times}. kez aynı maçta</span>}
               {sub && <small className="pn">{sub}</small>}

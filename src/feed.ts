@@ -50,6 +50,9 @@ export function cardOf(m: MyMatch, assets?: Assets, rank?: number): FeedCard {
 
 let me: Me | null = (() => { try { return JSON.parse(localStorage.getItem(SESSION_KEY) ?? "null") as Me | null; } catch { return null; } })();
 export const currentMe = () => me;
+const meSubs = new Set<() => void>();
+export const subscribeMe = (f: () => void) => { meSubs.add(f); return () => { meSubs.delete(f); }; };
+const notifyMe = () => meSubs.forEach((f) => f());
 
 /** Riot ile doğrulayıp akış oturumu açar (her açılışta yenilenir: ban, rol ve yönetici durumu güncel gelir). */
 export async function login(): Promise<Me> {
@@ -59,6 +62,7 @@ export async function login(): Promise<Me> {
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error((j as { error?: string }).error ?? (r.status === 404 ? "Akış servisi şu an kapalı." : `Giriş yapılamadı (${r.status})`));
   me = j as Me;
+  notifyMe();
   try { localStorage.setItem(SESSION_KEY, JSON.stringify(me)); } catch { /* depolama kapalı */ }
   return me;
 }
@@ -66,7 +70,7 @@ export async function login(): Promise<Me> {
 async function send<T>(path: string, body: object, retry = true): Promise<T> {
   if (!me) await login();
   const r = await tfetch(`${API}/${path}`, { method: "POST", headers: { "content-type": "text/plain" }, body: JSON.stringify({ session: me!.session, ...body }) });
-  if (r.status === 401 && retry) { me = null; await login(); return send<T>(path, body, false); }
+  if (r.status === 401 && retry) { me = null; notifyMe(); await login(); return send<T>(path, body, false); }
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error((j as { error?: string }).error ?? (r.status === 404 ? "Akış servisi şu an kapalı." : `Hata (${r.status})`));
   return j as T;

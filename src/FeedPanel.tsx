@@ -8,9 +8,10 @@ import { tierColor } from "./LoadoutPanel";
 import type { MyStats } from "./types";
 import { Empty, NameLine, PanelHead } from "./ui";
 import { ROLE_ICON_NAMES, ROLE_ICON_PATHS, RoleIcon } from "./roleIcons";
+import { Roles, adminOf, ink } from "./RoleBadge";
 import {
   ago, cardOf, currentMe, feedAdmin, feedComment, feedComments, feedDelete, feedLike, feedList, feedNotes, feedPost, feedProfile, feedReact, feedReport, login,
-  REACTS, type AdminList, type Clip, type Comment, type FeedCard, type Me, type Note, type Post, type Profile, type Role, type RoleDef, type Tab,
+  REACTS, type AdminList, type Clip, type Comment, type FeedCard, type Me, type Note, type Post, type Profile, type RoleDef, type Tab,
 } from "./feed";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
@@ -159,26 +160,6 @@ function ProfileView({ riot, assets, canWrite, onBack, onToast }: { riot: string
         </>
       )}
     </div>
-  );
-}
-
-/* ---------- İsim + roller ---------- */
-/** Zemin rengine göre okunur yazı rengi. */
-function ink(hex: string): string {
-  const n = parseInt(hex.slice(1), 16);
-  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? "#140d00" : "#ffffff";
-}
-const adminOf = (roles: Role[]) => roles.find((r) => r.admin);
-
-function Roles({ roles }: { roles: Role[] }) {
-  if (!roles.length) return null;
-  return (
-    <span className="froles">
-      {roles.map((r) => (
-        <span key={r.name} className={r.admin || r.glow ? "frole adm" : "frole"} style={{ "--rc": r.color, "--rt": ink(r.color) } as React.CSSProperties} title={r.admin ? "Celeste Overlay yöneticisi" : `Rol: ${r.name}`}><RoleIcon name={r.icon ?? (r.admin ? "crown" : undefined)} />{r.name}</span>
-      ))}
-    </span>
   );
 }
 

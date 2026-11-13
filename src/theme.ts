@@ -45,6 +45,14 @@ export interface Theme {
   discord: boolean;
   /** Yayıncı modu: Discord kartında rank, skor ve RR gizlenir. */
   streamer: boolean;
+  /** Premium tema kimliği ("" = Celeste varsayılanı). Yalnızca rol sahiplerinde uygulanır. */
+  skin: string;
+  /** Vurgu rengi rolün rengi olsun (rol sahiplerine). */
+  roleAccent: boolean;
+  /** Kartlarda rol renginde ince parıltı ve üst çubukta rol rozeti (rol sahiplerine). */
+  vipFx: boolean;
+  /** Lobide diğer Celeste kullanıcılarının rol rozetini göster. */
+  showRoles: boolean;
 }
 
 const ALL_ON = Object.fromEntries(COLS.map((c) => [c.id, true])) as Record<ColId, boolean>;
@@ -62,6 +70,10 @@ export const DEFAULT_THEME: Theme = {
   obs: false,
   discord: true,
   streamer: false,
+  skin: "",
+  roleAccent: false,
+  vipFx: true,
+  showRoles: true,
 };
 /** Eski varsayılan vurgu: değiştirmemiş kullanıcılar yeni Celeste moruna geçer. */
 const OLD_DEFAULT_ACCENTS = ["#38bdf8", "#b89cf5"];
@@ -102,6 +114,10 @@ export function loadTheme(): Theme {
       obs: t.obs === true,
       discord: t.discord !== false,
       streamer: t.streamer === true,
+      skin: typeof t.skin === "string" && /^[a-z]{0,16}$/.test(t.skin) ? t.skin : "",
+      roleAccent: t.roleAccent === true,
+      vipFx: t.vipFx !== false,
+      showRoles: t.showRoles !== false,
     };
   } catch { return DEFAULT_THEME; }
 }

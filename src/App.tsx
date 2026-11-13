@@ -46,6 +46,11 @@ import { Waiting } from "./Waiting";
 import { WhatsNew } from "./WhatsNew";
 import { NoticeCard } from "./NoticeCard";
 import { useNotices, useUsagePing } from "./community";
+import { PreviewBar } from "./PreviewBar";
+import { Roles } from "./RoleBadge";
+import { useLobbyRoles } from "./roleLookup";
+import { applyLook, isPremium, roleColor, useMe, usePreview } from "./vip";
+import { currentMe, login } from "./feed";
 import { applyTheme, gridCols, gridTemplate, hideOf, loadTheme, overlayWidth } from "./theme";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
@@ -156,6 +161,22 @@ export function App() {
   const idle = () => autoHiddenRef.current || document.hidden;
 
   useEffect(() => { applyTheme(theme); }, [theme]);
+  // Premium görünüm: tema, vurgu rengi ve rol efekti. Önizleme sırasında kilitli tema da uygulanır.
+  const me = useMe();
+  const prem = isPremium(me);
+  const pv = usePreview();
+  const rc = prem ? roleColor(me) : undefined;
+  const skinId = pv?.id ?? (prem ? theme.skin : "");
+  useEffect(() => {
+    applyLook({ skin: skinId, accent: prem && theme.roleAccent && rc ? rc : theme.accent, vipColor: prem && theme.vipFx ? rc : undefined });
+  }, [skinId, prem, rc, theme]);
+  // Rolü olan biri önceden Akış'a girdiyse oturum açılışta tazelenir (rol değişmiş olabilir). Yalnızca eski oturumu olanlar için.
+  useEffect(() => {
+    if (!inTauri || !currentMe()) return;
+    const t = window.setTimeout(() => { login().catch(() => undefined); }, 6_000);
+    return () => window.clearTimeout(t);
+  }, []);
+  const lobbyRoles = useLobbyRoles(snap.players, theme.showRoles);
   useEffect(() => {
     const el = drawerRef.current;
     if (!selected || !el) { setDrawerH(0); return; }
@@ -579,6 +600,7 @@ export function App() {
                 mapId={snap.mapId}
                 mapName={mapName}
                 lobby={snap.players}
+                roles={theme.showRoles ? (p.isSelf ? (prem ? me!.roles : undefined) : lobbyRoles.get(p.puuid)) : undefined}
               />
             ))}
           </section>
@@ -674,6 +696,7 @@ export function App() {
                 {mySide} · ilk yarı
               </span>
             )}
+            {prem && theme.vipFx && me && <Roles roles={me.roles} compact />}
             <TimerPill onOpen={() => go("timers")} />
             {theme.fps && <span className="fpsb" title="FPS modu açık: animasyonlar kapalı, maçta hemen gizlenir">FPS</span>}
           </span>
@@ -747,6 +770,7 @@ export function App() {
         </div>
         {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} onFeedback={() => { setGuide(false); setCollapsed(false); go("feedback"); }} onTrust={() => go("trust")} />}
       </div>
+      <PreviewBar onOpen={openTracker} />
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
   );

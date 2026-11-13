@@ -1762,3 +1762,130 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 .mport { right: -6px; top: auto; bottom: -6px; height: 118%; max-width: 54%; object-position: right bottom;
   -webkit-mask-image: linear-gradient(to left, #000 55%, transparent 100%); mask-image: linear-gradient(to left, #000 55%, transparent 100%); }
 .dmx h4 { margin-bottom: 8px; }
+
+/* ================= 0.9.2: premium temalar ve rol efektleri =================
+   Ortak değişkenler: tema kök öğeye (html[data-skin]) ya da önizleme kartına (.skp) aynı bloktan uygulanır.
+   Tasarım ilkesi: abartısız. Koyu zemin, tek vurgu rengi, ince çizgiler, yavaş ve sakin hareket. */
+html[data-skin="obsidyen"], .skp[data-s="obsidyen"] {
+  --ovb: 9, 9, 12; --glow: rgba(230, 194, 122, .10);
+  --card: #111115; --card-hi: #1a1a20; --s1: #111115; --s2: #17171d; --s3: #212128; --box: #0e0e12;
+  --line: #2b2a31; --line-2: #3a3842; --line-soft: #1b1b21; --fg-3: #8e8a96;
+}
+html[data-skin="aurora"], .skp[data-s="aurora"] {
+  --ovb: 7, 17, 23; --glow: rgba(94, 234, 212, .11);
+  --card: #0e1a21; --card-hi: #14262e; --s1: #0e1a21; --s2: #13232b; --s3: #1c313a; --box: #0b161c;
+  --line: #20383f; --line-2: #2b4952; --line-soft: #16282e; --fg-3: #7f98a0;
+}
+html[data-skin="gunbatimi"], .skp[data-s="gunbatimi"] {
+  --ovb: 19, 12, 25; --glow: rgba(255, 130, 105, .20);
+  --card: #1a1221; --card-hi: #251a2e; --s1: #1a1221; --s2: #221829; --s3: #2e2238; --box: #160f1c;
+  --line: #392943; --line-2: #4a3556; --line-soft: #271b30; --fg-3: #988aa3;
+}
+html[data-skin="kristal"], .skp[data-s="kristal"] {
+  --ovb: 9, 15, 22; --glow: rgba(155, 215, 255, .11);
+  --card: #0f1923; --card-hi: #172430; --s1: #0f1923; --s2: #14202c; --s3: #1d2e3f; --box: #0c151e;
+  --line: #26394a; --line-2: #34506a; --line-soft: #19273a; --fg-3: #8095aa;
+}
+.skp[data-s="obsidyen"] { --accent: #e6c27a; }
+.skp[data-s="aurora"] { --accent: #5eead4; }
+.skp[data-s="gunbatimi"] { --accent: #ff9e80; }
+.skp[data-s="kristal"] { --accent: #9bd7ff; }
+
+/* Zemin: yıldız tozu, alttan ufuk ışığı, tam opak menülerde de aynı */
+html[data-skin] .ov {
+  background:
+    radial-gradient(1px 1px at 78% 14px, rgba(255, 255, 255, .5), transparent),
+    radial-gradient(1px 1px at 91% 30px, rgba(255, 255, 255, .3), transparent),
+    radial-gradient(1.5px 1.5px at 94% 10px, color-mix(in srgb, var(--accent) 80%, transparent), transparent),
+    radial-gradient(120% 55% at 50% 118%, var(--glow), transparent 70%),
+    rgba(var(--ovb), var(--alpha));
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+html[data-skin] .ov.solid {
+  background:
+    radial-gradient(1px 1px at 78% 14px, rgba(255, 255, 255, .5), transparent),
+    radial-gradient(1.5px 1.5px at 94% 10px, color-mix(in srgb, var(--accent) 80%, transparent), transparent),
+    radial-gradient(120% 55% at 50% 118%, var(--glow), transparent 70%),
+    rgb(var(--ovb));
+}
+html[data-skin] .rail { background: color-mix(in srgb, var(--accent) 4%, rgba(var(--ovb), .7)); border-right-color: color-mix(in srgb, var(--accent) 18%, var(--line)); }
+html[data-skin] .ov::before { background: linear-gradient(90deg, transparent, var(--accent), transparent); }
+html[data-skin] .rlogo, html[data-skin] .mark { filter: drop-shadow(0 0 9px color-mix(in srgb, var(--accent) 55%, transparent)); }
+
+/* Kartlar: üstte ince vurgu çizgisi */
+html[data-skin] .dc, html[data-skin] .rcard, html[data-skin] .mshc, html[data-skin] .wcard { border-color: color-mix(in srgb, var(--accent) 14%, var(--line)); }
+html[data-skin] .dc::after { content: ""; position: absolute; left: 22px; right: 22px; top: 0; height: 1px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: .55; }
+html[data-skin] .tiles > div { border-left-color: var(--accent); }
+html[data-skin] .modes button.on, html[data-skin] .subt button.on { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, var(--line-2)); }
+
+/* Tema imzaları */
+html[data-skin="obsidyen"] .dhero .hname, html[data-skin="obsidyen"] .mshx b { background: linear-gradient(180deg, #f7e6b6, #c6a04e); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; }
+html[data-skin="obsidyen"] .dhero { background: radial-gradient(110% 90% at 88% 40%, rgba(230, 194, 122, .13), transparent 60%), linear-gradient(160deg, var(--card-hi), var(--card) 60%); }
+html[data-skin="gunbatimi"] .dhero { background: radial-gradient(110% 90% at 88% 100%, rgba(255, 140, 110, .22), transparent 62%), radial-gradient(80% 70% at 0% 0%, rgba(244, 114, 182, .10), transparent 60%), linear-gradient(160deg, var(--card-hi), var(--card) 60%); }
+html[data-skin="gunbatimi"] .dhero .hname { background: linear-gradient(90deg, #ffb59a, #f472b6); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; }
+html[data-skin="kristal"] .dc { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .10), inset 0 0 40px rgba(155, 215, 255, .03); }
+html[data-skin="kristal"] .dhero .hname { background: linear-gradient(180deg, #ffffff, #8fcff7); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; }
+html[data-skin="aurora"] .dhero .hname { background: linear-gradient(90deg, #5eead4, #a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; }
+/* Kuzey Işığı: üstte yavaşça akan ışık bandı */
+html[data-skin="aurora"] .ovm::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 170px; pointer-events: none; z-index: 0;
+  background: linear-gradient(100deg, transparent 0%, rgba(94, 234, 212, .13) 28%, rgba(167, 139, 250, .13) 58%, transparent 90%); background-size: 220% 100%;
+  -webkit-mask-image: linear-gradient(to bottom, #000, transparent); mask-image: linear-gradient(to bottom, #000, transparent);
+  animation: aurora 18s ease-in-out infinite alternate; }
+@keyframes aurora { from { background-position: 0% 0; } to { background-position: 100% 0; } }
+
+/* Rol efekti: kendi rolünün renginde ince parıltı (yalnızca profil kartların) */
+html[data-vip] .dhero, html[data-vip] .rankc { border-color: color-mix(in srgb, var(--vip) 38%, var(--line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--vip) 14%, transparent), 0 18px 50px -26px var(--vip); }
+html[data-vip] .dhero::before { background: linear-gradient(105deg, transparent 40%, color-mix(in srgb, var(--vip) 15%, transparent) 50%, transparent 60%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05); clip-path: inset(0 round var(--rad)); transform: translateX(-120%); animation: vipsheen 9s ease-in-out infinite; }
+@keyframes vipsheen { 0%, 55% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
+html[data-vip] .tico { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 28%, transparent); }
+.froles.cp .frole.adm::after { display: none; }
+.froles.cp { margin-right: 2px; }
+
+/* FPS modu: premium animasyonlar kapalı, renkler kalır */
+html.fps[data-skin] .ovm::before, html.fps[data-vip] .dhero::before { display: none; }
+@media (prefers-reduced-motion: reduce) { html[data-skin="aurora"] .ovm::before, html[data-vip] .dhero::before { animation: none; } }
+
+/* Ayarlar: tema kartları */
+.skgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin: 4px 0 14px; }
+.skc { display: flex; flex-direction: column; gap: 12px; padding: 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--card, var(--s1)); transition: border-color .15s, transform .15s; }
+.skc:hover { transform: translateY(-2px); border-color: var(--line-2); }
+.skc.on { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent); }
+.skp { position: relative; height: 124px; padding: 10px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  background: radial-gradient(120% 70% at 50% 125%, var(--glow), transparent 70%), rgb(var(--ovb)); }
+.skm-bar { display: flex; gap: 4px; }
+.skm-bar i { width: 22px; height: 5px; border-radius: 3px; background: var(--line-2); }
+.skm-bar i:first-child { background: var(--accent); }
+.skm-hero { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: linear-gradient(160deg, var(--card-hi), var(--card)); }
+.skm-hero small { font-size: 7px; letter-spacing: .14em; color: var(--fg-3); }
+.skm-hero b { font-size: 16px; font-weight: 800; line-height: 1; color: var(--accent); }
+.skm-hero em { display: flex; gap: 4px; margin-top: 2px; }
+.skm-hero em i { flex: 1; height: 4px; border-radius: 2px; background: var(--line-2); }
+.skm-row { display: flex; align-items: center; gap: 6px; padding: 5px 7px; border-radius: 6px; border-right: 2px solid var(--win); background: color-mix(in srgb, var(--win) 12%, var(--card)); }
+.skm-row i { width: 10px; height: 10px; border-radius: 3px; background: var(--accent); }
+.skm-row span { flex: 1; height: 4px; border-radius: 2px; background: var(--line-2); }
+.skm-row em { font-size: 8px; font-weight: 700; font-style: normal; color: var(--win); }
+.skm-lock { position: absolute; right: 8px; top: 8px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 7px; background: rgba(0, 0, 0, .5); color: #fff; }
+.skt { display: flex; flex-direction: column; gap: 2px; }
+.skt b { font-size: 13.5px; font-weight: 700; }
+.skt small { font-size: 11.5px; color: var(--fg-3); }
+.ska { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+.ska .x { flex: none; }
+.skon { font-size: 11.5px; font-weight: 700; color: var(--accent); margin-right: auto; }
+.skl { display: inline-flex; align-items: center; gap: 5px; margin-right: auto; font-size: 11.5px; color: var(--fg-3); }
+.vipid { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; margin-bottom: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--s1); }
+.vipid small { flex: 1; min-width: 160px; font-size: 11.5px; color: var(--fg-3); }
+.vipask { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 14px 16px; border-radius: 14px; border: 1px dashed color-mix(in srgb, var(--accent) 40%, var(--line)); background: color-mix(in srgb, var(--accent) 6%, var(--s1)); }
+.vipask > div { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 220px; }
+.vipask b { font-size: 13px; }
+.vipask span { font-size: 12px; line-height: 1.5; color: var(--fg-2); }
+.vipbtn { display: inline-flex; gap: 8px; flex: none; }
+.rcdot { width: 14px; height: 14px; border-radius: 50%; margin-right: 10px; box-shadow: 0 0 0 2px rgba(255, 255, 255, .12); }
+
+/* Önizleme şeridi */
+.pvbar { position: absolute; left: 50%; bottom: 64px; z-index: 60; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 16px; border-radius: 14px; white-space: nowrap;
+  background: rgba(9, 11, 17, .94); border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line)); box-shadow: 0 16px 44px rgba(0, 0, 0, .55); animation: mbIn .25s ease both; }
+.pvt { display: flex; flex-direction: column; gap: 1px; margin-right: 8px; }
+.pvt b { font-size: 12.5px; color: var(--accent); }
+.pvt small { font-size: 11px; color: var(--fg-3); }

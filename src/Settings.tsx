@@ -6,6 +6,10 @@ import { copyDiagnostics } from "./StatusBar";
 import { TILT_HOURS, TILT_LOSSES, TILT_RR, fmtRr } from "./tilt";
 import { DISCORD_URL } from "./community";
 import { PanelHead, Row, Toggle } from "./ui";
+import { Icon } from "./icons";
+import { Roles } from "./RoleBadge";
+import { login } from "./feed";
+import { SKINS, isPremium, roleColor, startPreview, stopPreview, useMe, usePreview } from "./vip";
 
 const TH_FIELDS: { key: keyof Thresholds; label: string; hint: string; unit: string }[] = [
   { key: "hs", label: "Kafa avcısı", hint: "Kafa isabeti en az", unit: "%" },
@@ -52,6 +56,17 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
     return () => { live = false; window.clearInterval(t); };
   }, [sec]);
   const set = (p: Partial<Theme>) => onChange({ ...theme, ...p });
+  const me = useMe();
+  const prem = isPremium(me);
+  const pv = usePreview();
+  const [checking, setChecking] = useState(false);
+  const refresh = async () => {
+    if (!inTauri) { onToast("Rol denetimi yalnızca masaüstü uygulamasında çalışır."); return; }
+    setChecking(true);
+    try { const m = await login(); onToast(isPremium(m) ? "Rolün doğrulandı" : "Bu hesapta rol bulunamadı"); }
+    catch (e) { onToast(String((e as Error).message ?? e).slice(0, 90)); }
+    setChecking(false);
+  };
   const alphaPct = Math.round(theme.alpha * 100);
 
   const upText = updater.state.kind === "checking" ? "Denetleniyor…"
@@ -122,7 +137,65 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
                       </button>
                     </span>
                   </Row>
+                  <Row title="Lobide rol rozetleri" desc="Celeste rolü olan diğer oyuncuların rozetini isimlerinin yanında gösterir. İsmini gizleyenler sorulmaz. Sunucuya kimlik değil, geri çevrilemeyen bir özet gider; istekler S.S.S & Panel'de görünür.">
+                    <Toggle on={theme.showRoles} label="Lobide rol rozetleri" onChange={(v) => set({ showRoles: v })} />
+                  </Row>
                 </div>
+              </section>
+              <section>
+                <h3 className="h2">Premium<span className="hv">{prem ? "Rolün aktif" : "Celeste rol sahiplerine özel"}</span></h3>
+                {prem && me && (
+                  <div className="vipid">
+                    <Roles roles={me.roles} />
+                    <small>Rolün Akış girişinden okunur; değiştiyse yenile.</small>
+                    <button className="x" type="button" disabled={checking} onClick={refresh}>{checking ? "Denetleniyor…" : "Rolümü yenile"}</button>
+                  </div>
+                )}
+                <div className="skgrid">
+                  {SKINS.map((s) => {
+                    const on = prem && theme.skin === s.id;
+                    return (
+                      <div key={s.id} className={`skc${on ? " on" : ""}${prem ? "" : " lock"}`}>
+                        <div className="skp" data-s={s.id} aria-hidden="true">
+                          <span className="skm-bar"><i /><i /><i /></span>
+                          <span className="skm-hero"><small>EN ÇOK OYNADIĞIN</small><b>DEADLOCK</b><em><i /><i /><i /></em></span>
+                          <span className="skm-row"><i /><span /><em>+19</em></span>
+                          {!prem && <span className="skm-lock"><Icon name="lock" size={14} /></span>}
+                        </div>
+                        <div className="skt"><b>{s.name}</b><small>{s.tag}</small></div>
+                        <div className="ska">
+                          {on ? <span className="skon">Kullanımda</span>
+                            : prem ? <button className="x go" type="button" onClick={() => { set({ skin: s.id }); stopPreview(); }}>Uygula</button>
+                            : <span className="skl"><Icon name="lock" size={12} />Rol gerekli</span>}
+                          <button className="x" type="button" onClick={() => startPreview(s.id)} disabled={!!pv}>Önizle</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {prem ? (
+                  <div className="box">
+                    {theme.skin && <Row title="Premium temayı kapat" desc="Celeste'nin varsayılan görünümüne döner."><button className="x" type="button" onClick={() => set({ skin: "" })}>Varsayılana dön</button></Row>}
+                    <Row title="Vurgu rengi rol rengim olsun" desc="Sekmeler, düğmeler ve halkalar rolünün rengini alır. Premium tema açıksa onun rengi geçerlidir.">
+                      <span className="rcdot" style={{ background: roleColor(me) }} aria-hidden="true" />
+                      <Toggle on={theme.roleAccent} label="Vurgu rengi rol rengim olsun" onChange={(v) => set({ roleAccent: v })} />
+                    </Row>
+                    <Row title="Rol efektleri" desc="Kartlarda rol renginde ince bir parıltı ve üst çubukta rol rozeti. FPS modunda animasyonlar kapanır.">
+                      <Toggle on={theme.vipFx} label="Rol efektleri" onChange={(v) => set({ vipFx: v })} />
+                    </Row>
+                  </div>
+                ) : (
+                  <div className="vipask">
+                    <div>
+                      <b>Bu temalar rol sahiplerine açık</b>
+                      <span>Önizleme 15 saniye sürer, istediğin kadar deneyebilirsin. Rolün varsa Akış'ta bir kez giriş yap ya da aşağıdan yenile; yoksa Discord'dan öğren.</span>
+                    </div>
+                    <span className="vipbtn">
+                      <button className="x" type="button" disabled={checking} onClick={refresh}>{checking ? "Denetleniyor…" : "Rolümü denetle"}</button>
+                      <button className="x go" type="button" onClick={() => onOpen(DISCORD_URL)}>Discord'a git</button>
+                    </span>
+                  </div>
+                )}
               </section>
             </>
           )}

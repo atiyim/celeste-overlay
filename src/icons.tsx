@@ -33,6 +33,8 @@ const P: Record<string, ReactNode> = {
   chart: <><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></>,
   layers: <><path d="M12 3l9 5-9 5-9-5z" /><path d="M3 13l9 5 9-5" /></>,
   chat: <><path d="M4 5h16v11H9l-5 4z" /><path d="M8 9.5h8M8 12.5h5" /></>,
+  lock: <><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>,
+  crown: <path d="M4 18h16l1.5-10-5 3.5L12 5 7.5 11.5 2.5 8z" />,
   chevron: <path d="M9 6l6 6-6 6" />,
   collapse: <path d="M6 15l6-6 6 6" />,
   expand: <path d="M6 9l6 6 6-6" />,
