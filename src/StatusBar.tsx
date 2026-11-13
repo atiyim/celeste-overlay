@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { Status } from "./types";
 import { Socials } from "./Socials";
-import { Icon } from "./icons";
+import { DiscordMark, Icon } from "./icons";
 import { verifyInstall, verifyText, type InstallCheck } from "./verify";
 
 interface Props { status?: Status; inApp: boolean; assetsOk: boolean; assetsFailed: boolean; version: string; onToast: (t: string) => void; onOpen: (url: string) => void; onFeedback: () => void; onTrust: () => void }
@@ -111,7 +111,7 @@ export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onTo
         </span>
         <span className="fbg">
           <button type="button" className="fbk dsc" title="Topluluk: soru, hata bildirimi, öneri ve yeni sürümler" onClick={() => onOpen(DISCORD_URL)}>
-            <Icon name="users" size={14} />Discord'a Katıl!
+            <DiscordMark />Discord'a Katıl!
           </button>
           <button type="button" className="fbk" title="Bir fikrini yaz ya da çalışmayan bir şeyi bildir; doğrudan yetkililere ulaşır" onClick={onFeedback}>
             <Icon name="msg" size={14} />Öneri / Hata

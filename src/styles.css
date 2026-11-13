@@ -2120,3 +2120,6 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 .mport { height: 170%; -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 92%), linear-gradient(to left, #000 45%, transparent 100%); -webkit-mask-composite: source-in; mask-image: linear-gradient(to bottom, #000 50%, transparent 92%), linear-gradient(to left, #000 45%, transparent 100%); mask-composite: intersect; }
 .pcport { height: 235%; top: -12%; -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 82%); mask-image: linear-gradient(to bottom, #000 45%, transparent 82%); }
 .phport { height: 195%; opacity: .92; -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 90%); mask-image: linear-gradient(to bottom, #000 45%, transparent 90%); }
+.fbk.dsc, .sb .fbk.dsc { color: #fff; font-weight: 600; background: #5865f2; border-color: #5865f2; }
+.fbk.dsc:hover, .sb .fbk.dsc:hover { background: #6b77f5; border-color: #6b77f5; }
+.fbk.dsc svg { flex: none; }
