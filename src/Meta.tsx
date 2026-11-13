@@ -81,7 +81,7 @@ export function Meta({ assets, currentMapId, onClose }: Props) {
       {tab === "tier" && (
         <>
           <p className="note-s">Tier'lar her rolün kendi içinde verilir; farklı roldeki ajanları doğrudan kıyaslama.</p>
-          <div className="rgrid">
+          <div className="mrgrid">
             {ROLES.map(([id, label]) => (
               <section className="rcard" key={id}>
                 <h3>{label}</h3>
@@ -164,7 +164,7 @@ function MapLine({ n, name, icon, wr, matches, pr }: { n: number; name: string; 
       <em>{n}</em>
       {icon !== null ? <AgentIcon icon={icon} name={name} className="mlic" /> : <span />}
       <b>{name}</b>
-      <i className="mbar"><i style={{ width: `${pct}%` }} /></i>
+      <i className="mlbar"><i style={{ width: `${pct}%` }} /></i>
       <strong>%{wr}</strong>
       <small>{matches.toLocaleString("tr")} maç</small>
     </div>

@@ -45,7 +45,7 @@ export function Search({ assets, seen, onOpen, onCopy, onClose }: Props) {
           const map = last?.mapId ? assets?.maps.get(lookup(last.mapId)) : undefined;
           const shownName = name ?? e.label ?? "?";
           return (
-            <div className="srow" key={puuid}>
+            <div className="psrow" key={puuid}>
               <span className="sn">
                 <b>{shownName}</b>
                 <small>

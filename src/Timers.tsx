@@ -67,7 +67,7 @@ export function Timers({ onClose }: { onClose: () => void }) {
             <div className={t.done ? "tmr done" : "tmr"} key={t.id}>
               <span className="tn">{t.name}</span>
               <b className="tt">{t.done ? "Bitti" : clock(left)}</b>
-              <i className="tb"><i style={{ width: `${t.done ? 100 : Math.max(0, 100 - (100 * left) / t.total)}%` }} /></i>
+              <i className="tmbar"><i style={{ width: `${t.done ? 100 : Math.max(0, 100 - (100 * left) / t.total)}%` }} /></i>
               <button className="x" type="button" onClick={() => restartTimer(t.id)}>Yeniden</button>
               <button className="x" type="button" onClick={() => removeTimer(t.id)} aria-label="Sayacı sil">Sil</button>
             </div>

@@ -656,7 +656,7 @@ html:has(body.web) { overflow-y: auto; }
 .sbody section + section:not(:has(> .h2)) { margin-top: 10px; }
 .sbody .dim { opacity: .45; }
 
-.srow { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 54px; padding: 10px 14px; box-sizing: border-box; }
+.srow { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 54px; padding: 12px 16px; box-sizing: border-box; }
 .srow + .srow, .snote + .srow, .srow + .thg { border-top: 1px solid var(--line-soft); }
 .slbl { min-width: 0; max-width: 460px; }
 .slbl b { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; color: var(--fg); }
@@ -1450,22 +1450,22 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 .tmr .tn { font-size: 13px; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tmr .tt { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--accent); }
 .tmr.done .tt { color: var(--win); }
-.tb { display: block; height: 6px; border-radius: 999px; background: var(--s3); overflow: hidden; }
-.tb > i { display: block; height: 100%; border-radius: 999px; background: var(--accent); transition: width .25s linear; }
-.tmr.done .tb > i { background: var(--win); }
-.fps .tb > i { transition: none; }
+.tmbar { display: block; height: 6px; border-radius: 999px; background: var(--s3); overflow: hidden; }
+.tmbar > i { display: block; height: 100%; border-radius: 999px; background: var(--accent); transition: width .25s linear; }
+.tmr.done .tmbar > i { background: var(--win); }
+.fps .tmbar > i { transition: none; }
 .tpill { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 999px; }
 .tpill:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.srow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
-.srow .sn { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.srow .sn b { font-size: 13px; font-weight: 500; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.srow .sn small { font-size: 11.5px; color: var(--fg-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.srow .tg { flex: none; padding: 0 8px; font-size: 11px; line-height: 18px; border: 1px solid; border-radius: 999px; }
+.psrow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+.psrow .sn { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.psrow .sn b { font-size: 13px; font-weight: 500; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.psrow .sn small { font-size: 11.5px; color: var(--fg-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.psrow .tg { flex: none; padding: 0 8px; font-size: 11px; line-height: 18px; border: 1px solid; border-radius: 999px; }
 
 /* ---------- 0.8.3: kaydırma, spike ---------- */
 .ov { min-height: 0; grid-template-rows: minmax(0, 1fr); }
 .ovm { min-height: 0; max-height: inherit; }
-.obody { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; overflow-x: hidden; padding-right: 4px; margin-right: -4px; scrollbar-width: thin; scrollbar-color: #384263 transparent; }
+.obody { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; overflow-x: hidden; padding-right: 10px; margin-right: -10px; scrollbar-gutter: stable; scrollbar-width: thin; scrollbar-color: #384263 transparent; }
 .obody::-webkit-scrollbar { width: 8px; }
 .obody::-webkit-scrollbar-thumb { background: #384263; border-radius: 999px; }
 .obody::-webkit-scrollbar-track { background: transparent; }
@@ -1480,7 +1480,7 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 /* ---------- Meta ---------- */
 .metam { display: flex; flex-wrap: wrap; gap: 6px; }
 .note-s { margin: 0; font-size: 12px; color: var(--fg-3); }
-.rgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mrgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .rcard { padding: 12px 14px 8px; border: 1px solid var(--line); border-radius: var(--r); background: var(--box); }
 .rcard h3 { margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-2); }
 .trow { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; padding: 8px 0; border-top: 1px solid var(--line-soft); }
@@ -1497,10 +1497,10 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 .mline > b { font-size: 12.5px; font-weight: 600; letter-spacing: .03em; color: var(--fg); }
 .mline strong { font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; }
 .mline small { font-size: 11px; color: var(--fg-3); text-align: right; font-variant-numeric: tabular-nums; }
-.mbar { display: block; height: 6px; border-radius: 999px; background: var(--s3); overflow: hidden; }
-.mbar > i { display: block; height: 100%; border-radius: 999px; background: var(--fg-3); }
-.mline.good .mbar > i { background: var(--win); } .mline.good strong { color: var(--win); }
-.mline.bad .mbar > i { background: var(--loss); } .mline.bad strong { color: var(--loss); }
+.mlbar { display: block; height: 6px; border-radius: 999px; background: var(--s3); overflow: hidden; }
+.mlbar > i { display: block; height: 100%; border-radius: 999px; background: var(--fg-3); }
+.mline.good .mlbar > i { background: var(--win); } .mline.good strong { color: var(--win); }
+.mline.bad .mlbar > i { background: var(--loss); } .mline.bad strong { color: var(--loss); }
 .agsel { display: flex; align-items: flex-end; gap: 16px; }
 .agsel label { display: flex; flex-direction: column; gap: 6px; font-size: 11.5px; color: var(--fg-3); }
 .agsel select { padding: 7px 10px; font: inherit; font-size: 13px; color: var(--fg); background: var(--s1); border: 1px solid var(--line); border-radius: 8px; min-width: 180px; }
@@ -1509,7 +1509,7 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 .agsum b { font-size: 13px; letter-spacing: .03em; color: var(--fg); }
 .agsum small { font-size: 11.5px; color: var(--fg-3); }
 .tsrc { display: block; margin-top: 8px; font-size: 11px; color: var(--fg-3); }
-@media (max-width: 1100px) { .rgrid { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { .mrgrid { grid-template-columns: 1fr; } }
 
 /* ---------- 0.8.4: doğrula rozeti, rahat boşluklar ---------- */
 .vbadge { all: unset; cursor: pointer; flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; font-size: 12px; white-space: nowrap; color: var(--fg-2); border: 1px solid var(--line); border-radius: 999px; background: var(--s1); }
@@ -1546,3 +1546,15 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 .mapban span { position: relative; z-index: 1; padding: 10px 16px; font-size: 15px; font-weight: 600; letter-spacing: .12em; color: #fff; }
 .mapres { animation: mbIn .6s ease .35s both; }
 @keyframes mbIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.ib.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+
+/* 0.8.6 nefes alan kontroller */
+.seg { gap: 4px; padding: 4px; border-radius: 10px; background: var(--s1); }
+.seg button { height: 28px; padding: 0 12px; }
+.seg .x { border-color: transparent; background: transparent; }
+.seg .x:hover { background: var(--s2); }
+.seg .x.on { background: color-mix(in srgb, var(--accent) 16%, var(--s2)); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+.zoom button, .x { height: 30px; padding: 0 14px; }
+.sbody h3.h2 + .box, .sbody .box { overflow: hidden; }
+.srow > :last-child { flex: none; }

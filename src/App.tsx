@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { LogicalSize, PhysicalPosition } from "@tauri-apps/api/dpi";
+import { LogicalPosition, LogicalSize, PhysicalPosition } from "@tauri-apps/api/dpi";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { availableMonitors, cursorPosition, getCurrentWindow, primaryMonitor } from "@tauri-apps/api/window";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
@@ -117,7 +117,33 @@ export function App() {
   const autoHiddenRef = useRef(false);
   const manualKeep = useRef(false); // F2 ile elle açıldıysa bu maç boyunca otomatik gizleme yapma
   const ingameSince = useRef<number | null>(null);
-  const width = overlayWidth(theme.cols);
+  const [full, setFull] = useState(false);
+  const prevPos = useRef<PhysicalPosition | null>(null);
+  const scr = window.screen as Screen & { availLeft?: number; availTop?: number };
+  const width = full ? Math.floor(scr.availWidth / zoom) : overlayWidth(theme.cols);
+  const fullH = Math.floor(scr.availHeight / zoom);
+  const toggleFull = async () => {
+    const next = !full;
+    if (inTauri) {
+      const w = getCurrentWindow();
+      try {
+        if (next) {
+          prevPos.current = await w.outerPosition();
+          await w.setPosition(new LogicalPosition(scr.availLeft ?? 0, scr.availTop ?? 0));
+        } else if (prevPos.current) {
+          await w.setPosition(prevPos.current);
+        }
+      } catch { /* konum alınamazsa yalnız boyut değişir */ }
+    }
+    lastSize.current = "";
+    setFull(next);
+  };
+  useEffect(() => {
+    if (!full) return;
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape" && !document.querySelector("[role=dialog] :focus")) toggleFull(); };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  });
   const template = gridTemplate(theme.cols);
   const widthRef = useRef(width);
   widthRef.current = width;
@@ -620,7 +646,7 @@ export function App() {
   const phaseTone = snap.phase === "pregame" ? "go" : snap.phase === "ingame" ? "live" : snap.phase === "menu" ? "wait" : "off";
 
   return (
-    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}${collapsed ? " mini" : ""}`} ref={rootRef} style={{ width, maxHeight: Math.max(360, Math.floor(((window.screen?.availHeight ?? 1000) - 24) / zoom)) }}>
+    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}${collapsed ? " mini" : ""}`} ref={rootRef} style={full ? { width, height: fullH, maxHeight: fullH, borderRadius: 0 } : { width, maxHeight: Math.max(360, Math.floor(((window.screen?.availHeight ?? 1000) - 24) / zoom)) }}>
       {!collapsed && !guide && <Rail active={group} onPick={pickGroup} feedCount={feedCount} feedNote={feedNotes > 0} onDrag={startDrag} />}
       <div className="ovm">
         <header className="hd drag" onMouseDown={startDrag} title="Sürükleyerek taşı">
@@ -645,6 +671,11 @@ export function App() {
                 zoom={zoom} zooms={ZOOMS} onZoom={setZoom}
                 onAll={() => go("settings")}
               />
+            )}
+            {!collapsed && (
+              <button type="button" className={full ? "ib on" : "ib"} onClick={toggleFull} aria-pressed={full} aria-label={full ? "Tam ekrandan çık" : "Tam ekran"} title={full ? "Tam ekrandan çık" : "Tam ekran"}>
+                <Icon name={full ? "unfull" : "full"} size={16} />
+              </button>
             )}
             <button type="button" className="ib" onClick={() => setCollapsed((c) => !c)} aria-expanded={!collapsed} aria-label={collapsed ? "Göster" : "Küçült"} title={collapsed ? "Göster" : "Küçült · tamamen gizlemek için F2"}>
               <Icon name={collapsed ? "expand" : "minus"} size={17} />
