@@ -1,7 +1,8 @@
 import type { KeyboardEvent } from "react";
 import { tierColor } from "./LoadoutPanel";
 import { Roles } from "./RoleBadge";
-import { Icon } from "./icons";
+import { Icon, type IconName } from "./icons";
+import { lookup, type Assets } from "./assets";
 import { AgentIcon, NameLine } from "./ui";
 import { partyColor, playerView } from "./playerView";
 import { BadgePill, Moon, type RowProps } from "./PlayerRow";
@@ -47,7 +48,7 @@ function Cell({ p, index, assets, entry, cols, th, onOpen, mapId, mapName, roles
   return (
     <div className={`vsc ${side}${p.isSelf ? " pme" : ""}${hot ? " hot" : ""}`} role="button" tabIndex={0} onClick={onOpen} onKeyDown={key}
       style={party ? ({ "--pc": partyColor(party) } as React.CSSProperties) : undefined}>
-      <span className="vsa"><AgentIcon className="agent" icon={v.agent?.icon} name={v.agent?.name} /></span>
+      <span className="vsa"><AgentIcon className="agent" icon={v.agent?.icon} name={v.agent?.name} />{v.agent?.roleIcon && <img className="vsro" src={v.agent.roleIcon} alt="" title={v.agent.role} />}</span>
       <span className="vsn">
         <span className="vsl">
           <NameLine name={v.name}>{celeste && !roles?.length && <Moon />}</NameLine>
@@ -76,31 +77,59 @@ function Cell({ p, index, assets, entry, cols, th, onOpen, mapId, mapName, roles
   );
 }
 
-export function Versus({ allies, enemies, cell, tierName, allySide, foeSide }: {
+function Agents({ list, assets }: { list: Player[]; assets: Assets }) {
+  return (
+    <span className="vsag" aria-hidden="true">
+      {list.map((p) => {
+        const a = assets.agents.get(lookup(p.agentId));
+        return a?.icon ? <img key={p.puuid} src={a.icon} alt="" /> : <i key={p.puuid} />;
+      })}
+    </span>
+  );
+}
+
+const SideIcon = ({ side }: { side?: string | null }) => (side ? <span className="vssi" title={side}><Icon name={/savun/i.test(side) ? "shield" : "bolt"} size={12} /></span> : null);
+
+export function Versus({ allies, enemies, cell, assets, mapId, mapName, allySide, foeSide }: {
   allies: Player[]; enemies: Player[]; cell: (p: Player, list: Player[]) => CellProps;
-  tierName: (t: number) => string | undefined; allySide?: string | null; foeSide?: string | null;
+  assets: Assets; mapId?: string | null; mapName?: string; allySide?: string | null; foeSide?: string | null;
 }) {
   const a = teamNumbers(allies), e = teamNumbers(enemies);
-  const stats: Stat[] = [
-    { label: "Ortalama rank", left: a.tier ? tierName(Math.round(a.tier)) ?? "–" : "–", right: e.tier ? tierName(Math.round(e.tier)) ?? "–" : "–", share: share(a.tier, e.tier) },
-    { label: "K/D", left: a.kd != null ? a.kd.toFixed(2) : "–", right: e.kd != null ? e.kd.toFixed(2) : "–", share: share(a.kd, e.kd) },
-    { label: "Kazanma", left: a.wr != null ? `%${Math.round(a.wr)}` : "–", right: e.wr != null ? `%${Math.round(e.wr)}` : "–", share: share(a.wr, e.wr) },
+  const tier = (t: number | null) => (t ? assets.tiers.get(Math.round(t)) : undefined);
+  const art = mapId ? assets.mapArt.get(lookup(mapId)) : undefined;
+  const ta = tier(a.tier), te = tier(e.tier);
+  const stats: (Stat & { icon: IconName; li?: string; ri?: string })[] = [
+    { label: "Ortalama rank", icon: "crown", li: ta?.icon, ri: te?.icon, left: ta?.name ?? "–", right: te?.name ?? "–", share: share(a.tier, e.tier) },
+    { label: "K/D", icon: "target", left: a.kd != null ? a.kd.toFixed(2) : "–", right: e.kd != null ? e.kd.toFixed(2) : "–", share: share(a.kd, e.kd) },
+    { label: "Kazanma", icon: "chart", left: a.wr != null ? `%${Math.round(a.wr)}` : "–", right: e.wr != null ? `%${Math.round(e.wr)}` : "–", share: share(a.wr, e.wr) },
   ];
   return (
     <div className="vs">
       <div className="vsh">
+        {art && <span className="vshbg" style={{ backgroundImage: `url(${art})` }} aria-hidden="true" />}
         <div className="vst">
-          <span className="vstn ally"><i />Takımın{allySide ? <small>{allySide}</small> : null}</span>
-          <span className="vsvs" aria-hidden="true">VS</span>
-          <span className="vstn foe">{foeSide ? <small>{foeSide}</small> : null}Rakipler<i /></span>
+          <span className="vstn ally">
+            <Agents list={allies} assets={assets} />
+            <span className="vstt"><b><i />Takımın</b>{allySide ? <small><SideIcon side={allySide} />{allySide}</small> : null}</span>
+          </span>
+          <span className="vsvs"><small>{mapName ?? ""}</small><b aria-hidden="true">VS</b></span>
+          <span className="vstn foe">
+            <span className="vstt"><b>Rakipler<i /></b>{foeSide ? <small>{foeSide}<SideIcon side={foeSide} /></small> : null}</span>
+            <Agents list={enemies} assets={assets} />
+          </span>
         </div>
         {stats.map((s) => (
           <div className="vsm" key={s.label}>
-            <b className={s.share != null && s.share > 50 ? "lead" : ""}>{s.left}</b>
-            <span className="vsbar lf"><i style={{ width: `${s.share ?? 0}%` }} /></span>
-            <span className="vsml">{s.label}</span>
-            <span className="vsbar rt"><i style={{ width: `${s.share != null ? 100 - s.share : 0}%` }} /></span>
-            <b className={s.share != null && s.share < 50 ? "lead" : ""}>{s.right}</b>
+            <span className={`vsv l${s.share != null && s.share > 50 ? " lead" : ""}`}>{s.li && <img src={s.li} alt="" />}<b>{s.left}</b></span>
+            <span className="vsmid">
+              <span className="vsml"><Icon name={s.icon} size={11} />{s.label}</span>
+              <span className="vstug" role="img" aria-label={`${s.label}: ${s.left} - ${s.right}`}>
+                <i className="lf" style={{ width: `${s.share ?? 50}%` }} />
+                <i className="rt" style={{ width: `${s.share != null ? 100 - s.share : 50}%` }} />
+                <em style={{ left: `${s.share ?? 50}%` }} />
+              </span>
+            </span>
+            <span className={`vsv r${s.share != null && s.share < 50 ? " lead" : ""}`}><b>{s.right}</b>{s.ri && <img src={s.ri} alt="" />}</span>
           </div>
         ))}
       </div>

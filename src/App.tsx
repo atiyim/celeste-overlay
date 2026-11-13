@@ -675,7 +675,7 @@ export function App() {
         </div>
       )}
       {versus && assets && (
-        <Versus allies={groupParties(allies)} enemies={groupParties(enemies)} tierName={(t) => assets.tiers.get(t)?.name} allySide={sideText(allies)} foeSide={sideText(enemies)}
+        <Versus allies={groupParties(allies)} enemies={groupParties(enemies)} assets={assets} mapId={snap.mapId} mapName={mapName} allySide={sideText(allies)} foeSide={sideText(enemies)}
           cell={(p, list) => cellProps(p, list, list === enemies || enemies.includes(p) ? foeHot : null)} />
       )}
       {!cards && !versus && (
