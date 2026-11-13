@@ -2114,3 +2114,9 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 .prt .prnote { margin-top: 6px; font-size: 12px; line-height: 1.55; color: var(--fg-3, var(--fg-2)); max-width: 62ch; }
 .prt .prnote .lnk { font: inherit; color: #f0d79c; text-decoration-color: rgba(240, 215, 156, .5); }
 .prt .prnote .lnk:hover { color: #fff3d0; }
+
+/* Ajan görselleri: daha büyük, karakterin altı arka plana karışır */
+.hport { height: calc(100% + 96px); max-width: 62%; right: -4px; -webkit-mask-image: linear-gradient(to bottom, #000 52%, transparent 94%); mask-image: linear-gradient(to bottom, #000 52%, transparent 94%); }
+.mport { height: 170%; -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 92%), linear-gradient(to left, #000 45%, transparent 100%); -webkit-mask-composite: source-in; mask-image: linear-gradient(to bottom, #000 50%, transparent 92%), linear-gradient(to left, #000 45%, transparent 100%); mask-composite: intersect; }
+.pcport { height: 235%; top: -12%; -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 82%); mask-image: linear-gradient(to bottom, #000 45%, transparent 82%); }
+.phport { height: 195%; opacity: .92; -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 90%); mask-image: linear-gradient(to bottom, #000 45%, transparent 90%); }
