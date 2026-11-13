@@ -98,10 +98,10 @@ export function PremiumPanel({ theme, onChange, onOpen, onToast, onClose }: Prop
   const effectAction = (it: Item): ReactNode => {
     const on = unlocked(me, it.id, cfg);
     if (it.id === "discord") {
-      if (!on) return lockLine(it.id);
+      // Bağlama herkese açık: yönetici yetkisi de Discord hesabına bağlanabilir. Rol dağıtımı yine yetkiye bağlı.
       return me?.discord
         ? <><span className="pon"><Icon name="check" size={13} />Bağlı</span><button className="x" type="button" onClick={() => link("unlink")}>Kaldır</button></>
-        : <button className="x go" type="button" onClick={() => link("start")}>Discord'u bağla</button>;
+        : <>{!on && lockLine(it.id)}<button className={on ? "x go" : "x"} type="button" onClick={() => link("start")}>Discord'u bağla</button></>;
     }
     if (it.id === "fx:accent") return on ? <><span className="pst">{theme.roleAccent ? "Açık" : "Kapalı"}</span><Toggle on={theme.roleAccent} label={it.name} onChange={(v) => set({ roleAccent: v })} /></> : <>{lockLine(it.id)}{tryBtn(it.id)}</>;
     if (it.id === "fx:glow") return on ? <><span className="pst">{theme.vipFx ? "Açık" : "Kapalı"}</span><Toggle on={theme.vipFx} label={it.name} onChange={(v) => set({ vipFx: v })} /></> : <>{lockLine(it.id)}{tryBtn(it.id)}</>;
