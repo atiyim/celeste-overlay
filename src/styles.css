@@ -2167,3 +2167,48 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 
 /* Tam ekran: Akış listesi sabit 560px'te kalmasın, boş alanı doldursun */
 .ov.fullw .flist { max-height: max(360px, calc(100vh - 400px)); }
+
+/* ============ 0.9.6 · Sıkışma ve kesik yazı düzeltmeleri ============ */
+/* Alt çubuk: dar pencerede öğeler üst üste binmez; önce imza, sonra sosyal, en son düğme yazıları gizlenir. */
+.sb { container: sb / inline-size; min-width: 0; }
+.sb .credit { overflow: hidden; }
+.sb .sok, .sb .vbadge { flex: none; }
+@container sb (max-width: 900px) { .sb .made { display: none; } }
+@container sb (max-width: 720px) { .sb .credit { display: none; } .sb .fbg { margin-left: auto; } }
+@container sb (max-width: 520px) { .sb .fbk .fbt { display: none; } .sb .fbk { padding: 4px 9px; } }
+
+/* Paneller: içerik genişliğine göre yerleşir (pencere değil, panelin kendi genişliği) */
+.panel { container: pnl / inline-size; }
+.perf { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+@container pnl (max-width: 760px) { .perf { grid-template-columns: minmax(0, 1fr); row-gap: 6px; } }
+.stats { grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); }
+.stats > div { min-width: 0; }
+.stats small { display: block; overflow-wrap: anywhere; }
+.wpair { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.wpair > div { min-width: 0; }
+.wv, .wn { white-space: nowrap; }
+.tr.tmx > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tr.tmx .ra img { flex: none; }
+.tr.tmx .tt { white-space: normal; }
+@container pnl (max-width: 460px) { .tr.tmx { grid-template-columns: 24px minmax(0, 1fr) 30px 72px 40px; } .tr.tmx > :last-child { display: none; } .tr.tmx .ra { font-size: 0; } }
+/* Alt sekmeler: yazı iki satıra bölünmez; sığmazsa yatay kayar, dar alanda simgeler gizlenir */
+.hub { container: hub / inline-size; }
+.hubh { min-width: 0; }
+.subt { max-width: 100%; box-sizing: border-box; overflow-x: auto; scrollbar-width: none; }
+.subt::-webkit-scrollbar { display: none; }
+.subt button { flex: none; white-space: nowrap; }
+@container hub (max-width: 760px) { .subt button { padding: 6px 10px; } .subt button svg { display: none; } }
+.wr { grid-template-columns: 44px minmax(56px, 1fr) minmax(14px, 44px) auto; }
+.wpair { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.teamh { flex-wrap: wrap; row-gap: 6px; }
+.teamh .cmp { white-space: nowrap; }
+/* Premium kart alt satırı: kilit yazısı ve düğme sığmazsa alt alta geçer, yazı bölünmez */
+.ska { flex-wrap: wrap; row-gap: 6px; }
+.plk { white-space: nowrap; }
+/* Seçici düğme grupları dar alanda alt satıra geçer */
+.presets, .seg { flex-wrap: wrap; }
+.sctl { min-width: 0; max-width: 100%; }
+.rep, .prevn b { white-space: nowrap; }
+.phero .m > span:not(.sep), .phero .m > b, .nw { white-space: nowrap; }
+.pcr small { white-space: normal; overflow: visible; line-height: 1.35; }
+.pcr > span { min-width: 0; }

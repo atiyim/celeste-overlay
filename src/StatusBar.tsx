@@ -111,10 +111,10 @@ export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onTo
         </span>
         <span className="fbg">
           <button type="button" className="fbk dsc" title="Topluluk: soru, hata bildirimi, öneri ve yeni sürümler" onClick={() => onOpen(DISCORD_URL)}>
-            <DiscordMark />Discord'a Katıl!
+            <DiscordMark /><span className="fbt">Discord'a Katıl!</span>
           </button>
           <button type="button" className="fbk" title="Bir fikrini yaz ya da çalışmayan bir şeyi bildir; doğrudan yetkililere ulaşır" onClick={onFeedback}>
-            <Icon name="msg" size={14} />Öneri / Hata
+            <Icon name="msg" size={14} /><span className="fbt">Öneri / Hata</span>
           </button>
         </span>
       </div>

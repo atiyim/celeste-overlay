@@ -14,7 +14,7 @@ interface Props<T extends string> {
 /** Sekme kimliği → simge. Listede olmayan sekme simgesiz görünür. */
 const ICON: Record<string, IconName> = {
   stats: "chart", store: "store", account: "user",
-  chat: "chat", cross: "target", device: "mouse", timers: "timer", search: "search", meta: "layers",
+  chat: "chat", cross: "target", device: "mouse", timers: "timer", search: "search", watch: "users", meta: "layers",
 };
 
 export function Hub<T extends string>({ title, tabs, active, onPick, children }: Props<T>) {

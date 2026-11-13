@@ -210,8 +210,8 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
             <span style={{ color: cur ? tierColor(cur.color) : undefined }}>{cur?.name ?? "Derecesiz"}{p.rank.current > 0 ? ` · ${p.rank.rr} RR` : ""}</span>
             {p.rank.leaderboard ? <span className="lbr" title="Güncel act liderlik tablosundaki sırası">#{p.rank.leaderboard.toLocaleString("tr-TR")}</span> : null}
             <span className="sep" />
-            Peak <span style={{ color: peak ? tierColor(peak.color) : undefined }}>{peak?.name ?? "–"}</span>
-            {p.level != null && <><span className="sep" />Seviye {p.level}</>}
+            <span className="nw">Peak <span style={{ color: peak ? tierColor(peak.color) : undefined }}>{peak?.name ?? "–"}</span></span>
+            {p.level != null && <><span className="sep" /><span className="nw">Seviye {p.level}</span></>}
           </p>
         </div>
         <div className="phr">

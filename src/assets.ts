@@ -12,14 +12,18 @@ export async function cachedJson<T>(path: string): Promise<T> {
   try {
     const cache = await caches.open("valo-assets");
     const hit = await cache.match(url);
-    if (hit) return (await hit.json()).data as T;
+    if (hit) { const d = (await hit.json())?.data; if (d != null) return d as T; await cache.delete(url); }
     const res = await tfetch(url);
     if (res.ok) {
-      await cache.put(url, res.clone());
-      return (await res.json()).data as T;
+      const d = (await res.clone().json())?.data;
+      if (d != null) { await cache.put(url, res); return d as T; }
     }
   } catch { /* önbellek yoksa doğrudan dene */ }
-  return (await (await tfetch(url)).json()).data as T;
+  const res = await tfetch(url);
+  if (!res.ok) throw new Error(`Görsel verisi alınamadı (${res.status})`);
+  const data = (await res.json())?.data;
+  if (data == null) throw new Error("Görsel verisi boş geldi");
+  return data as T;
 }
 
 async function invalidateOnNewVersion() {
@@ -77,7 +81,8 @@ const k = (s?: string | null) => (s ?? "").toLowerCase();
 export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets> {
   await invalidateOnNewVersion();
   const skip = async () => [] as any[];
-  const opt = (path: string) => (opts.lite ? skip() : cachedJson<any[]>(path));
+  // Yardımcı listeler (aksesuar, sprey, kart…) gelmezse uygulama yine açılır; yalnızca o görseller eksik kalır.
+  const opt = (path: string) => (opts.lite ? skip() : cachedJson<any[]>(path).catch(() => [] as any[]));
   const [agents, weapons, buddies, sprays, cards, titles, tiers, maps, flex, ctiers, seasons] = await Promise.all([
     cachedJson<any[]>("/agents?isPlayableCharacter=true"),
     cachedJson<any[]>("/weapons"),
