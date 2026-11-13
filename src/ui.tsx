@@ -1,3 +1,4 @@
+import { Icon } from "./icons";
 import { useState } from "react";
 import type { ReactNode } from "react";
 
@@ -83,7 +84,9 @@ export function Empty({ title, text, onRetry, tone }: { title?: string; text: Re
 /** Ajan ikonu: resim yoksa ya da yüklenemezse adın baş harfi gösterilir; kutu hiçbir zaman boş kalmaz. */
 export function AgentIcon({ icon, name, className }: { icon?: string; name?: string; className?: string }) {
   const [bad, setBad] = useState(false);
-  if (!icon || bad) return <span className={`${className ?? ""} aifb`} title={name}>{(name ?? "?").slice(0, 1).toUpperCase()}</span>;
+  // Ajan henüz seçilmedi (seçim ekranı): soru işareti yerine bekleyen bir siluet.
+  if (!name && (!icon || bad)) return <span className={`${className ?? ""} aifb pick`} title="Ajan seçiyor" aria-label="Ajan seçiyor"><Icon name="user" size={18} stroke={1.6} /></span>;
+  if (!icon || bad) return <span className={`${className ?? ""} aifb`} title={name}>{name!.slice(0, 1).toUpperCase()}</span>;
   return <img className={className} src={icon} alt={name ?? ""} loading="lazy" onError={() => setBad(true)} />;
 }
 

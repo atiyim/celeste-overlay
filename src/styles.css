@@ -2212,3 +2212,11 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 .phero .m > span:not(.sep), .phero .m > b, .nw { white-space: nowrap; }
 .pcr small { white-space: normal; overflow: visible; line-height: 1.35; }
 .pcr > span { min-width: 0; }
+/* Ajan henüz seçilmedi: ortalı siluet, kesik çizgili halka ve yavaş nabız */
+.agw .aifb { display: grid; place-items: center; }
+.aifb.pick { color: var(--fg-3); background: var(--s2); box-shadow: inset 0 0 0 1px var(--line); }
+.agw .aifb.pick { box-shadow: none; background: repeating-conic-gradient(from 0deg, transparent 0 10deg, color-mix(in srgb, var(--fg-3) 12%, transparent) 10deg 20deg); }
+.aifb.pick svg { animation: pickp 1.6s ease-in-out infinite; }
+@keyframes pickp { 0%, 100% { opacity: .45; } 50% { opacity: .9; } }
+.fps .aifb.pick svg, .reduce .aifb.pick svg { animation: none; }
+@media (prefers-reduced-motion: reduce) { .aifb.pick svg { animation: none; } }
