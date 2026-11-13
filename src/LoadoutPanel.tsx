@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { Assets, WeaponInfo } from "./assets";
-import { agentArt, charmIcon, lookup, resolveFlex, resolveSkin, resolveSprays } from "./assets";
+import { charmIcon, lookup, resolveFlex, resolveSkin, resolveSprays } from "./assets";
 import { ago, stamp, analyze, formBadge, isComp, modeGroup, modeName, styleBadge, type ModeGroup, type WeaponStat } from "./playstyle";
 import { DEFAULT_TH, type Thresholds } from "./theme";
 import { TAGS, type Entry, type TagId } from "./seen";
@@ -195,7 +195,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
   return (
     <div className="panel" role="dialog" aria-label="Oyuncu ayrıntısı">
       <div className="ph phero" style={card?.wide ? ({ "--pcard": `url(${card.wide})` } as React.CSSProperties) : undefined}>
-        {agentArt(agent) && <img className={`phport${agent?.mastery ? " mast" : ""}`} src={agentArt(agent)} alt="" loading="lazy" />}
+        {agent?.portrait && <img className="phport" src={agent.portrait} alt="" loading="lazy" />}
         {cur && p.rank.current > 0 && <img className="phrank" src={cur.icon} alt="" style={{ "--tc": tierColor(cur.color) } as React.CSSProperties} />}
         <div className="phl">
           <h2 className="t">

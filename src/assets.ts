@@ -34,7 +34,7 @@ async function invalidateOnNewVersion() {
 }
 
 export interface Img { name: string; icon: string }
-export interface AgentInfo extends Img { role?: string; roleIcon?: string; portrait?: string; bust?: string; mastery?: string; colors?: string[] }
+export interface AgentInfo extends Img { role?: string; roleIcon?: string; portrait?: string; bust?: string; colors?: string[] }
 /* Rekabet act'i: "V25 · ACT 2" gibi ad (varsa) ve başlangıç/bitiş zamanı (ms). */
 export interface SeasonInfo { name: string; start: number; end: number }
 export interface Tier { name: string; icon: string; color: string }
@@ -72,9 +72,6 @@ export interface Assets {
 
 const k = (s?: string | null) => (s ?? "").toLowerCase();
 
-/** Kartlarda ve profilde gösterilecek ajan görseli: varsa Usta kartı, yoksa tam boy portre. */
-export const agentArt = (a?: { mastery?: string; portrait?: string } | null) => a?.mastery ?? a?.portrait;
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /** `lite`: telefon uygulaması; kullanmadığı listeler (aksesuar, sprey, kart, unvan, sezon) hiç indirilmez. */
 export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets> {
@@ -105,20 +102,6 @@ export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets>
 
   for (const x of agents) a.agents.set(k(x.uuid), { name: x.displayName, icon: x.displayIcon ?? x.displayIconSmall ?? x.killfeedPortrait ?? x.bustPortrait ?? "", role: x.role?.displayName, roleIcon: x.role?.displayIcon, portrait: x.fullPortrait ?? x.bustPortrait ?? undefined, bust: x.bustPortrait ?? undefined,
     colors: Array.isArray(x.backgroundGradientColors) ? x.backgroundGradientColors.filter((c: unknown) => typeof c === "string" && /^[0-9a-f]{6,8}$/i.test(c)).map((c: string) => `#${c.slice(0, 6)}`) : undefined });
-
-  /* Usta (Mastery) kartı: ajanın yüksek seviyede açılan özel görseli. Kart adı dile göre değiştiği için eşleme,
-     kartın dosya yolundaki kod adı (Bloomline_<KodAdı>) ile ajanın yolundaki kod adı (Characters/<KodAdı>) üzerinden yapılır. */
-  const masteryArt = new Map<string, string>();
-  for (const c of cards ?? []) {
-    const m = /\/Bloomline_([A-Za-z0-9]+?)(?:_\d+)?\//.exec(String(c.assetPath ?? ""));
-    const art = c.largeArt ?? c.wideArt;
-    if (m && art && /Mastery|Playercard_Bloomline/i.test(`${c.displayName} ${c.assetPath}`)) masteryArt.set(m[1].toLowerCase(), art);
-  }
-  for (const x of agents) {
-    const code = /Characters\/([A-Za-z0-9]+)\//.exec(String(x.assetPath ?? ""))?.[1]?.toLowerCase();
-    const art = code ? masteryArt.get(code) : undefined;
-    if (art) { const ai = a.agents.get(k(x.uuid)); if (ai) ai.mastery = art; }
-  }
 
   /* Act adı: bağlı olduğu bölümle birlikte ("EPISODE 9 · ACT 2"). Ad gelmezse arayüz tarihe döner. */
   const seasonById = new Map<string, any>((seasons ?? []).map((s: any) => [k(s.uuid), s]));

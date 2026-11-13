@@ -1,5 +1,4 @@
 import type { KeyboardEvent } from "react";
-import { agentArt } from "./assets";
 import { tierColor } from "./LoadoutPanel";
 import { partyInfo } from "./party";
 import { Roles } from "./RoleBadge";
@@ -24,7 +23,7 @@ export function PlayerCard({ p, index, assets, entry, cols, th, onOpen, onCopy, 
   return (
     <div className={`pcd${party ? " inparty" : ""}${plate ? " plate" : ""}${p.isSelf ? " pme" : ""}${v.times ? " again" : ""}`} style={style} role="button" tabIndex={0} onClick={onOpen} onKeyDown={key}>
       <div className="pcv">
-        {agentArt(v.agent) && <img className={`pcport${v.agent?.mastery ? " mast" : ""}`} src={agentArt(v.agent)} alt="" loading="lazy" />}
+        {v.agent?.portrait && <img className="pcport" src={v.agent.portrait} alt="" loading="lazy" />}
         <span className="pcrole">{v.agent?.name ?? "Seçiliyor…"}</span>
         {party && <span className="pcparty" title={`Parti ${p.party}: ${party.tip}`}>Parti {p.party}</span>}
         {v.times > 0 && <span className="pcagain" title={`Bu oyuncuyla ${v.times}. kez aynı maçtasın`}><Icon name="repeat" size={11} />{v.times}</span>}

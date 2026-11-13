@@ -2114,15 +2114,3 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 .prt .prnote { margin-top: 6px; font-size: 12px; line-height: 1.55; color: var(--fg-3, var(--fg-2)); max-width: 62ch; }
 .prt .prnote .lnk { font: inherit; color: #f0d79c; text-decoration-color: rgba(240, 215, 156, .5); }
 .prt .prnote .lnk:hover { color: #fff3d0; }
-
-/* Usta kartı görseli: kenarlar arka plana yumuşakça karışır, alt kısım görünmez (karakterin altı kesilmiş gibi durur) */
-.mast { object-fit: cover; object-position: center top;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 96%), linear-gradient(to right, transparent 0%, #000 22%, #000 78%, transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 96%), linear-gradient(to right, transparent 0%, #000 22%, #000 78%, transparent 100%);
-  mask-composite: intersect; }
-.hport.mast { width: auto; max-width: 52%; height: calc(100% + 34px); object-fit: contain; object-position: right top; opacity: .96; }
-.mport.mast { width: 46%; height: 120%; right: -4px; top: -6px; object-fit: cover; object-position: center top; opacity: .9; }
-.pcport.mast { width: 120%; height: 150%; top: 0; object-fit: cover; object-position: center top; opacity: .98; }
-.phport.mast { width: 260px; height: 190%; right: 120px; bottom: auto; top: -8%; object-fit: cover; object-position: center top; opacity: .9; }
-.fps .mast { display: none; }
