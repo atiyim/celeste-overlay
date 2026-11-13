@@ -130,18 +130,25 @@ export function App() {
   const fullRef = useRef(false);
   fullRef.current = full;
   const prevPos = useRef<PhysicalPosition | null>(null);
+  const progMove = useRef(0); // kodun kendi yaptığı taşımalar (tam ekran, konum onarımı) sürükleme sayılmasın
+  const fullPos = useRef<PhysicalPosition | null>(null);
+  const dragAt = useRef(0);
+  const toggleFullRef = useRef<(on?: boolean, restore?: boolean) => void>(() => undefined);
   const scr = window.screen as Screen & { availLeft?: number; availTop?: number };
   const width = full ? Math.floor(scr.availWidth / zoom) : overlayWidth(theme.cols, theme.layout);
   const fullH = Math.floor(scr.availHeight / zoom);
-  const toggleFull = async () => {
-    const next = !full;
+  const toggleFull = async (force?: boolean, restore = true) => {
+    const next = typeof force === "boolean" ? force : !full;
+    if (next === full) return;
+    progMove.current = Date.now() + 900;
     if (inTauri) {
       const w = getCurrentWindow();
       try {
         if (next) {
           prevPos.current = await w.outerPosition();
           await w.setPosition(new LogicalPosition(scr.availLeft ?? 0, scr.availTop ?? 0));
-        } else if (prevPos.current) {
+          window.setTimeout(() => { w.outerPosition().then((q) => { fullPos.current = q; }).catch(() => undefined); }, 450);
+        } else if (restore && prevPos.current) {
           await w.setPosition(prevPos.current);
         }
       } catch { /* konum alınamazsa yalnız boyut değişir */ }
@@ -149,6 +156,7 @@ export function App() {
     lastSize.current = "";
     setFull(next);
   };
+  toggleFullRef.current = (on, restore) => { void toggleFull(on, restore); };
   useEffect(() => {
     if (!full) return;
     const k = (e: KeyboardEvent) => { if (e.key === "Escape" && !document.querySelector("[role=dialog] :focus")) toggleFull(); };
@@ -390,6 +398,32 @@ export function App() {
     return () => { window.clearTimeout(t0); window.clearInterval(t); un?.(); };
   }, []);
 
+  // Kenara yapıştır: pencereyi tutup ekranın üst kenarına değdirip bırakınca tam ekran olur (Windows'taki gibi).
+  // Tam ekrandayken tutup çekersen tam ekrandan çıkar.
+  useEffect(() => {
+    if (!inTauri) return;
+    const w = getCurrentWindow();
+    let timer: number | undefined;
+    let un: (() => void) | undefined;
+    w.onMoved(({ payload }) => {
+      if (Date.now() < progMove.current) return;
+      window.clearTimeout(timer);
+      if (fullRef.current) {
+        const f = fullPos.current;
+        if (f && Math.abs(payload.x - f.x) + Math.abs(payload.y - f.y) > 40) toggleFullRef.current(false, false);
+        return;
+      }
+      if (Date.now() - dragAt.current > 120_000) return; // yalnızca kullanıcının tutup sürüklediği taşımalar
+      timer = window.setTimeout(async () => {
+        try {
+          const [c, mon] = await Promise.all([cursorPosition(), currentMonitor()]);
+          if (mon && c.y <= mon.position.y + 6 && c.x >= mon.position.x && c.x < mon.position.x + mon.size.width) toggleFullRef.current(true);
+        } catch { /* imleç okunamadı */ }
+      }, 350);
+    }).then((f) => { un = f; }).catch(() => undefined);
+    return () => { window.clearTimeout(timer); un?.(); };
+  }, []);
+
   useEffect(() => {
     localStorage.setItem("overlay-zoom", String(zoom));
     if (inTauri) getCurrentWebview().setZoom(zoom).catch(() => undefined);
@@ -495,7 +529,7 @@ export function App() {
   };
 
   const startDrag = (e: React.MouseEvent) => {
-    if (inTauri && e.button === 0) getCurrentWindow().startDragging().catch(() => undefined);
+    if (inTauri && e.button === 0) { dragAt.current = Date.now(); getCurrentWindow().startDragging().catch(() => undefined); }
   };
   const noDrag = (e: React.MouseEvent) => e.stopPropagation();
   const myTeam = snap.players.find((p) => p.isSelf)?.team ?? snap.players[0]?.team;
@@ -743,7 +777,7 @@ export function App() {
               />
             )}
             {!collapsed && (
-              <button type="button" className={full ? "ib on" : "ib"} onClick={toggleFull} aria-pressed={full} aria-label={full ? "Tam ekrandan çık" : "Tam ekran"} title={full ? "Tam ekrandan çık" : "Tam ekran"}>
+              <button type="button" className={full ? "ib on" : "ib"} onClick={() => toggleFull()} aria-pressed={full} aria-label={full ? "Tam ekrandan çık" : "Tam ekran"} title={full ? "Tam ekrandan çık" : "Tam ekran"}>
                 <Icon name={full ? "unfull" : "full"} size={16} />
               </button>
             )}
