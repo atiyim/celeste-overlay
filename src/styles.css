@@ -172,7 +172,7 @@ button.tg:hover { opacity: 1; }
 .gcol section + section { margin-top: 14px; }
 
 /* kaplama kutuları (oyun içi cephanelik düzeni) */
-.gcols { display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 14px; align-items: start; }
+.gcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(214px, 1fr)); column-gap: 14px; align-items: start; }
 .gt { position: relative; display: grid; grid-template-columns: 76px minmax(0, 1fr); column-gap: 10px; align-items: center; min-height: 52px; margin-bottom: 6px; padding: 6px 30px 6px 8px; box-sizing: border-box; border: 1px solid var(--line-soft); border-radius: 8px; background: var(--s1); transition: border-color .15s, background .15s; }
 .gt:not(.dim) { border-color: color-mix(in srgb, var(--teal) 38%, var(--line)); background: linear-gradient(90deg, rgba(45, 212, 191, .07), transparent 70%), var(--s1); }
 .gt:hover { border-color: #3d4660; }
