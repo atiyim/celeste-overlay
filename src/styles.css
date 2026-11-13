@@ -2144,3 +2144,23 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 .pchot { position: absolute; left: 10px; bottom: 8px; z-index: 1; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; color: #fff; background: color-mix(in srgb, var(--loss) 80%, #000); box-shadow: 0 2px 10px rgba(0, 0, 0, .4); }
 .g.r.hot { box-shadow: inset 3px 0 0 var(--loss); background: color-mix(in srgb, var(--loss) 7%, transparent); }
 .fps .pcd.hot { box-shadow: none; outline: 1px solid color-mix(in srgb, var(--loss) 55%, transparent); }
+
+/* İzleme listesi */
+.lchip.watch { color: var(--tc); border-color: color-mix(in srgb, var(--tc) 50%, transparent); background: color-mix(in srgb, var(--tc) 10%, transparent); }
+.lchip.watch b, .lchip.watch svg { color: var(--tc); }
+.wlrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid var(--line-soft, var(--line)); }
+.wlrow:last-child { border-bottom: 0; }
+.wlrow .sn { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.wlrow .sn b { font-size: 13px; font-weight: 600; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wlrow .sn small { font-size: 11.5px; color: var(--fg-3); }
+.wltags { display: inline-flex; gap: 4px; }
+.wlt { all: unset; cursor: pointer; box-sizing: border-box; height: 24px; padding: 0 10px; display: inline-flex; align-items: center; font-size: 11.5px; font-weight: 500; color: var(--fg-3); border: 1px solid var(--line); border-radius: 999px; }
+.wlt:hover { color: var(--tc); border-color: color-mix(in srgb, var(--tc) 50%, var(--line)); }
+.wlt.on { color: var(--tc); border-color: var(--tc); background: color-mix(in srgb, var(--tc) 12%, transparent); font-weight: 600; }
+.wlt:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.wlf { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 0 6px; }
+.wlf .x b { font-weight: 600; opacity: .8; margin-left: 2px; }
+.wled { display: inline-flex; gap: 6px; flex: 1 1 220px; }
+.wled input { flex: 1; min-width: 0; }
+.wlio { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.wlsnd { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-2); cursor: pointer; }

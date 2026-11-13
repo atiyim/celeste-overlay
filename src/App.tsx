@@ -9,7 +9,8 @@ import { exit } from "@tauri-apps/plugin-process";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { loadAssets, lookup, type Assets } from "./assets";
 import { mockSnapshot } from "./mock";
-import { recordSeen, setLabel, setTag, type Seen } from "./seen";
+import { clearWatch, exportWatch, importWatch, recordSeen, setLabel, setTag, TAGS, type Seen } from "./seen";
+import { Watchlist } from "./Watchlist";
 import type { MyStats, Player, Snapshot } from "./types";
 import { PlayerRow } from "./PlayerRow";
 import { PlayerCard } from "./PlayerCard";
@@ -64,7 +65,7 @@ export const ZOOMS = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
 
 /* Bölümler: sol menüdeki gruplar ve içlerindeki alt sekmeler. */
 const PROFILE = [["stats", "İstatistik"], ["store", "Mağaza"], ["account", "Hesabım"]] as const;
-const TOOLS = [["chat", "Hızlı mesajlar"], ["cross", "Nişangah"], ["device", "DPI/eDPI"], ["timers", "Sayaçlar"], ["search", "Oyuncu arama"], ["meta", "Meta"]] as const;
+const TOOLS = [["chat", "Hızlı mesajlar"], ["cross", "Nişangah"], ["device", "DPI/eDPI"], ["timers", "Sayaçlar"], ["search", "Oyuncu arama"], ["watch", "İzleme listesi"], ["meta", "Meta"]] as const;
 type ProfileView = (typeof PROFILE)[number][0];
 type ToolView = (typeof TOOLS)[number][0];
 type View = "roster" | "report" | "feed" | "feedback" | "premium" | "trust" | "settings" | ProfileView | ToolView;
@@ -92,6 +93,8 @@ export function App() {
   const [feedNew, feedSeen, feedNotes] = useFeedBadge(view === "feed");
   const [theme, setTheme] = useState(loadTheme);
   const [seen, setSeen] = useState<Seen>({});
+  const [watchSound, setWatchSound] = useState(() => { try { return localStorage.getItem("overlay-watch-sound") !== "0"; } catch { return true; } });
+  const alerted = useRef(new Set<string>());
   const [guide, setGuide] = useState<boolean>(() => { try { return localStorage.getItem("overlay-guide") !== "1"; } catch { return false; } });
   const closeGuide = () => { setGuide(false); try { localStorage.setItem("overlay-guide", "1"); } catch { /* depolama kapalı */ } };
   const [protect, setProtect] = useState<boolean>(() => localStorage.getItem("overlay-protect") === "1");
@@ -230,6 +233,24 @@ export function App() {
   }, [assets]);
 
   // Aynı oyuncuyla karşılaşma geçmişini yerelde kaydet (isim saklanmaz).
+  // İzleme listesi: etiketli oyuncu lobiye girince (maç başına bir kez) kısa bir uyarı sesi. Yalnızca Toksik ve Şüpheli için.
+  useEffect(() => {
+    if (!watchSound || snap.phase !== "ingame" || !snap.matchId) return;
+    const hit = snap.players.filter((p) => !p.isSelf && (seen[p.puuid]?.tag === "toksik" || seen[p.puuid]?.tag === "supheli") && !alerted.current.has(`${snap.matchId}:${p.puuid}`));
+    if (!hit.length) return;
+    for (const p of hit) alerted.current.add(`${snap.matchId}:${p.puuid}`);
+    try {
+      const ctx = new AudioContext();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "sine"; o.frequency.value = 660; g.gain.value = 0.0001;
+      o.connect(g); g.connect(ctx.destination);
+      const t = ctx.currentTime;
+      g.gain.exponentialRampToValueAtTime(0.12, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      o.frequency.setValueAtTime(660, t); o.frequency.setValueAtTime(880, t + 0.16);
+      o.start(t); o.stop(t + 0.4); o.onended = () => { void ctx.close(); };
+    } catch { /* ses çalınamadı */ }
+  }, [snap.phase, snap.matchId, snap.players, seen, watchSound]);
+
   useEffect(() => {
     if (snap.phase !== "ingame" || !snap.matchId) return;
     const me = snap.players.find((p) => p.isSelf)?.team;
@@ -595,6 +616,7 @@ export function App() {
     .filter((p) => !p.isSelf && (seen[p.puuid]?.n ?? 0) >= 2)
     .sort((a, b) => (seen[b.puuid]?.n ?? 0) - (seen[a.puuid]?.n ?? 0))[0];
   const againName = again ? (again.hiddenName ? seen[again.puuid]?.label ?? "Gizli bir oyuncu" : (again.name ?? "").split("#")[0]) : null;
+  const watchedHere = snap.players.filter((p) => !p.isSelf && seen[p.puuid]?.tag).slice(0, 4);
   const foeSum = teamSummary(enemies, snap.mapId), mySum = teamSummary(allies.filter((x) => !x.isSelf), snap.mapId);
 
   const cards = theme.layout === "cards";
@@ -612,7 +634,7 @@ export function App() {
   })();
   const lobby = (
     <>
-      {(foeSum.length > 0 || mySum.length > 0 || again || (sess && sess.games > 0 && theme.tilt.on)) && (
+      {(foeSum.length > 0 || mySum.length > 0 || again || watchedHere.length > 0 || (sess && sess.games > 0 && theme.tilt.on)) && (
         <div className="lchips" role="note" aria-label="Lobi özeti">
           {foeSum.length > 0 && <span className="lchip foe" title="Rakip takım"><Icon name="link" size={14} /><b>Rakipte</b>{foeSum.join(" · ")}</span>}
           {mySum.length > 0 && <span className="lchip ally" title="Senin takımın"><Icon name="users" size={14} /><b>Takımında</b>{mySum.join(" · ")}</span>}
@@ -621,6 +643,15 @@ export function App() {
               <Icon name="repeat" size={14} /><b className="pn">{againName}</b>ile {seen[again.puuid]?.n}. kez aynı maçtasın
             </span>
           )}
+          {watchedHere.map((p) => {
+            const t = TAGS.find((x) => x.id === seen[p.puuid]?.tag)!;
+            const nm = p.hiddenName ? seen[p.puuid]?.label ?? "Gizli bir oyuncu" : (p.name ?? "").split("#")[0];
+            return (
+              <span key={p.puuid} className="lchip watch" style={{ "--tc": t.color } as React.CSSProperties} title="İzleme listendeki oyuncu">
+                <Icon name="eyeoff" size={14} /><b className="pn">{nm}</b>{t.label} · {p.team === myTeam ? "takımında" : "rakipte"}
+              </span>
+            );
+          })}
           {sess && sess.games > 0 && theme.tilt.on && (
             <span className="lchip" title="Bugünkü seansın">
               <Icon name="moon" size={14} />Bu seans <b>{sess.wins}G {sess.losses}M</b>
@@ -693,6 +724,11 @@ export function App() {
         : view === "device" ? <Device onCopy={copyName} onClose={() => go("roster")} />
         : view === "timers" ? <Timers onClose={() => go("roster")} />
         : view === "meta" ? <Meta assets={assets} currentMapId={snap.mapId} onClose={() => go("roster")} />
+        : view === "watch" ? <Watchlist assets={assets} seen={seen} sound={watchSound} onSound={(on) => { setWatchSound(on); try { localStorage.setItem("overlay-watch-sound", on ? "1" : "0"); } catch { /* depolama kapalı */ } }}
+            onTag={(id, t) => setSeen(setTag(id, t))} onLabel={(id, t) => setSeen(setLabel(id, t))} onClear={(id) => setSeen(clearWatch(id))}
+            onExport={() => copyName(exportWatch(seen), "Liste kopyalandı")}
+            onImport={(t) => { const r = importWatch(t); if (!r) showToast("Liste okunamadı"); else { setSeen(r.seen); showToast(r.added ? `${r.added} oyuncu eklendi` : "Yeni oyuncu yok"); } }}
+            onClose={() => go("roster")} />
         : view === "search" ? <Search assets={assets} seen={seen} onOpen={openTracker} onCopy={copyName} onClose={() => go("roster")} />
         : <QuickChat onCopy={copyName} onClose={() => go("roster")} />}
     </Hub>
