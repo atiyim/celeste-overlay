@@ -30,13 +30,14 @@ export function Waiting({ inApp, status: st, phase, assetsOk, assetsFailed, text
     : !st.riotClient ? "Riot Client kapalı"
     : !st.valorant ? "Valorant'ı başlat"
     : st.fault || !st.data ? "Bağlantıda sorun var"
-    : phase === "menu" ? "Kuyruğa gir, gerisi hazır"
+    : phase === "menu" ? "Maç aramaya başla"
     : "Maç bekleniyor";
 
+
   const steps: Step[] = [
-    { label: "Riot Client açık", state: !inApp || !st ? "wait" : st.riotClient ? "done" : "bad" },
-    { label: "Valorant çalışıyor", state: !inApp || !st ? "todo" : st.valorant ? "done" : st.riotClient ? "wait" : "todo" },
-    { label: "Ajan seçimi bekleniyor", state: inApp && st?.valorant && st.data ? "wait" : "todo" },
+    { label: st?.riotClient ? "Riot Client açık" : "Riot Client'ı aç", state: !inApp || !st ? "wait" : st.riotClient ? "done" : "bad" },
+    { label: st?.valorant ? "Valorant açık" : "Valorant'ı aç", state: !inApp || !st ? "todo" : st.valorant ? "done" : st.riotClient ? "wait" : "todo" },
+    { label: "Maç bulunsun, oyuncular gelsin", state: inApp && st?.valorant && st.data ? "wait" : "todo" },
   ];
 
   const go = (v: Parameters<Props["onGo"]>[0], icon: IconName, label: string, sub: string, badge?: string) => (

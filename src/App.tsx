@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { LogicalPosition, LogicalSize, PhysicalPosition } from "@tauri-apps/api/dpi";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
-import { availableMonitors, cursorPosition, getCurrentWindow, primaryMonitor } from "@tauri-apps/api/window";
+import { availableMonitors, currentMonitor, cursorPosition, getCurrentWindow, primaryMonitor } from "@tauri-apps/api/window";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { exit } from "@tauri-apps/plugin-process";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -118,6 +118,8 @@ export function App() {
   const manualKeep = useRef(false); // F2 ile elle açıldıysa bu maç boyunca otomatik gizleme yapma
   const ingameSince = useRef<number | null>(null);
   const [full, setFull] = useState(false);
+  const fullRef = useRef(false);
+  fullRef.current = full;
   const prevPos = useRef<PhysicalPosition | null>(null);
   const scr = window.screen as Screen & { availLeft?: number; availTop?: number };
   const width = full ? Math.floor(scr.availWidth / zoom) : overlayWidth(theme.cols);
@@ -412,7 +414,20 @@ export function App() {
     const key = `${h}|${zoom}|${width}`;
     if (key === lastSize.current) return;
     lastSize.current = key;
-    getCurrentWindow().setSize(new LogicalSize(Math.round(width * zoom), Math.round(h * zoom))).catch(() => undefined);
+    getCurrentWindow().setSize(new LogicalSize(Math.round(width * zoom), Math.round(h * zoom))).then(keepOnScreen).catch(() => undefined);
+  };
+  // Pencere büyüyünce (menü açılınca, genişlik değişince) ekranın dışına taşmasın: çalışma alanına geri çek.
+  const keepOnScreen = async () => {
+    if (!inTauri || fullRef.current) return;
+    try {
+      const w = getCurrentWindow();
+      const [pos, size, mon] = await Promise.all([w.outerPosition(), w.outerSize(), currentMonitor()]);
+      if (!mon) return;
+      const wa = mon.workArea ?? { position: mon.position, size: mon.size };
+      const maxX = wa.position.x + wa.size.width - size.width, maxY = wa.position.y + wa.size.height - size.height;
+      const x = Math.max(wa.position.x, Math.min(pos.x, maxX)), y = Math.max(wa.position.y, Math.min(pos.y, maxY));
+      if (x !== pos.x || y !== pos.y) await w.setPosition(new PhysicalPosition(x, y));
+    } catch { /* konum okunamazsa pencere olduğu yerde kalır */ }
   };
   useEffect(() => { fit(); });
   useEffect(() => {
@@ -466,15 +481,15 @@ export function App() {
   const st = snap.status;
   const emptyText = !assets
     ? assetsFailed ? "Görseller yüklenemedi. İnternet bağlantını kontrol edip yeniden dene." : "Görseller yükleniyor…"
-    : !inTauri ? "Maç başladığında oyuncular burada görünecek."
+    : !inTauri ? "Maç bulunduğunda oyuncular burada kendiliğinden listelenir."
     : !st ? "Bağlanılıyor…"
-    : st.fault === "no_riot_client" ? "Riot Client açık değil. Önce Riot Client'ı, sonra Valorant'ı başlat."
+    : st.fault === "no_riot_client" ? "Riot Client kapalı görünüyor. Önce Riot Client'ı, ardından Valorant'ı aç."
     : st.fault === "not_logged_in" ? "Riot Client'ta oturum açık değil. Giriş yap."
     : st.fault === "no_region" ? "Bölge bilgisi bulunamadı. Valorant'ı bu bilgisayarda en az bir kez açmış olmalısın."
-    : st.riotClient && !st.valorant ? "Valorant'ı başlatman gerekiyor, Valorant bekleniyor."
+    : st.riotClient && !st.valorant ? "Riot Client bağlı. Şimdi Valorant'ı aç."
     : snap.error ? snap.error
-    : snap.phase === "menu" ? "Maç bekleniyor. Ajan seçimi başlayınca oyuncular burada görünecek."
-    : "Maç başladığında oyuncular burada görünecek.";
+    : snap.phase === "menu" ? "Valorant'a bağlandık. Maç bulunduğunda oyuncular burada kendiliğinden listelenir."
+    : "Maç bulunduğunda oyuncular burada kendiliğinden listelenir.";
 
   // Takım karşılaşması: ortalama rank, ortalama K/D.
   const teamStats = (list: typeof allies) => {
@@ -607,7 +622,7 @@ export function App() {
       assetsFailed={assetsFailed}
       text={<>
         {emptyText}
-        {st?.valorant && <small>Overlay oyunun arkasında kalıyorsa Valorant'ta Ekran Modu'nu Pencereli Tam Ekran yap.</small>}
+        {st?.valorant && <small>Overlay oyunun arkasında kalıyorsa Valorant'ta Ekran Modu'nu “Pencereli Tam Ekran” yap.</small>}
       </>}
       onRetry={assetsFailed && !assets ? retryAssets : undefined}
       sess={theme.tilt.on ? sess : null}
@@ -646,7 +661,7 @@ export function App() {
   const phaseTone = snap.phase === "pregame" ? "go" : snap.phase === "ingame" ? "live" : snap.phase === "menu" ? "wait" : "off";
 
   return (
-    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}${collapsed ? " mini" : ""}`} ref={rootRef} style={full ? { width, height: fullH, maxHeight: fullH, borderRadius: 0 } : { width, maxHeight: Math.max(360, Math.floor(((window.screen?.availHeight ?? 1000) - 24) / zoom)) }}>
+    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}${collapsed ? " mini" : ""}${full ? " fullw" : ""}`} ref={rootRef} style={full ? { width, height: fullH, maxHeight: fullH, borderRadius: 0 } : { width, maxHeight: Math.max(360, Math.floor(((window.screen?.availHeight ?? 1000) - 24) / zoom)) }}>
       {!collapsed && !guide && <Rail active={group} onPick={pickGroup} feedCount={feedCount} feedNote={feedNotes > 0} onDrag={startDrag} />}
       <div className="ovm">
         <header className="hd drag" onMouseDown={startDrag} title="Sürükleyerek taşı">

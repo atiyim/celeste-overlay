@@ -1734,3 +1734,31 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 .rcard { border-radius: var(--rad); padding: 16px 18px 10px; background: linear-gradient(160deg, var(--card-hi), var(--card) 55%); }
 .rcard h3 { letter-spacing: .12em; }
 .fps .rcard { background: var(--card); }
+
+/* ---------- 0.9.1: düzeltmeler ---------- */
+/* Logo: ortada, üstten pay; tam ekranda pencere kenarına yapışmaz */
+.rail { padding-top: 22px; }
+.rlogo { width: 36px; height: 36px; margin-bottom: 14px; object-fit: cover; }
+.ov.fullw .rail { padding-top: 40px; }
+.ov.fullw .ovm { padding-top: 30px; }
+
+/* Alt şerit: Discord ve Öneri/Hata yan yana */
+.fbg { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; flex: none; }
+.fbg .fbk { margin-left: 0; }
+.fbk.dsc { color: #aab8ff; border-color: color-mix(in srgb, #7c8cff 55%, transparent); background: color-mix(in srgb, #5865f2 18%, transparent); }
+.fbk.dsc:hover { background: color-mix(in srgb, #5865f2 30%, transparent); }
+
+/* Son maçlar: liste kartın içinde kayar, kartı büyütüp diğer kartları bozmaz */
+.last { min-height: 0; padding-bottom: 18px; }
+.last > .lgs { position: absolute; left: 18px; padding-left: 8px; right: 18px; top: 58px; bottom: 16px; overflow-y: auto; padding-right: 6px; scrollbar-width: thin; scrollbar-color: #384263 transparent; }
+@container (max-width: 1040px) { .last { min-height: 420px; } }
+
+/* Ajan kartları: yazı solda, portre sağda ve kırpılı; üst üste binmez */
+.dhero { min-height: 270px; }
+.hport { height: calc(100% + 26px); max-width: 46%; right: 4px; }
+.hx { max-width: 54%; }
+.dmini { min-height: 128px; overflow: hidden; }
+.dmx { max-width: 58%; }
+.mport { right: -6px; top: auto; bottom: -6px; height: 118%; max-width: 54%; object-position: right bottom;
+  -webkit-mask-image: linear-gradient(to left, #000 55%, transparent 100%); mask-image: linear-gradient(to left, #000 55%, transparent 100%); }
+.dmx h4 { margin-bottom: 8px; }

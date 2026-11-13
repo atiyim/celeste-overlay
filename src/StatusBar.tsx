@@ -108,11 +108,15 @@ export function StatusBar({ status, inApp, assetsOk, assetsFailed, version, onTo
         <span className="credit">
           <Socials onOpen={onOpen} />
           <span className="made">Made by Claude &amp; <button type="button" className="ig" title="Instagram: @bneceleste" onClick={() => onOpen("https://www.instagram.com/bneceleste")}>bneceleste</button></span>
-          <button type="button" className="ig" title="Topluluk: soru, hata bildirimi, öneri ve yeni sürümler" onClick={() => onOpen(DISCORD_URL)}>Discord</button>
         </span>
-        <button type="button" className="fbk" title="Bir fikrini yaz ya da çalışmayan bir şeyi bildir; doğrudan yetkililere ulaşır" onClick={onFeedback}>
-          <Icon name="msg" size={14} />Öneri / Hata
-        </button>
+        <span className="fbg">
+          <button type="button" className="fbk dsc" title="Topluluk: soru, hata bildirimi, öneri ve yeni sürümler" onClick={() => onOpen(DISCORD_URL)}>
+            <Icon name="users" size={14} />Discord'a Katıl!
+          </button>
+          <button type="button" className="fbk" title="Bir fikrini yaz ya da çalışmayan bir şeyi bildir; doğrudan yetkililere ulaşır" onClick={onFeedback}>
+            <Icon name="msg" size={14} />Öneri / Hata
+          </button>
+        </span>
       </div>
     </>
   );
