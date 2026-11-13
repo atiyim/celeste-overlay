@@ -2220,3 +2220,18 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 @keyframes pickp { 0%, 100% { opacity: .45; } 50% { opacity: .9; } }
 .fps .aifb.pick svg, .reduce .aifb.pick svg { animation: none; }
 @media (prefers-reduced-motion: reduce) { .aifb.pick svg { animation: none; } }
+
+/* Zorunlu güncelleme ekranı */
+.fupd { display: grid; place-items: center; min-height: 340px; padding: 24px; }
+.fupc { max-width: 440px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.fupi { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 20px; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent), 0 10px 40px color-mix(in srgb, var(--accent) 22%, transparent); }
+.fupc h2 { margin: 6px 0 0; font-size: 22px; font-weight: 700; color: var(--fg); }
+.fupc p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--fg-2); }
+.fupc p b { color: var(--fg); }
+.fupb { height: 36px !important; padding: 0 22px !important; font-size: 13.5px !important; margin-top: 4px; }
+.fupbar { position: relative; width: 260px; height: 34px; border-radius: 10px; overflow: hidden; background: var(--s1); border: 1px solid var(--line); }
+.fupbar i { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--accent) 40%, transparent); transition: width .3s; }
+.fupbar i.ind { animation: fupind 1.2s ease-in-out infinite alternate; }
+.fupbar span { position: relative; display: grid; place-items: center; height: 100%; font-size: 12.5px; font-weight: 600; color: var(--fg); }
+@keyframes fupind { from { transform: translateX(-60%); } to { transform: translateX(160%); } }
+.fupe { font-size: 12px !important; color: var(--loss) !important; }

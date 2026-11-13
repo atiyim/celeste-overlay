@@ -4,7 +4,10 @@ import type { useUpdater } from "./updater";
 import { ACCENTS, COLS, DEFAULT_THEME, DEFAULT_TH, FPS_HIDE_AFTER, HIDE_AFTER_OPTIONS, hideOf, type Theme, type Thresholds } from "./theme";
 import { copyDiagnostics } from "./StatusBar";
 import { TILT_HOURS, TILT_LOSSES, TILT_RR, fmtRr } from "./tilt";
-import { DISCORD_URL } from "./community";
+import { DISCORD_URL, SITE } from "./community";
+import { feedAdmin } from "./feed";
+import { tfetch } from "./net";
+import { useMe } from "./vip";
 import { PanelHead, Row, Toggle } from "./ui";
 
 const TH_FIELDS: { key: keyof Thresholds; label: string; hint: string; unit: string }[] = [
@@ -315,6 +318,7 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
                   </Row>
                 </div>
               </section>
+              <MinVersion current={updater.version} onToast={onToast} />
               <section>
                 <h3 className="h2">Topluluk</h3>
                 <div className="box">
@@ -343,5 +347,42 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
         </div>
       </div>
     </div>
+  );
+}
+
+const cmpVer = (a: string, b: string) => { const x = a.split(".").map(Number), y = b.split(".").map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); return 0; };
+
+/** Yönetici: zorunlu güncelleme. Bu sürümün altındakiler uygulamayı güncellemeden kullanamaz. */
+function MinVersion({ current, onToast }: { current: string; onToast: (t: string) => void }) {
+  const me = useMe();
+  const [min, setMin] = useState<string | null | undefined>(undefined);
+  const [v, setV] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!me?.admin) return;
+    tfetch(`${SITE}/api/overlay/version`).then((r) => r.json()).then((d: { min: string | null }) => { setMin(d.min); setV(d.min ?? ""); }).catch(() => setMin(null));
+  }, [me?.admin]);
+  if (!me?.admin) return null;
+  const save = async (val: string) => {
+    if (val && !/^\d+\.\d+\.\d+$/.test(val)) { onToast("Sürüm 0.7.3 biçiminde olmalı"); return; }
+    if (val && current && cmpVer(val, current) > 0) { onToast("Kendi sürümünden yüksek olamaz; önce güncelle"); return; }
+    setBusy(true);
+    try { const r = await feedAdmin<{ min: string | null }>("min_version", { version: val }); setMin(r.min); setV(r.min ?? ""); onToast(r.min ? `v${r.min} altı artık güncellemeden kullanılamaz` : "Zorunlu güncelleme kapatıldı"); }
+    catch (e) { onToast(e instanceof Error ? e.message : "Kaydedilemedi"); }
+    setBusy(false);
+  };
+  return (
+    <section>
+      <h3 className="h2">Zorunlu güncelleme<span className="hv">Yalnızca yönetici görür</span></h3>
+      <div className="box">
+        <Row title="En düşük sürüm" desc={min ? <>Şu an <b>v{min}</b> altındakiler engelli: uygulama güncelleme ekranında durur, Akış ve roller çalışmaz.</> : "Kapalı: her sürüm kullanılabilir."}>
+          <span className="btns">
+            <input className="inp" style={{ width: 92 }} value={v} placeholder={current || "0.7.3"} onChange={(e) => setV(e.target.value.trim())} onKeyDown={(e) => e.stopPropagation()} aria-label="En düşük sürüm" />
+            <button className="x go" type="button" disabled={busy || v === (min ?? "")} onClick={() => save(v)}>Kaydet</button>
+            {min && <button className="x" type="button" disabled={busy} onClick={() => save("")}>Kapat</button>}
+          </span>
+        </Row>
+      </div>
+    </section>
   );
 }

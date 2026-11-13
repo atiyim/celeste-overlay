@@ -40,6 +40,7 @@ import { useDiscordPresence } from "./discordRpc";
 import { useFeedBadge, type FeedCard } from "./feed";
 import { alertOf, fmtRr, sessionOf, type Session } from "./tilt";
 import { useUpdater } from "./updater";
+import { ForceUpdate, useOutdated } from "./ForceUpdate";
 import { Empty } from "./ui";
 import { Icon } from "./icons";
 import { Rail, type Group } from "./Rail";
@@ -109,6 +110,7 @@ export function App() {
   useDiscordPresence(snap, assets, theme.discord, theme.streamer);
   const updater = useUpdater();
   useUsagePing(updater.version);
+  const outdated = useOutdated(updater.version);
   const [notices, clearNotices] = useNotices();
   const [lastMatch, setLastMatch] = useState<string | null>(() => {
     try { return localStorage.getItem("overlay-last-match"); } catch { return null; }
@@ -868,7 +870,7 @@ export function App() {
         {!collapsed && !guide && notices.length > 0 && <NoticeCard list={notices} onClose={clearNotices} />}
         {!collapsed && !guide && view === "roster" && !active && <WhatsNew version={updater.version} />}
         {!collapsed && guide && <Guide onDone={closeGuide} />}
-        {!collapsed && !guide && content}
+        {!collapsed && !guide && (outdated ? <ForceUpdate info={outdated} updater={updater} onOpen={openTracker} /> : content)}
         </div>
         {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} onFeedback={() => { setGuide(false); setCollapsed(false); go("feedback"); }} onTrust={() => go("trust")} />}
       </div>

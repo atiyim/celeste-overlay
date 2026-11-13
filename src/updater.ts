@@ -23,8 +23,8 @@ export function useUpdater() {
 
   useEffect(() => { if (inTauri) getVersion().then(setVersion).catch(() => undefined); }, []);
 
-  const run = useCallback(async (quiet: boolean) => {
-    if (!inTauri) return;
+  const run = useCallback(async (quiet: boolean): Promise<Update | null> => {
+    if (!inTauri) return null;
     if (!quiet) setState({ kind: "checking" });
     try {
       const t0 = performance.now();
@@ -33,9 +33,11 @@ export function useUpdater() {
       upd.current = u;
       if (u) setState({ kind: "available", version: u.version, notes: u.body });
       else if (!quiet) setState({ kind: "none" });
+      return u;
     } catch (e) {
       // Sessiz denetimde hata göstermeyiz (internet yok, depo henüz ayarlanmamış vb.).
       if (!quiet) setState({ kind: "error", msg: String(e) });
+      return null;
     }
   }, []);
 
@@ -64,5 +66,13 @@ export function useUpdater() {
     }
   }, []);
 
-  return { state, version, check: () => run(false), install };
+  /** Zorunlu güncelleme: denetle, varsa hemen indirip kur. Bulunamazsa false. */
+  const force = useCallback(async () => {
+    const u = upd.current ?? (await run(false));
+    if (!u) return false;
+    await install();
+    return true;
+  }, [run, install]);
+
+  return { state, version, check: () => { void run(false); }, install, force };
 }
