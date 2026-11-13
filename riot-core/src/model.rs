@@ -65,8 +65,6 @@ pub struct Player {
     pub party_src: Option<String>,
     /// Bu lobideki takım arkadaşlarıyla son maçlarda aynı partide girilen maç sayıları.
     pub together: Vec<Together>,
-    /// 0-100 arası smurf olasılığı (sezgisel).
-    pub smurf: u8,
     pub loadout: Loadout,
     pub is_self: bool,
     /// Son 5 maç (en yeni başta). Maç ayrıntıları yüklenirken `form_loading` true olur.

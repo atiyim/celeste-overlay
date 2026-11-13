@@ -141,7 +141,7 @@ pub struct PresenceRow {
     pub state: String,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct PartyScan {
     /// Listedeki tüm kayıt (her ürün).
     pub all: usize,

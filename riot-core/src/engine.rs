@@ -1,6 +1,6 @@
 use crate::model::*;
 use crate::netlog;
-use crate::session::{fault, fault_of, friendly, Fault, Session};
+use crate::session::{fault, fault_of, friendly, Fault, PartyScan, Session};
 use anyhow::{anyhow, bail, Result};
 use futures::future::join_all;
 use serde_json::Value;
@@ -27,6 +27,8 @@ const ENT_CARD: &str = "3f296c07-64c3-494c-923b-fe692a4fa1bd";
 const ENT_TITLE: &str = "de7caa6b-adf7-4588-bbd1-143831e786c6";
 
 const CACHE_TTL: Duration = Duration::from_secs(600);
+/// Riot Client'ın canlı parti listesi her turda değil, bu süre için bir kez okunur (yerel istek tasarrufu).
+const PARTY_TTL: Duration = Duration::from_secs(6);
 
 #[derive(Clone, Default)]
 struct Mmr {
@@ -439,6 +441,8 @@ struct State {
     match_cache: Option<(String, Value, Option<Value>, Instant)>,
     /// Ajan seçimindeki kaplamalar: seçim boyunca nadiren değişir; 20 sn'de bir tazelenir.
     pre_cache: Option<(String, Option<Value>, Instant)>,
+    /// Riot Client canlı parti taraması ve alındığı an.
+    party_cache: Option<(Instant, Option<PartyScan>)>,
     debug_match: Option<String>,
     debug_party: Option<String>,
     debug_pre: Option<String>,
@@ -833,7 +837,6 @@ impl Engine {
             if let Some((_, m)) = st.mmr.get(&p.puuid) {
                 p.rank = to_rank(m);
             }
-            p.smurf = smurf_score(p.level, &p.rank);
             if let Some((c, cap, last)) = st.activity.get(&p.puuid) {
                 p.played_24h = *c;
                 p.played_24h_capped = *cap;
@@ -1635,33 +1638,6 @@ fn shape(v: &Value, depth: usize) -> String {
     }
 }
 
-/// Sezgisel smurf olasılığı: düşük hesap seviyesi + yüksek rank + yüksek galibiyet oranı.
-/// Kesin bir kanıt değildir; arayüzde "olası" olarak gösterilir.
-fn smurf_score(level: Option<u32>, rank: &Rank) -> u8 {
-    let mut score: i32 = 0;
-    let high_rank = rank.current >= 12; // Altın 1 ve üstü
-    if let Some(l) = level {
-        score += match l {
-            0..=29 => 40,
-            30..=59 => 25,
-            60..=99 => 10,
-            _ => 0,
-        };
-        if high_rank && l < 60 {
-            score += 25;
-        }
-    }
-    if rank.games >= 10 {
-        let wr = rank.wins as f32 / rank.games as f32;
-        if wr > 0.62 {
-            score += 20;
-        }
-    } else if rank.current >= 15 {
-        score += 10;
-    }
-    score.clamp(0, 100) as u8
-}
-
 /// Kişisel veri sızmasın diye metindeki oyuncu/maç kimliklerini (UUID) `<id>` ile değiştirir.
 fn scrub(s: &str) -> String {
     let mut out = String::new();
@@ -1776,8 +1752,16 @@ impl Engine {
     async fn assign_parties(&self, st: &mut State, s: &Session, players: &mut [Player]) {
         let n = players.len();
 
-        // 1) Canlı parti kimliği
-        let live = s.party_ids().await;
+        // 1) Canlı parti kimliği (kısa süre önbellekli)
+        let cached = st.party_cache.as_ref().filter(|c| c.0.elapsed() < PARTY_TTL).map(|c| c.1.clone());
+        let live = match cached {
+            Some(sc) => sc,
+            None => {
+                let sc = s.party_ids().await;
+                st.party_cache = Some((Instant::now(), sc.clone()));
+                sc
+            }
+        };
         let ids: HashMap<String, String> = live.as_ref().map(|s| s.ids.clone()).unwrap_or_default();
         let mut label = b'A';
         let mut order: Vec<String> = Vec::new();
