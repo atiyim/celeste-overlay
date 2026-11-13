@@ -90,3 +90,27 @@ export function mockNet(n: number): import("./net").NetReport {
     hiddenSkipped: 2, since: now - 3_600_000,
   };
 }
+
+/* Tarayıcı önizlemesi için kendi istatistiklerin (gerçek görsellerle, sabit tohumla). */
+export function mockStats(a: Assets): import("./types").MyStats {
+  const agents = [...a.agents.keys()];
+  const maps = a.mapList.map((m) => [...a.maps.keys()].find((k) => a.maps.get(k) === m.name)).filter((x): x is string => !!x);
+  const main = [agents[3], agents[3], agents[7], agents[3], agents[11], agents[7], agents[3]];
+  const queues = ["competitive", "competitive", "competitive", "unrated", "competitive", "swiftplay", "competitive"];
+  const now = Date.now();
+  const matches = Array.from({ length: 20 }, (_, i) => {
+    const won = (i * 7 + 3) % 5 < 3;
+    const q = queues[i % queues.length];
+    const ally = won ? 13 : 7 + (i % 5), enemy = won ? 6 + (i % 6) : 13;
+    return {
+      matchId: `mock-m-${i}`, mapId: maps[(i * 3) % maps.length], agentId: main[i % main.length], queue: q, won,
+      kills: 12 + ((i * 5) % 17), deaths: 10 + ((i * 3) % 9), assists: 3 + ((i * 7) % 9), acs: 170 + ((i * 37) % 140),
+      rrDelta: q === "competitive" ? (won ? 18 + (i % 7) : -(14 + (i % 6))) : null,
+      tierAfter: q === "competitive" ? 18 + (i % 2) : null,
+      started: now - (i * 2.3 + (i > 6 ? 20 : 0) + (i > 13 ? 26 : 0)) * 3_600_000,
+      score: [ally, enemy] as [number, number],
+      rounds: null,
+    };
+  });
+  return { matches, rank: { current: 18, peak: 20, rr: 64, wins: 31, games: 58, totalWins: 412, totalGames: 801, acts: [] } };
+}

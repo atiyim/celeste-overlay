@@ -10,18 +10,11 @@ import { Goal } from "./Goal";
 import { MatchCard } from "./MatchCard";
 import type { MyMatch } from "./types";
 import { cardOf, type FeedCard } from "./feed";
-import { QUEUE_NAMES } from "./queues";
+import { Dashboard } from "./Dashboard";
+import { mockStats } from "./mock";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
 
-const QUEUE = QUEUE_NAMES;
-
-function ago(ms: number): string {
-  const m = Math.max(0, Math.floor((Date.now() - ms) / 60000));
-  if (m < 60) return `${m}dk`;
-  if (m < 1440) return `${Math.floor(m / 60)}sa`;
-  return `${Math.floor(m / 1440)}g`;
-}
 
 export function StatsPanel({ assets, onClose, onToast, onShare }: { assets: Assets; onClose: () => void; onToast: (t: string) => void; onShare: (c: FeedCard) => void }) {
   const [data, setData] = useState<MyStats | null>(null);
@@ -31,12 +24,12 @@ export function StatsPanel({ assets, onClose, onToast, onShare }: { assets: Asse
   const [card, setCard] = useState<MyMatch | null>(null);
 
   const load = useCallback(async () => {
-    if (!inTauri) { setErr("İstatistikler yalnızca masaüstü uygulamasında çalışır."); return; }
+    if (!inTauri) { setData(mockStats(assets)); return; } // tarayıcı önizlemesi
     setBusy(true);
     try { setData(await invoke<MyStats>("get_my_stats")); setErr(null); }
     catch (e) { setErr(String(e)); }
     setBusy(false);
-  }, []);
+  }, [assets]);
   useEffect(() => { load(); }, [load]);
 
   const sum = useMemo(() => {
@@ -79,71 +72,25 @@ export function StatsPanel({ assets, onClose, onToast, onShare }: { assets: Asse
       {sum && data && tab === "rounds" && <div className="fade"><RoundsView matches={data.matches} /></div>}
       {sum && data && tab === "maps" && <div className="fade"><MapsView matches={data.matches} assets={assets} /></div>}
       {sum && data && tab === "sum" && (
-        <div className="stgrid fade">
-          <div>
-            <div className="kpis">
-              <div><b>%{sum.wr}</b><small>Kazanma · {sum.w}/{sum.n}</small></div>
-              <div><b>{sum.kd.toFixed(2)}</b><small>K/D</small></div>
-              <div><b>{sum.acs}</b><small>Ort. ACS</small></div>
-              <div><b className={sum.rr >= 0 ? "pos" : "neg"}>{sum.rr > 0 ? "+" : ""}{sum.rr}</b><small>Rekabetçi RR</small></div>
-            </div>
-            {(() => {
-              const s = rrStats(data.matches.filter((m) => m.queue === "competitive" && m.rrDelta != null).map((m) => m.rrDelta as number));
-              if (!s) return null;
-              const nx = nextRank(data.rank.current, data.rank.rr, s);
-              const up = s.diff >= MMR_GAP, down = s.diff <= -MMR_GAP;
-              return (
-                <div className="mmr box">
-                  <span className={up ? "bd pos" : down ? "bd neg" : "bd gray"}>{up ? "MMR ↑" : down ? "MMR ↓" : "MMR dengede"}</span>
-                  <span className="m">
-                    Kazanınca ort. <b className="pos">+{Math.round(s.gain)}</b>, kaybedince ort. <b className="neg">−{Math.round(s.loss)}</b> RR
-                    {nx && assets.tiers.get(nx.tier) ? <> · {assets.tiers.get(nx.tier)!.name} için ≈{nx.wins} galibiyet</> : null}
-                    {derankRisk(data.rank.current, data.rank.rr, s) ? <> · <span className="neg">bir mağlubiyette düşebilirsin</span></> : null}
-                  </span>
-                </div>
-              );
-            })()}
-            <Goal assets={assets} tier={data.rank.current} rr={data.rank.rr} deltas={data.matches.filter((m) => m.queue === "competitive" && m.rrDelta != null).map((m) => m.rrDelta as number)} />
-            <h3 className="h2">Ajanlar</h3>
-            <div className="box pad">
-            <div className="ag hd2"><span /><span>Ajan</span><span className="num">Maç</span><span className="num">Galibiyet</span><span className="num">K/D</span></div>
-            {sum.agents.map(([id, e]) => {
-              const ag = assets.agents.get(id);
-              return (
-                <div className="ag" key={id}>
-                  {ag && <img src={ag.icon} alt="" />}
-                  <span className="an">{ag?.name ?? "?"}</span>
-                  <span className="num d">{e.n}</span>
-                  <span className="num">%{Math.round((100 * e.w) / e.n)}</span>
-                  <span className="num">{(e.d ? e.k / e.d : e.k).toFixed(2)}</span>
-                </div>
-              );
-            })}
-            </div>
-          </div>
-          <div>
-            <h3 className="h2 hrow">Son maçlar<button className="x" type="button" onClick={() => setCard(data.matches[0])}>Son maçın kartı</button></h3>
-            <div className="box pad">
-            <div className="mm hd2"><span /><span>Harita</span><span>Ajan</span><span className="num">K / D / A</span><span className="num">ACS</span><span className="num">RR</span><span className="num">Önce</span><span /></div>
-            {data.matches.slice(0, 10).map((m) => {
-              const ag = assets.agents.get(lookup(m.agentId));
-              return (
-                <div className="mm" key={m.matchId} title={QUEUE[m.queue] ?? m.queue}>
-                  <span className={m.won ? "fc win" : "fc loss"}>{m.won ? "W" : "L"}</span>
-                  <span className="mmap">{assets.maps.get(lookup(m.mapId)) ?? "?"}</span>
-                  <span className="mag">{ag?.name ?? "?"}</span>
-                  <span className="num">{m.kills} / {m.deaths} / {m.assists}</span>
-                  <span className="num d">{m.acs}</span>
-                  <span className={m.rrDelta == null ? "num d" : m.rrDelta >= 0 ? "num pos" : "num neg"}>{m.rrDelta == null ? "–" : `${m.rrDelta > 0 ? "+" : ""}${m.rrDelta}`}</span>
-                  <span className="num d">{ago(m.started)}</span>
-                  <button className="mcbtn" type="button" title="Bu maçın kartını oluştur" aria-label="Bu maçın kartını oluştur" onClick={() => setCard(m)}>
-                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"><rect x="2" y="3" width="12" height="10" rx="2" /><path d="M2 10.5l3.5-3 3 2.5 2-1.5L14 11" /></svg>
-                  </button>
-                </div>
-              );
-            })}
-            </div>
-          </div>
+        <div className="fade">
+          <Dashboard matches={data.matches} rank={data.rank} assets={assets} onCard={setCard} />
+          {(() => {
+            const s = rrStats(data.matches.filter((m) => m.queue === "competitive" && m.rrDelta != null).map((m) => m.rrDelta as number));
+            if (!s) return null;
+            const nx = nextRank(data.rank.current, data.rank.rr, s);
+            const up = s.diff >= MMR_GAP, down = s.diff <= -MMR_GAP;
+            return (
+              <div className="mmr box">
+                <span className={up ? "bd pos" : down ? "bd neg" : "bd gray"}>{up ? "MMR ↑" : down ? "MMR ↓" : "MMR dengede"}</span>
+                <span className="m">
+                  Kazanınca ort. <b className="pos">+{Math.round(s.gain)}</b>, kaybedince ort. <b className="neg">−{Math.round(s.loss)}</b> RR
+                  {nx && assets.tiers.get(nx.tier) ? <> · {assets.tiers.get(nx.tier)!.name} için ≈{nx.wins} galibiyet</> : null}
+                  {derankRisk(data.rank.current, data.rank.rr, s) ? <> · <span className="neg">bir mağlubiyette düşebilirsin</span></> : null}
+                </span>
+              </div>
+            );
+          })()}
+          <Goal assets={assets} tier={data.rank.current} rr={data.rank.rr} deltas={data.matches.filter((m) => m.queue === "competitive" && m.rrDelta != null).map((m) => m.rrDelta as number)} />
         </div>
       )}
       {card && <MatchCard m={card} assets={assets} rank={data?.rank.current} onToast={onToast} onShare={() => { onShare(cardOf(card, assets, data?.rank.current)); setCard(null); }} onClose={() => setCard(null)} />}

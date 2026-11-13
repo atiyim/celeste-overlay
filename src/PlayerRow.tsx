@@ -115,7 +115,9 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
       </button>
       {cols.rank && (
         <div className="tier">
-          {cur && p.rank.current > 0 ? <img src={cur.icon} alt="" /> : <i className="tier0" />}
+          {cur && p.rank.current > 0
+            ? <span className="tico" style={{ "--tc": cur.color, "--rr": `${Math.min(100, p.rank.rr)}%` } as React.CSSProperties}><img src={cur.icon} alt="" /></span>
+            : <i className="tier0" />}
           <span className="n">
             <span style={cur && p.rank.current > 0 ? { color: tierColor(cur.color) } : undefined}>{cur && p.rank.current > 0 ? cur.name : "Derecesiz"}</span>
             <small>

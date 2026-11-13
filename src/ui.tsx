@@ -86,3 +86,17 @@ export function AgentIcon({ icon, name, className }: { icon?: string; name?: str
   if (!icon || bad) return <span className={`${className ?? ""} aifb`} title={name}>{(name ?? "?").slice(0, 1).toUpperCase()}</span>;
   return <img className={className} src={icon} alt={name ?? ""} loading="lazy" onError={() => setBad(true)} />;
 }
+
+/** Halka gösterge: yüzde (0–100), ortada büyük değer ve küçük etiket. */
+export function Ring({ pct, value, label, size = 120, tone = "var(--win)" }: { pct: number; value: ReactNode; label: string; size?: number; tone?: string }) {
+  const r = 44, c = 2 * Math.PI * r, p = Math.max(0, Math.min(100, pct));
+  return (
+    <div className="ring" style={{ width: size, height: size }}>
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r={r} className="rg0" />
+        <circle cx="50" cy="50" r={r} className="rg1" style={{ stroke: tone, strokeDasharray: `${(c * p) / 100} ${c}` }} />
+      </svg>
+      <span><small>{label}</small><b>{value}</b></span>
+    </div>
+  );
+}

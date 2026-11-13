@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Icon, type IconName } from "./icons";
 
 /* Birden çok ekranı tek bölümde toplayan alt sekmeler (Profilim, Araçlar).
    İçerideki panelin kendi başlığı ve kapat düğmesi burada gizlenir; başlığı bu sekmeler taşır. */
@@ -10,6 +11,12 @@ interface Props<T extends string> {
   children: ReactNode;
 }
 
+/** Sekme kimliği → simge. Listede olmayan sekme simgesiz görünür. */
+const ICON: Record<string, IconName> = {
+  stats: "chart", store: "store", account: "user",
+  chat: "chat", cross: "target", device: "mouse", timers: "timer", search: "search", meta: "layers",
+};
+
 export function Hub<T extends string>({ title, tabs, active, onPick, children }: Props<T>) {
   return (
     <div className="hub">
@@ -18,6 +25,7 @@ export function Hub<T extends string>({ title, tabs, active, onPick, children }:
         <div className="subt" role="tablist" aria-label={title}>
           {tabs.map(([id, label]) => (
             <button key={id} type="button" role="tab" aria-selected={active === id} className={active === id ? "on" : ""} onClick={() => onPick(id)}>
+              {ICON[id] && <Icon name={ICON[id]} size={15} />}
               {label}
             </button>
           ))}

@@ -1558,3 +1558,179 @@ button.quit:hover { color: var(--loss) !important; border-color: color-mix(in sr
 .zoom button, .x { height: 30px; padding: 0 14px; }
 .sbody h3.h2 + .box, .sbody .box { overflow: hidden; }
 .srow > :last-child { flex: none; }
+
+/* ================= 0.9: premium kart dili ================= */
+:root { --card: #131824; --card-hi: #1a2131; --rad: 18px; }
+/* Ortak kart: yumuşak köşe, hafif üstten ışık, ince kenar. */
+.dc { position: relative; box-sizing: border-box; min-width: 0; padding: 20px 22px; border-radius: var(--rad); border: 1px solid var(--line);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--ac, var(--accent)) 9%, var(--card-hi)) 0%, var(--card) 55%); }
+.dc::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05); }
+.dk { display: block; font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--fg-3); }
+.dh { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.dh h3 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--fg); }
+.dh > span { font-size: 11.5px; color: var(--fg-3); }
+.dlnk { all: unset; cursor: pointer; font-size: 12px; color: var(--fg-2); padding: 2px 4px; border-radius: 6px; }
+.dlnk:hover { color: var(--accent); } .dlnk:focus-visible { outline: 2px solid var(--focus); }
+
+/* Mod sekmeleri */
+.dashw { display: flex; flex-direction: column; gap: 14px; container-type: inline-size; }
+.modes { display: flex; align-items: center; gap: 4px; padding: 5px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); flex-wrap: wrap; }
+.modes button { all: unset; cursor: pointer; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); transition: color .15s, background .15s; }
+.modes button:hover { color: var(--fg); }
+.modes button.on { color: var(--fg); background: var(--card-hi); box-shadow: inset 0 0 0 1px var(--line-2), 0 4px 14px rgba(0, 0, 0, .25); }
+.modes button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.mscope { margin-left: auto; padding-right: 10px; font-size: 11.5px; color: var(--fg-3); }
+
+/* Izgara: hero | yan ajanlar | son maçlar  /  genel bakış | rank | son maçlar */
+.dash { display: grid; gap: 14px; padding-top: 22px; grid-template-columns: minmax(0, 1fr) 196px 340px;
+  grid-template-areas: "hero side last" "ov rank last"; }
+.dhero { grid-area: hero; } .dside { grid-area: side; } .ov2 { grid-area: ov; } .rankc { grid-area: rank; } .last { grid-area: last; }
+@container (max-width: 1040px) {
+  .dash { grid-template-columns: minmax(0, 1fr) 190px; grid-template-areas: "hero side" "ov rank" "last last"; }
+}
+@container (max-width: 640px) {
+  .dash { grid-template-columns: minmax(0, 1fr); grid-template-areas: "hero" "side" "ov" "rank" "last"; }
+  .dside { flex-direction: row; } .dside > * { flex: 1; }
+}
+
+/* Hero: ajan portresi kartın üstünden taşar */
+.dhero { min-height: 250px; overflow: visible; --ac: var(--accent);
+  background: radial-gradient(120% 90% at 85% 40%, color-mix(in srgb, var(--accent) 22%, transparent) 0%, transparent 60%), linear-gradient(160deg, var(--card-hi), var(--card) 60%); }
+.hport { position: absolute; right: -6px; bottom: 0; height: calc(100% + 34px); max-width: 58%; object-fit: contain; object-position: right bottom; pointer-events: none;
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, .5)); -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent); mask-image: linear-gradient(to bottom, #000 72%, transparent); }
+.hx { position: relative; max-width: 58%; display: flex; flex-direction: column; }
+.hname { margin: 10px 0 2px; font-size: 44px; line-height: 1; font-weight: 800; letter-spacing: -.01em; text-transform: uppercase; color: var(--accent);
+  text-shadow: 0 0 28px color-mix(in srgb, var(--accent) 35%, transparent); }
+.hsub { font-size: 12px; font-weight: 500; letter-spacing: .04em; color: var(--fg-2); }
+.hx hr { width: 100%; margin: 16px 0 14px; border: 0; border-top: 1px solid var(--line); }
+.hstats { display: flex; gap: 26px; flex-wrap: wrap; }
+.hstats > div { display: flex; flex-direction: column; gap: 4px; }
+.hstats small { font-size: 11.5px; color: var(--fg-3); }
+.hstats b { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fg); }
+.hstats b em { font-style: normal; font-size: 13px; font-weight: 600; color: var(--win); margin-left: 4px; }
+.hstats.sm { margin-top: 14px; } .hstats.sm b { font-size: 14px; font-weight: 600; }
+
+/* Yan ajan kartları */
+.dside { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.dmini { flex: 1; min-height: 118px; padding: 16px 16px; overflow: hidden; --ac: var(--violet); }
+.dside .dmini:nth-child(2) { --ac: var(--teal); }
+.mport { position: absolute; right: -18px; top: -4px; height: 130%; object-fit: contain; object-position: right top; pointer-events: none; opacity: .92;
+  -webkit-mask-image: linear-gradient(to left, #000 40%, transparent 95%); mask-image: linear-gradient(to left, #000 40%, transparent 95%); }
+.dmx { position: relative; display: flex; flex-direction: column; gap: 2px; }
+.dmx h4 { margin: 0 0 10px; font-size: 19px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase; color: var(--fg); }
+.dmx small { font-size: 11px; color: var(--fg-3); }
+.dmx b { font-size: 16px; font-weight: 700; color: var(--fg); }
+.dmx .dmn { margin-top: 4px; }
+.dmini.dempty { display: grid; place-items: center; text-align: center; }
+
+/* Genel bakış */
+.ovtop { display: flex; align-items: center; gap: 22px; margin-bottom: 16px; }
+.ring { position: relative; flex: none; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 7; }
+.ring .rg0 { stroke: rgba(255, 255, 255, .07); }
+.ring .rg1 { stroke-linecap: round; transition: stroke-dasharray .6s cubic-bezier(.2, .8, .2, 1); }
+.ring > span { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.ring small { font-size: 11px; color: var(--fg-3); }
+.ring b { font-size: 24px; font-weight: 800; letter-spacing: -.02em; }
+.wl { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.wl > span { padding: 12px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-2); border-left: 3px solid; }
+.wl b { display: block; font-size: 22px; letter-spacing: -.01em; color: var(--fg); }
+.wlw { border-color: var(--win) !important; background: linear-gradient(90deg, color-mix(in srgb, var(--win) 14%, transparent), transparent); }
+.wll { border-color: var(--loss) !important; background: linear-gradient(90deg, color-mix(in srgb, var(--loss) 14%, transparent), transparent); }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tiles > div { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; border-left: 2px solid color-mix(in srgb, var(--accent) 70%, transparent); border-radius: 0 10px 10px 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 8%, var(--s2)), transparent); }
+.tiles small { font-size: 11px; color: var(--fg-3); }
+.tiles b { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Rank kartı */
+.rankc { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; --ac: var(--tc, var(--violet));
+  background: radial-gradient(90% 70% at 50% 40%, color-mix(in srgb, var(--tc, var(--violet)) 18%, transparent), transparent 70%), linear-gradient(160deg, var(--card-hi), var(--card)); }
+.rankc .dk { margin-bottom: 4px; }
+.rankc img { width: 76px; height: 76px; object-fit: contain; filter: drop-shadow(0 0 18px color-mix(in srgb, var(--tc, var(--violet)) 45%, transparent)); }
+.rankc > b { font-size: 15px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--fg); }
+.rankc > small { font-size: 11.5px; color: var(--fg-3); }
+.rrbar { width: 100%; max-width: 140px; height: 5px; border-radius: 999px; background: var(--s3); overflow: hidden; }
+.rrbar > i { display: block; height: 100%; border-radius: inherit; background: var(--tc, var(--accent)); }
+.tier0.dbig { width: 64px; height: 64px; }
+
+/* Son maçlar */
+.last { display: flex; flex-direction: column; padding-bottom: 14px; }
+.lgs { display: flex; flex-direction: column; gap: 14px; }
+.lg { display: flex; flex-direction: column; gap: 8px; padding-left: 12px; border-left: 1px solid var(--line); }
+.lday { position: relative; display: flex; align-items: center; gap: 8px; margin-left: -12px; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--fg); }
+.lday i { width: 7px; height: 7px; margin-left: -4px; border-radius: 2px; background: var(--teal); box-shadow: 0 0 8px var(--teal); }
+.lm { all: unset; cursor: pointer; position: relative; box-sizing: border-box; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto 34px; align-items: center; gap: 12px;
+  padding: 11px 14px 11px 12px; border-radius: 12px; overflow: hidden; border-right: 3px solid; transition: transform .15s, filter .15s; }
+.lm::before { content: ""; position: absolute; inset: 0; background-image: var(--art); background-size: cover; background-position: center; opacity: .13; pointer-events: none; }
+.lm.lw { border-color: var(--win); background: linear-gradient(90deg, color-mix(in srgb, var(--win) 6%, var(--s2)), color-mix(in srgb, var(--win) 14%, var(--s2))); }
+.lm.ll { border-color: var(--loss); background: linear-gradient(90deg, color-mix(in srgb, var(--loss) 5%, var(--s2)), color-mix(in srgb, var(--loss) 13%, var(--s2))); }
+.lm:hover { transform: translateX(-2px); filter: brightness(1.08); }
+.lm:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.lm > * { position: relative; }
+.lai, .lm .aifb { width: 34px; height: 34px; border-radius: 9px; }
+.lmap { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lmap b { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lmap em { font-style: normal; font-size: 13px; font-weight: 700; color: var(--fg-2); font-variant-numeric: tabular-nums; }
+.lmap em i { font-style: normal; }
+.lm.lw .s1 { color: var(--win); } .lm.ll .s1 { color: var(--loss); }
+.lkda { display: flex; flex-direction: column; gap: 2px; text-align: right; }
+.lkda small { font-size: 10.5px; letter-spacing: .08em; color: var(--fg-3); }
+.lkda b { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lend { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.lend img { width: 26px; height: 26px; object-fit: contain; }
+.lend small { font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Hub sekmeleri ikonlu */
+.subt button { display: inline-flex; align-items: center; gap: 7px; }
+.subt button svg { opacity: .7; } .subt button.on svg { opacity: 1; color: var(--accent); }
+
+/* FPS modu: görseller ve parıltılar kapalı, kartlar düz */
+.fps .hport, .fps .mport, .fps .lm::before { display: none; }
+.fps .dc, .fps .dhero, .fps .rankc { background: var(--card); }
+.fps .hx { max-width: none; }
+.fps .hname { text-shadow: none; }
+.fps .ring .rg1, .fps .rankc img, .fps .lday i { filter: none; box-shadow: none; }
+
+/* Oyuncu ayrıntısı: oyuncu kartı zeminli başlık, ajan portresi, rank rozeti */
+.ph.phero { position: relative; overflow: hidden; min-height: 78px; padding: 14px 18px; margin-bottom: 4px; border: 1px solid var(--line); border-bottom-color: var(--line); border-radius: var(--rad);
+  background: linear-gradient(90deg, var(--card) 30%, color-mix(in srgb, var(--card) 55%, transparent) 70%, color-mix(in srgb, var(--accent) 12%, var(--card))), var(--pcard, none) center 30% / cover no-repeat, var(--card); }
+.ph.phero:has(.phrank) { padding-left: 90px; }
+.phero > .phl, .phero > .phr { position: relative; z-index: 1; }
+.phero .phl .t { font-size: 20px; }
+.phport { position: absolute; right: 150px; bottom: 0; height: 150%; object-fit: contain; object-position: bottom; pointer-events: none; opacity: .85;
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 98%); mask-image: linear-gradient(to bottom, #000 55%, transparent 98%); }
+.phrank { position: absolute; left: 20px; top: 50%; width: 54px; height: 54px; transform: translateY(-50%); object-fit: contain; filter: drop-shadow(0 0 14px color-mix(in srgb, var(--tc) 50%, transparent)); }
+.fps .phport { display: none; } .fps .phrank { filter: none; }
+.fps .ph.phero { background: var(--card); }
+
+/* Lobi rank hücresi: tier renginde plaka + altında ince RR çubuğu */
+.tico { position: relative; flex: none; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px;
+  background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--tc) 26%, transparent), transparent 72%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 28%, transparent); }
+.tico img { width: 26px !important; height: 26px !important; }
+.tico::after { content: ""; position: absolute; left: 5px; right: 5px; bottom: 3px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--tc) var(--rr), rgba(255, 255, 255, .1) var(--rr)); }
+.fps .tico { background: none; }
+
+/* Meta vitrin: rol liderleri portreli kart */
+.mshow { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; padding-top: 18px; }
+.mshc { all: unset; box-sizing: border-box; position: relative; cursor: pointer; min-height: 170px; padding: 18px 18px; border-radius: var(--rad); border: 1px solid var(--line); overflow: visible;
+  background: radial-gradient(100% 80% at 90% 30%, color-mix(in srgb, var(--ac) 20%, transparent), transparent 65%), linear-gradient(160deg, var(--card-hi), var(--card) 60%);
+  transition: transform .18s, border-color .18s; }
+.mshc:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--ac) 45%, var(--line)); }
+.mshc:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.mshp { position: absolute; right: -4px; bottom: 0; height: calc(100% + 18px); max-width: 62%; object-fit: contain; object-position: right bottom; pointer-events: none;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, .45)); -webkit-mask-image: linear-gradient(to bottom, #000 75%, transparent); mask-image: linear-gradient(to bottom, #000 75%, transparent); }
+.mshx { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.mshx .dk { margin-bottom: 8px; }
+.mshx b { font-size: 22px; font-weight: 800; letter-spacing: .01em; color: var(--fg); }
+.mshx small { font-size: 11px; color: var(--fg-3); }
+.mshx strong { font-size: 17px; font-weight: 700; color: var(--fg); margin-bottom: 2px; }
+.mtier { font-style: normal; margin: 6px 0 10px; min-width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; font-size: 12px; font-weight: 800; color: #10132a; background: #5f6a85; }
+.mtier.tS { background: var(--gold); } .mtier.tA { background: var(--win); } .mtier.tB { background: var(--teal); } .mtier.tC { background: var(--violet); } .mtier.tD { background: var(--loss); }
+.fps .mshp { display: none; } .fps .mshc { background: var(--card); }
+.rcard { border-radius: var(--rad); padding: 16px 18px 10px; background: linear-gradient(160deg, var(--card-hi), var(--card) 55%); }
+.rcard h3 { letter-spacing: .12em; }
+.fps .rcard { background: var(--card); }
