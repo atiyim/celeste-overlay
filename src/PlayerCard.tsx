@@ -8,7 +8,7 @@ import { partyColor, playerView } from "./playerView";
 import { BadgePill, FormDots, Moon, MoreBadges, type RowProps } from "./PlayerRow";
 
 /* Kart düzeni: ajan seçim ekranı gibi; her takım 5 dikey kart. Tıklayınca aynı ayrıntı paneli açılır. */
-export function PlayerCard({ p, index, assets, entry, cols, th, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles, plate, top, celeste }: Omit<RowProps, "template" | "blur">) {
+export function PlayerCard({ p, index, assets, entry, cols, th, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles, plate, top, hot, celeste }: Omit<RowProps, "template" | "blur">) {
   const v = playerView(p, { assets, entry, th, mapId, mapName, index });
   const party = cols.party && p.party ? partyInfo(p, lobby) : null;
   const [c1, c2] = v.agent?.colors ?? [];
@@ -21,11 +21,12 @@ export function PlayerCard({ p, index, assets, entry, cols, th, onOpen, onCopy, 
   } as React.CSSProperties;
 
   return (
-    <div className={`pcd${party ? " inparty" : ""}${plate ? " plate" : ""}${p.isSelf ? " pme" : ""}${v.times ? " again" : ""}`} style={style} role="button" tabIndex={0} onClick={onOpen} onKeyDown={key}>
+    <div className={`pcd${party ? " inparty" : ""}${plate ? " plate" : ""}${p.isSelf ? " pme" : ""}${v.times ? " again" : ""}${hot ? " hot" : ""}`} style={style} role="button" tabIndex={0} onClick={onOpen} onKeyDown={key}>
       <div className="pcv">
         {v.agent?.portrait && <img className="pcport" src={v.agent.portrait} alt="" loading="lazy" />}
         <span className="pcrole">{v.agent?.name ?? "Seçiliyor…"}</span>
         {party && <span className="pcparty" title={`Parti ${p.party}: ${party.tip}`}>Parti {p.party}</span>}
+        {hot && <span className="pchot" title="Rakipler içinde en tehlikeli: yüksek K/D, galibiyet oranı ve yükselen form"><Icon name="bolt" size={11} />Tehlikeli</span>}
         {v.times > 0 && <span className="pcagain" title={`Bu oyuncuyla ${v.times}. kez aynı maçtasın`}><Icon name="repeat" size={11} />{v.times}</span>}
       </div>
       <div className="pcb">

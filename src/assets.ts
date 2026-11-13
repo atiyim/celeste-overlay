@@ -34,7 +34,7 @@ async function invalidateOnNewVersion() {
 }
 
 export interface Img { name: string; icon: string }
-export interface AgentInfo extends Img { role?: string; roleIcon?: string; portrait?: string; bust?: string; colors?: string[] }
+export interface AgentInfo extends Img { role?: string; roleId?: string; roleIcon?: string; portrait?: string; bust?: string; colors?: string[] }
 /* Rekabet act'i: "V25 · ACT 2" gibi ad (varsa) ve başlangıç/bitiş zamanı (ms). */
 export interface SeasonInfo { name: string; start: number; end: number }
 export interface Tier { name: string; icon: string; color: string }
@@ -100,7 +100,7 @@ export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets>
   const TIER_RANK: Record<string, number> = { Select: 1, Deluxe: 2, Premium: 3, Ultra: 4, Exclusive: 5 };
   for (const t of ctiers ?? []) a.contentTiers.set(k(t.uuid), { name: t.displayName, color: `#${String(t.highlightColor ?? "888888").slice(0, 6)}`, rank: TIER_RANK[t.devName] ?? 0, icon: t.displayIcon ?? undefined });
 
-  for (const x of agents) a.agents.set(k(x.uuid), { name: x.displayName, icon: x.displayIcon ?? x.displayIconSmall ?? x.killfeedPortrait ?? x.bustPortrait ?? "", role: x.role?.displayName, roleIcon: x.role?.displayIcon, portrait: x.fullPortrait ?? x.bustPortrait ?? undefined, bust: x.bustPortrait ?? undefined,
+  for (const x of agents) a.agents.set(k(x.uuid), { name: x.displayName, icon: x.displayIcon ?? x.displayIconSmall ?? x.killfeedPortrait ?? x.bustPortrait ?? "", role: x.role?.displayName, roleId: String(x.role?.uuid ?? "").toLowerCase() || undefined, roleIcon: x.role?.displayIcon, portrait: x.fullPortrait ?? x.bustPortrait ?? undefined, bust: x.bustPortrait ?? undefined,
     colors: Array.isArray(x.backgroundGradientColors) ? x.backgroundGradientColors.filter((c: unknown) => typeof c === "string" && /^[0-9a-f]{6,8}$/i.test(c)).map((c: string) => `#${c.slice(0, 6)}`) : undefined });
 
   /* Act adı: bağlı olduğu bölümle birlikte ("EPISODE 9 · ACT 2"). Ad gelmezse arayüz tarihe döner. */

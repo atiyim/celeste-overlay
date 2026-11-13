@@ -35,6 +35,8 @@ export interface RowProps {
   plate?: string;
   /** Lobinin en yüksek rankı. */
   top?: boolean;
+  /** Rakiplerin en tehlikelisi. */
+  hot?: boolean;
   /** Celeste Overlay kullanıyor (rolü yoksa küçük ay işareti). */
   celeste?: boolean;
 }
@@ -64,7 +66,7 @@ export function FormDots({ p, assets }: { p: Player; assets: Assets }) {
   );
 }
 
-export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles, plate, top, celeste }: RowProps) {
+export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles, plate, top, hot, celeste }: RowProps) {
   const v = playerView(p, { assets, entry, th, mapId, mapName, index });
   const party = cols.party && p.party ? partyInfo(p, lobby) : null;
   const sub = [v.anonymous ? (v.label ? "İsim gizli, kendi notun" : "İsim gizli") : null, v.prevText, p.level != null ? `Seviye ${p.level}` : null].filter(Boolean).join(" · ");
@@ -73,7 +75,7 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
   const key = (e: KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };
 
   return (
-    <div className={`g r${v.times ? " again" : ""}${party ? " inparty" : ""}`} style={{ gridTemplateColumns: template, "--i": index, ...(party ? { "--pc": partyColor(p.party!) } : {}) } as React.CSSProperties} role="button" tabIndex={0} onClick={onOpen} onKeyDown={key}>
+    <div className={`g r${v.times ? " again" : ""}${party ? " inparty" : ""}${hot ? " hot" : ""}`} style={{ gridTemplateColumns: template, "--i": index, ...(party ? { "--pc": partyColor(p.party!) } : {}) } as React.CSSProperties} role="button" tabIndex={0} onClick={onOpen} onKeyDown={key}>
       <div className={plate ? "who plate" : "who"} style={plate ? ({ "--pl": plate } as React.CSSProperties) : undefined} title={blur ? undefined : sub || undefined}>
         {party && <i className={party.soft ? "pbar soft" : "pbar"} title={`Parti ${p.party}: ${party.tip}`} />}
         <span className="agw"><AgentIcon className="agent" icon={v.agent?.icon} name={v.agent?.name} /></span>

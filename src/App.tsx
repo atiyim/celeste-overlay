@@ -10,7 +10,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { loadAssets, lookup, type Assets } from "./assets";
 import { mockSnapshot } from "./mock";
 import { recordSeen, setLabel, setTag, type Seen } from "./seen";
-import type { MyStats, Snapshot } from "./types";
+import type { MyStats, Player, Snapshot } from "./types";
 import { PlayerRow } from "./PlayerRow";
 import { PlayerCard } from "./PlayerCard";
 import { groupParties } from "./playerView";
@@ -50,6 +50,7 @@ import { NoticeCard } from "./NoticeCard";
 import { useNotices, useUsagePing } from "./community";
 import { PreviewBar } from "./PreviewBar";
 import { PremiumPanel } from "./PremiumPanel";
+import { ROLES, roleCounts, topThreat } from "./threat";
 import { Roles } from "./RoleBadge";
 import { syncPresence, useLobbyRoles } from "./roleLookup";
 import { SAMPLE, applyLook, fxColor, isPremium, rolesUnlock, loadPremiumCfg, unlocked, useMe, usePremiumCfg, usePreview, type ItemId } from "./vip";
@@ -536,6 +537,9 @@ export function App() {
     };
   };
 
+  const avgTierOf = (list: typeof allies) => teamStats(list).tier ? Math.round(list.filter((p) => p.rank.current > 0).reduce((s, p) => s + p.rank.current, 0) / Math.max(1, list.filter((p) => p.rank.current > 0).length)) : 0;
+  let hotId: string | null = null;
+
   if (autoHidden) return null;
   // Menüler ve oyuncu ayrıntısı her zaman tam opaktır; saydamlık yalnızca oyuncu listesinde geçerlidir.
   const solid = !collapsed && (guide || view !== "roster" || !!active);
@@ -602,6 +606,7 @@ export function App() {
           <section key={title} className={`team ${kind}${cards ? " cards" : ""}`}>
             <div className="teamh">
               <span className="teamn"><i />{title}{sideText(list) ? <small>{sideText(list)}</small> : null}</span>
+              {assets && <RoleStrip list={list} assets={assets} ally={kind === "ally"} />}
               {(() => {
                 const t = teamStats(list);
                 const gap = kind === "foe" ? rankGap : null;
@@ -614,11 +619,12 @@ export function App() {
               })()}
             </div>
             <div className={cards ? "pcgrid" : "rows"}>
+            {(() => { hotId = kind === "foe" ? topThreat(list, avgTierOf(list)) : null; return null; })()}
             {groupParties(list).map((p) => {
               const props = {
                 p, index: list.indexOf(p), assets: assets!, entry: seen[p.puuid], cols: theme.cols, th: theme.th,
                 onOpen: () => setSelected(p.puuid), onCopy: copyName, onTracker: openTracker,
-                mapId: snap.mapId, mapName, lobby: snap.players, top: topIds.has(p.puuid),
+                mapId: snap.mapId, mapName, lobby: snap.players, top: topIds.has(p.puuid), hot: p.puuid === hotId,
                 celeste: theme.showRoles && (p.isSelf ? theme.showMe : marks.users.has(p.puuid)),
                 roles: theme.showRoles ? (p.isSelf ? (prem ? me!.roles : undefined) : lobbyRoles.get(p.puuid)) : undefined,
                 plate: theme.showRoles ? (p.isSelf ? (can("fx:plate") ? (fxColor(me?.roles, "fx:plate", pcfg) ?? SAMPLE) : undefined) : rolesUnlock(lobbyRoles.get(p.puuid), "fx:plate", pcfg) ? fxColor(lobbyRoles.get(p.puuid), "fx:plate", pcfg) : undefined) : undefined,
@@ -799,5 +805,24 @@ export function App() {
       <PreviewBar onOpen={openTracker} />
       {toast && <div className="toast" role="status">{toast}</div>}
     </main>
+  );
+}
+
+/** Takımdaki rol dağılımı; takımın kontrolcüsü yoksa uyarır (ajan seçimi bitmişse). */
+function RoleStrip({ list, assets, ally }: { list: Player[]; assets: Assets; ally: boolean }) {
+  const n = roleCounts(list, assets);
+  const icons = new Map<string, string>();
+  for (const a of assets.agents.values()) if (a.roleId && a.roleIcon && !icons.has(a.roleId)) icons.set(a.roleId, a.roleIcon);
+  const picked = list.every((p) => p.agentId && assets.agents.has(lookup(p.agentId)));
+  const noCtl = ally && picked && !n.get(ROLES[1].id);
+  return (
+    <span className="rstrip" title="Takımdaki ajan rolleri">
+      {ROLES.map((r) => (
+        <span key={r.id} className={n.get(r.id) ? "rs on" : "rs"} title={`${r.short}: ${n.get(r.id) ?? 0}`}>
+          {icons.get(r.id) && <img src={icons.get(r.id)} alt="" />}<b>{n.get(r.id) ?? 0}</b>
+        </span>
+      ))}
+      {noCtl && <span className="rwarn" title="Takımda kontrolcü yok">Kontrolcü yok</span>}
+    </span>
   );
 }
