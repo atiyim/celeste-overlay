@@ -53,6 +53,8 @@ export interface Theme {
   vipFx: boolean;
   /** Lobide diğer Celeste kullanıcılarının rol rozetini göster. */
   showRoles: boolean;
+  /** Lobide başka Celeste kullanıcılarına "Celeste kullanıyor" işaretiyle görün. */
+  showMe: boolean;
   /** Lobi düzeni: sade liste ya da oyuncu kartları. */
   layout: "list" | "cards";
   /** Ayar şeması sürümü (yeni varsayılanları bir kez uygulamak için). */
@@ -81,6 +83,7 @@ export const DEFAULT_THEME: Theme = {
   roleAccent: false,
   vipFx: true,
   showRoles: true,
+  showMe: true,
   layout: "list",
   v: THEME_V,
 };
@@ -127,6 +130,7 @@ export function loadTheme(): Theme {
       roleAccent: t.roleAccent === true,
       vipFx: t.vipFx !== false,
       showRoles: t.showRoles !== false,
+      showMe: t.showMe !== false,
       layout: t.layout === "cards" ? "cards" : "list",
       v: THEME_V,
     };

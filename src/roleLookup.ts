@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import type { Player } from "./types";
 import type { Role } from "./feed";
 import { SITE } from "./community";
@@ -12,7 +13,7 @@ import { ROLE_ICON_PATHS } from "./roleIcons";
 const inTauri = "__TAURI_INTERNALS__" in window;
 const TTL = 10 * 60_000;
 const BACKOFF = 30 * 60_000;
-const cache = new Map<string, { roles: Role[]; at: number }>();
+const cache = new Map<string, { roles: Role[]; user: boolean; at: number }>();
 let downUntil = 0;
 
 async function digest(puuid: string): Promise<string> {
@@ -30,11 +31,15 @@ function clean(list: unknown): Role[] {
   });
 }
 
-export function useLobbyRoles(players: Player[], on: boolean): Map<string, Role[]> {
-  const [map, setMap] = useState<Map<string, Role[]>>(new Map());
+export interface LobbyMarks { roles: Map<string, Role[]>; users: Set<string> }
+const EMPTY: LobbyMarks = { roles: new Map(), users: new Set() };
+
+/** Lobideki Celeste kullanıcıları: rolü olanların rozetleri ve "Celeste kullanıyor" işareti olanlar. */
+export function useLobbyRoles(players: Player[], on: boolean): LobbyMarks {
+  const [map, setMap] = useState<LobbyMarks>(EMPTY);
   const key = players.filter((p) => !p.isSelf && !p.hiddenName).map((p) => p.puuid).sort().join(",");
   useEffect(() => {
-    if (!on || !inTauri || !key) { setMap(new Map()); return; }
+    if (!on || !inTauri || !key) { setMap(EMPTY); return; }
     let live = true;
     (async () => {
       const ids = key.split(",");
@@ -45,14 +50,28 @@ export function useLobbyRoles(players: Player[], on: boolean): Map<string, Role[
           const r = await tfetch(`${SITE}/api/feed/who`, { method: "POST", headers: { "content-type": "text/plain" }, body: JSON.stringify({ h: hs }) });
           if (!r.ok) downUntil = Date.now() + BACKOFF; // servis bu özelliği henüz bilmiyor ya da kapalı
           else {
-            const j = (await r.json().catch(() => ({}))) as { roles?: Record<string, unknown> };
-            need.forEach((p, i) => cache.set(p, { roles: clean(j.roles?.[hs[i]]), at: Date.now() }));
+            const j = (await r.json().catch(() => ({}))) as { roles?: Record<string, unknown>; users?: unknown };
+            const users = new Set(Array.isArray(j.users) ? j.users.filter((x): x is string => typeof x === "string") : []);
+            need.forEach((p, i) => cache.set(p, { roles: clean(j.roles?.[hs[i]]), user: users.has(hs[i]), at: Date.now() }));
           }
         } catch { downUntil = Date.now() + BACKOFF; }
       }
-      if (live) setMap(new Map(ids.map((p) => [p, cache.get(p)?.roles ?? []])));
+      if (live) setMap({ roles: new Map(ids.map((p) => [p, cache.get(p)?.roles ?? []])), users: new Set(ids.filter((p) => cache.get(p)?.user)) });
     })();
     return () => { live = false; };
   }, [key, on]);
   return map;
+}
+
+/* "Lobide Celeste kullandığımı göster": hesap Akış oturumuyla ya da Riot'un imzalı belirteciyle kanıtlanır.
+   Sunucu yalnızca geri çevrilemeyen özeti saklar. Uygulama her açılışta bir kez bildirir (30 gün açılmazsa işaret kalkar). */
+let sent: boolean | null = null;
+export async function syncPresence(on: boolean, session?: string): Promise<void> {
+  if (!inTauri || sent === on) return;
+  try {
+    const auth = session ? { session } : on ? { token: await invoke<string>("get_id_token") } : null;
+    if (!auth) { sent = on; return; } // kapatıldı ama hiç bildirilmemiş: yapılacak bir şey yok
+    const r = await tfetch(`${SITE}/api/feed/presence`, { method: "POST", headers: { "content-type": "text/plain" }, body: JSON.stringify({ ...auth, on }) });
+    if (r.ok || r.status === 404) sent = on; // 404: servis bu özelliği henüz bilmiyor, tekrar zorlama
+  } catch { /* Riot Client kapalı: sonra yeniden denenir */ }
 }

@@ -122,8 +122,11 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
                       </button>
                     </span>
                   </Row>
-                  <Row title="Lobide rol rozetleri" desc="Celeste rolü olan diğer oyuncuların rozetini isimlerinin yanında gösterir. İsmini gizleyenler sorulmaz. Sunucuya kimlik değil, geri çevrilemeyen bir özet gider; istekler S.S.S & Panel'de görünür.">
-                    <Toggle on={theme.showRoles} label="Lobide rol rozetleri" onChange={(v) => set({ showRoles: v })} />
+                  <Row title="Lobide Celeste kullanıcıları" desc="Celeste kullanan oyuncuların adının yanında ay, rolü olanlarda rol rozeti görünür. İsmini gizleyenler sorulmaz. Sunucuya kimlik değil, geri çevrilemeyen bir özet gider; istekler S.S.S & Panel'de görünür.">
+                    <Toggle on={theme.showRoles} label="Lobide Celeste kullanıcıları" onChange={(v) => set({ showRoles: v })} />
+                  </Row>
+                  <Row title="Lobide Celeste kullandığımı göster" desc="Diğer Celeste kullanıcıları adının yanında ay görür. Sunucuda yalnızca hesabının geri çevrilemeyen özeti tutulur; kapatınca silinir, 30 gün uygulamayı açmazsan kendiliğinden kalkar.">
+                    <Toggle on={theme.showMe} label="Lobide Celeste kullandığımı göster" onChange={(v) => set({ showMe: v })} />
                   </Row>
                 </div>
               </section>

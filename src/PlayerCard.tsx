@@ -5,10 +5,10 @@ import { Roles } from "./RoleBadge";
 import { Icon } from "./icons";
 import { NameLine } from "./ui";
 import { partyColor, playerView } from "./playerView";
-import { BadgePill, FormDots, MoreBadges, type RowProps } from "./PlayerRow";
+import { BadgePill, FormDots, Moon, MoreBadges, type RowProps } from "./PlayerRow";
 
 /* Kart düzeni: ajan seçim ekranı gibi; her takım 5 dikey kart. Tıklayınca aynı ayrıntı paneli açılır. */
-export function PlayerCard({ p, index, assets, entry, cols, th, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles, plate, top }: Omit<RowProps, "template" | "blur">) {
+export function PlayerCard({ p, index, assets, entry, cols, th, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles, plate, top, celeste }: Omit<RowProps, "template" | "blur">) {
   const v = playerView(p, { assets, entry, th, mapId, mapName, index });
   const party = cols.party && p.party ? partyInfo(p, lobby) : null;
   const [c1, c2] = v.agent?.colors ?? [];
@@ -30,7 +30,7 @@ export function PlayerCard({ p, index, assets, entry, cols, th, onOpen, onCopy, 
       </div>
       <div className="pcb">
         <div className="pcn">
-          <NameLine name={v.name} />
+          <NameLine name={v.name}>{celeste && !roles?.length && <Moon />}</NameLine>
           <span className="qa" onClick={(e) => e.stopPropagation()}>
             {v.copyName && <button type="button" className="qb" title="Adı kopyala" aria-label="Adı kopyala" onClick={() => onCopy(v.copyName)}><Icon name="text" size={13} /></button>}
             {v.trackerUrl && <button type="button" className="qb" title="Tracker.gg'de aç" aria-label="Tracker.gg'de aç" onClick={() => onTracker(v.trackerUrl!)}><Icon name="link" size={13} /></button>}

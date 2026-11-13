@@ -51,7 +51,7 @@ import { useNotices, useUsagePing } from "./community";
 import { PreviewBar } from "./PreviewBar";
 import { PremiumPanel } from "./PremiumPanel";
 import { Roles } from "./RoleBadge";
-import { useLobbyRoles } from "./roleLookup";
+import { syncPresence, useLobbyRoles } from "./roleLookup";
 import { SAMPLE, applyLook, fxColor, isPremium, rolesUnlock, loadPremiumCfg, unlocked, useMe, usePremiumCfg, usePreview, type ItemId } from "./vip";
 import { currentMe, login } from "./feed";
 import { applyTheme, gridCols, gridTemplate, hideOf, loadTheme, overlayWidth } from "./theme";
@@ -185,7 +185,11 @@ export function App() {
     const t = window.setTimeout(() => { login().catch(() => undefined); }, 6_000);
     return () => window.clearTimeout(t);
   }, []);
-  const lobbyRoles = useLobbyRoles(snap.players, theme.showRoles);
+  const marks = useLobbyRoles(snap.players, theme.showRoles);
+  const lobbyRoles = marks.roles;
+  // Lobide görünme: açılışta ve ayar değişince bir kez (Riot Client açıksa).
+  const riotUp = snap.phase !== "offline";
+  useEffect(() => { if (riotUp) void syncPresence(theme.showMe, currentMe()?.session); }, [theme.showMe, riotUp]);
   useEffect(() => {
     const el = drawerRef.current;
     if (!selected || !el) { setDrawerH(0); return; }
@@ -615,6 +619,7 @@ export function App() {
                 p, index: list.indexOf(p), assets: assets!, entry: seen[p.puuid], cols: theme.cols, th: theme.th,
                 onOpen: () => setSelected(p.puuid), onCopy: copyName, onTracker: openTracker,
                 mapId: snap.mapId, mapName, lobby: snap.players, top: topIds.has(p.puuid),
+                celeste: theme.showRoles && (p.isSelf ? theme.showMe : marks.users.has(p.puuid)),
                 roles: theme.showRoles ? (p.isSelf ? (prem ? me!.roles : undefined) : lobbyRoles.get(p.puuid)) : undefined,
                 plate: theme.showRoles ? (p.isSelf ? (can("fx:plate") ? (fxColor(me?.roles, "fx:plate", pcfg) ?? SAMPLE) : undefined) : rolesUnlock(lobbyRoles.get(p.puuid), "fx:plate", pcfg) ? fxColor(lobbyRoles.get(p.puuid), "fx:plate", pcfg) : undefined) : undefined,
               };

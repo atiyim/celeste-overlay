@@ -2105,3 +2105,5 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 .pcv { height: 128px; }
 .pcb { gap: 8px; padding-bottom: 10px; }
 .r .qb { display: inline-flex; align-items: center; height: 26px; }
+.cmoon { display: inline-grid; place-items: center; flex: none; width: 16px; height: 16px; margin-left: 6px; vertical-align: -2px; border-radius: 50%;
+  color: #cdb8ff; background: rgba(167, 139, 250, .14); box-shadow: inset 0 0 0 1px rgba(167, 139, 250, .35); }

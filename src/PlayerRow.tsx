@@ -35,6 +35,8 @@ export interface RowProps {
   plate?: string;
   /** Lobinin en yüksek rankı. */
   top?: boolean;
+  /** Celeste Overlay kullanıyor (rolü yoksa küçük ay işareti). */
+  celeste?: boolean;
 }
 
 /** Rozet: yalnızca iyi/kötü renkli; diğerleri nötr, anlamı küçük bir renk noktasıyla. */
@@ -42,6 +44,9 @@ export function BadgePill({ b }: { b: Badge }) {
   const tone = b.tone === "pos" || b.tone === "neg" ? b.tone : `bdn ${b.tone}`;
   return <span className={`bd ${tone}`} title={b.tip}>{b.text}</span>;
 }
+/** Rolü olmayan Celeste kullanıcısı: adın yanında küçük ay. */
+export const Moon = () => <span className="cmoon" title="Celeste Overlay kullanıyor" aria-label="Celeste Overlay kullanıyor"><Icon name="moon" size={11} stroke={2} /></span>;
+
 export function MoreBadges({ list }: { list: Badge[] }) {
   if (!list.length) return null;
   return <span className="bd more" title={list.map((b) => `${b.text}: ${b.tip}`).join("\n\n")}>+{list.length}</span>;
@@ -59,7 +64,7 @@ export function FormDots({ p, assets }: { p: Player; assets: Assets }) {
   );
 }
 
-export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles, plate, top }: RowProps) {
+export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles, plate, top, celeste }: RowProps) {
   const v = playerView(p, { assets, entry, th, mapId, mapName, index });
   const party = cols.party && p.party ? partyInfo(p, lobby) : null;
   const sub = [v.anonymous ? (v.label ? "İsim gizli, kendi notun" : "İsim gizli") : null, v.prevText, p.level != null ? `Seviye ${p.level}` : null].filter(Boolean).join(" · ");
@@ -74,8 +79,8 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
         <span className="agw"><AgentIcon className="agent" icon={v.agent?.icon} name={v.agent?.name} /></span>
         <span className="n">
           {v.copyName
-            ? <button type="button" className="nmc" title="Adı kopyala" onClick={stop(() => onCopy(v.copyName))}><NameLine name={v.name} /></button>
-            : <NameLine name={v.name} />}
+            ? <button type="button" className="nmc" title="Adı kopyala" onClick={stop(() => onCopy(v.copyName))}><NameLine name={v.name}>{celeste && !roles?.length && <Moon />}</NameLine></button>
+            : <NameLine name={v.name}>{celeste && !roles?.length && <Moon />}</NameLine>}
           <span className="sub2">
             {roles && roles.length > 0 && <Roles roles={roles} compact />}
             {v.tag && <span className="tg" style={{ color: v.tag.color, borderColor: v.tag.color }}>{v.tag.label}</span>}
