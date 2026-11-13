@@ -11,6 +11,7 @@ import { loadAssets, lookup, type Assets } from "./assets";
 import { mockSnapshot } from "./mock";
 import { clearWatch, exportWatch, importWatch, recordSeen, setLabel, setTag, TAGS, type Seen } from "./seen";
 import { Watchlist } from "./Watchlist";
+import { Versus } from "./Versus";
 import type { MyStats, Player, Snapshot } from "./types";
 import { PlayerRow } from "./PlayerRow";
 import { PlayerCard } from "./PlayerCard";
@@ -622,6 +623,7 @@ export function App() {
   const foeSum = teamSummary(enemies, snap.mapId), mySum = teamSummary(allies.filter((x) => !x.isSelf), snap.mapId);
 
   const cards = theme.layout === "cards";
+  const versus = theme.layout === "versus";
   // Lobinin en yüksek rankı (eşitlikte hepsi).
   const maxTier = Math.max(0, ...snap.players.map((p) => p.rank.current));
   const topIds = new Set(maxTier > 0 ? snap.players.filter((p) => p.rank.current === maxTier).map((p) => p.puuid) : []);
@@ -634,6 +636,16 @@ export function App() {
     if (d === 0) return { text: "Denk", tone: "eq" };
     return { text: `${Math.abs(d)} kademe ${d > 0 ? "üstte" : "altta"}`, tone: d > 0 ? "up" : "down" };
   })();
+
+  const cellProps = (p: Player, list: Player[], hot: string | null) => ({
+                p, index: list.indexOf(p), assets: assets!, entry: seen[p.puuid], cols: theme.cols, th: theme.th,
+                onOpen: () => setSelected(p.puuid), onCopy: copyName, onTracker: openTracker,
+                mapId: snap.mapId, mapName, lobby: snap.players, top: topIds.has(p.puuid), hot: p.puuid === hot,
+                celeste: theme.showRoles && (p.isSelf ? theme.showMe : marks.users.has(p.puuid)),
+                roles: theme.showRoles ? (p.isSelf ? (prem ? me!.roles : undefined) : lobbyRoles.get(p.puuid)) : undefined,
+                plate: theme.showRoles ? (p.isSelf ? (can("fx:plate") ? (fxColor(me?.roles, "fx:plate", pcfg) ?? SAMPLE) : undefined) : rolesUnlock(lobbyRoles.get(p.puuid), "fx:plate", pcfg) ? fxColor(lobbyRoles.get(p.puuid), "fx:plate", pcfg) : undefined) : undefined,
+  });
+  const foeHot = versus ? topThreat(enemies, avgTierOf(enemies)) : null;
   const lobby = (
     <>
       {(foeSum.length > 0 || mySum.length > 0 || again || watchedHere.length > 0 || (sess && sess.games > 0 && theme.tilt.on)) && (
@@ -662,13 +674,17 @@ export function App() {
           )}
         </div>
       )}
-      {!cards && (
+      {versus && assets && (
+        <Versus allies={groupParties(allies)} enemies={groupParties(enemies)} tierName={(t) => assets.tiers.get(t)?.name} allySide={sideText(allies)} foeSide={sideText(enemies)}
+          cell={(p, list) => cellProps(p, list, list === enemies || enemies.includes(p) ? foeHot : null)} />
+      )}
+      {!cards && !versus && (
         <div className="g c" style={{ gridTemplateColumns: template }}>
           <div>Oyuncu</div>
           {gridCols(theme.cols).map((c) => <div key={c.id}>{c.id === "tracker" ? "" : c.label}</div>)}
         </div>
       )}
-      {([["Takımın", allies, "ally"], ["Rakipler", enemies, "foe"]] as const).map(([title, list, kind]) =>
+      {!versus && ([["Takımın", allies, "ally"], ["Rakipler", enemies, "foe"]] as const).map(([title, list, kind]) =>
         list.length ? (
           <section key={title} className={`team ${kind}${cards ? " cards" : ""}`}>
             <div className="teamh">
@@ -688,14 +704,7 @@ export function App() {
             <div className={cards ? "pcgrid" : "rows"}>
             {(() => { hotId = kind === "foe" ? topThreat(list, avgTierOf(list)) : null; return null; })()}
             {groupParties(list).map((p) => {
-              const props = {
-                p, index: list.indexOf(p), assets: assets!, entry: seen[p.puuid], cols: theme.cols, th: theme.th,
-                onOpen: () => setSelected(p.puuid), onCopy: copyName, onTracker: openTracker,
-                mapId: snap.mapId, mapName, lobby: snap.players, top: topIds.has(p.puuid), hot: p.puuid === hotId,
-                celeste: theme.showRoles && (p.isSelf ? theme.showMe : marks.users.has(p.puuid)),
-                roles: theme.showRoles ? (p.isSelf ? (prem ? me!.roles : undefined) : lobbyRoles.get(p.puuid)) : undefined,
-                plate: theme.showRoles ? (p.isSelf ? (can("fx:plate") ? (fxColor(me?.roles, "fx:plate", pcfg) ?? SAMPLE) : undefined) : rolesUnlock(lobbyRoles.get(p.puuid), "fx:plate", pcfg) ? fxColor(lobbyRoles.get(p.puuid), "fx:plate", pcfg) : undefined) : undefined,
-              };
+              const props = cellProps(p, list, hotId);
               return cards ? <PlayerCard key={p.puuid} {...props} /> : <PlayerRow key={p.puuid} {...props} template={template} blur={blur} />;
             })}
             </div>

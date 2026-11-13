@@ -56,7 +56,7 @@ export interface Theme {
   /** Lobide başka Celeste kullanıcılarına "Celeste kullanıyor" işaretiyle görün. */
   showMe: boolean;
   /** Lobi düzeni: sade liste ya da oyuncu kartları. */
-  layout: "list" | "cards";
+  layout: "list" | "cards" | "versus";
   /** Ayar şeması sürümü (yeni varsayılanları bir kez uygulamak için). */
   v: number;
 }
@@ -131,7 +131,7 @@ export function loadTheme(): Theme {
       vipFx: t.vipFx !== false,
       showRoles: t.showRoles !== false,
       showMe: t.showMe !== false,
-      layout: t.layout === "cards" ? "cards" : "list",
+      layout: t.layout === "cards" || t.layout === "versus" ? t.layout : "list",
       v: THEME_V,
     };
   } catch { return DEFAULT_THEME; }
@@ -154,6 +154,7 @@ export const gridTemplate = (cols: Record<ColId, boolean>) =>
 /* Açık sütunlara göre pencere genişliği (CSS px). */
 /* Sol menü 64, kenar boşlukları 44, takım kartı ve satır iç boşlukları 32, oyuncu sütunu en az 210. */
 export function overlayWidth(cols: Record<ColId, boolean>, layout: Theme["layout"] = "list"): number {
+  if (layout === "versus") return 1240; // iki takım yan yana
   if (layout === "cards") return 1100; // 5 kart × ~190 + menü ve boşluklar
   const on = gridCols(cols);
   return Math.max(820, 64 + 44 + 32 + 210 + on.reduce((a, c) => a + c.px, 0) + 12 * on.length);
