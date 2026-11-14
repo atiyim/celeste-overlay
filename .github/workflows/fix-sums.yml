@@ -36,8 +36,9 @@ jobs:
           if (-not $exe) { throw "Kurulan valorant-overlay.exe bulunamadı" }
           $h = (Get-FileHash $exe.FullName).Hash
           Write-Host "Kurulan: $($exe.FullName)  boyut $($exe.Length)  $h"
-          $lines = @(Get-Content dl/SHA256SUMS.txt | Where-Object { $_ -notmatch '  uygulama/' })
-          $lines += "$h  uygulama/valorant-overlay.exe"
+          # Liste baştan yazılır: kurulum dosyası + kurulan uygulama dosyası (GitHub dosya adındaki boşlukları noktaya çevirir).
+          $name = (Split-Path $setup -Leaf) -replace ' ', '.'
+          $lines = @("$((Get-FileHash $setup).Hash)  $name", "$h  uygulama/valorant-overlay.exe")
           [IO.File]::WriteAllLines("$PWD/SHA256SUMS.txt", $lines)
           Get-Content SHA256SUMS.txt
       - name: Listeyi sürüme yükle
