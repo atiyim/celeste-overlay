@@ -132,7 +132,7 @@ export function useDiscordPresence(snapNow: Snapshot, assetsNow: Assets | null, 
     const { snap, assets, on, streamer } = cur.current;
     const phase = phaseOf();
     if (phase !== prevPhase.current) onPhase(phase);
-    if (!on || !assets || phase === "offline") { invoke("discord_set", { activity: null }).catch(() => undefined); return; }
+    if (!on || !assets || phase === "offline") { invoke("discord_set", { activity: null, enabled: on }).catch(() => undefined); return; }
     const p = pr.current;
     // Overlay'in okuması bir adım geride olabilir (ör. menüde kalmış): o zaman harita ve mod Riot'un kaydından.
     const fresh = snap.phase === phase;

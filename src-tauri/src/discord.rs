@@ -21,21 +21,25 @@ struct Conn {
 }
 
 impl Conn {
-    fn open() -> Option<Conn> {
+    /// Discord'un yerel kanalını bulup el sıkışır. Hata metni Ayarlar'da gösterilir.
+    fn open() -> Result<Conn, String> {
+        let mut last = String::from("Discord bulunamadı. Masaüstü uygulaması açık mı?");
         for i in 0..10 {
-            if let Some(io) = connect(i) {
-                let mut c = Conn { io, nonce: 0 };
-                if c.send(0, &json!({ "v": 1, "client_id": CLIENT_ID })).is_ok() {
-                    // İlk yanıt READY (op 1) olmalı; CLOSE (op 2) gelirse uygulama kimliği geçersizdir.
-                    if let Ok((op, _)) = c.recv() {
-                        if op == 1 {
-                            return Some(c);
-                        }
-                    }
-                }
+            let Some(io) = connect(i) else { continue };
+            let mut c = Conn { io, nonce: 0 };
+            note(Phase::Handshake, None);
+            if let Err(e) = c.send(0, &json!({ "v": 1, "client_id": CLIENT_ID })) {
+                last = format!("Discord'a yazılamadı: {e}");
+                continue;
+            }
+            // İlk yanıt READY (op 1) olmalı; CLOSE (op 2) gelirse Discord nedenini yazar.
+            match c.recv() {
+                Ok((1, _)) => return Ok(c),
+                Ok((op, v)) => last = format!("Discord bağlantıyı kabul etmedi ({op}): {}", v["message"].as_str().unwrap_or("neden yok")),
+                Err(e) => last = format!("Discord yanıt vermedi: {e}"),
             }
         }
-        None
+        Err(last)
     }
 
     fn send(&mut self, op: u32, v: &Value) -> std::io::Result<()> {
@@ -80,9 +84,10 @@ impl Conn {
             }
         };
         if v["evt"].as_str() == Some("ERROR") {
-            *LAST_ERROR.lock().unwrap() = v["data"]["message"].as_str().map(String::from);
+            let msg = v["data"]["message"].as_str().unwrap_or("neden yok");
+            note(Phase::Connected, Some(format!("Discord kartı kabul etmedi: {msg}")));
         } else {
-            *LAST_ERROR.lock().unwrap() = None;
+            note(Phase::Connected, None);
         }
         Ok(())
     }
@@ -107,11 +112,37 @@ fn connect(_: u8) -> Option<Box<dyn Pipe>> {
 }
 
 static TX: OnceLock<Sender<Option<Value>>> = OnceLock::new();
-static CONNECTED: Mutex<bool> = Mutex::new(false);
-static LAST_ERROR: Mutex<Option<String>> = Mutex::new(None);
+#[derive(Clone, Copy, PartialEq)]
+enum Phase {
+    /// Kanal açıldı, Discord'un cevabı bekleniyor.
+    Handshake,
+    Connected,
+    Failed,
+}
 
-/// Kartı güncelle (`None`: kartı kaldır).
-pub fn set(activity: Option<Value>) {
+struct Status {
+    phase: Phase,
+    error: Option<String>,
+    since: Instant,
+}
+
+static STATUS: Mutex<Option<Status>> = Mutex::new(None);
+
+fn note(phase: Phase, error: Option<String>) {
+    let mut st = STATUS.lock().unwrap();
+    let since = match st.as_ref() {
+        Some(s) if s.phase == phase => s.since,
+        _ => Instant::now(),
+    };
+    *st = Some(Status { phase, error, since });
+}
+
+/// Ayarlardaki "Discord'da göster". Kapalıyken Discord'a hiç bağlanılmaz.
+static ENABLED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
+
+/// Kartı güncelle (`None`: kartı kaldır). `enabled: false`: bağlantıyı kapat.
+pub fn set(activity: Option<Value>, enabled: bool) {
+    ENABLED.store(enabled, std::sync::atomic::Ordering::Relaxed);
     let tx = TX.get_or_init(|| {
         let (tx, rx) = channel::<Option<Value>>();
         std::thread::Builder::new().name("discord".into()).spawn(move || run(rx)).ok();
@@ -120,9 +151,18 @@ pub fn set(activity: Option<Value>) {
     let _ = tx.send(activity);
 }
 
-/// (Discord'a bağlı mı, Discord'un son hata mesajı)
+/// (Discord'a bağlı mı, kullanıcıya gösterilecek açıklama)
 pub fn status() -> (bool, Option<String>) {
-    (*CONNECTED.lock().unwrap(), LAST_ERROR.lock().unwrap().clone())
+    let st = STATUS.lock().unwrap();
+    match st.as_ref() {
+        None => (false, None),
+        Some(s) => match s.phase {
+            Phase::Connected => (true, s.error.clone()),
+            Phase::Handshake if s.since.elapsed() > Duration::from_secs(8) => (false, Some("Discord yanıt vermiyor. Discord'u tamamen kapatıp yeniden açmayı dene.".into())),
+            Phase::Handshake => (false, None),
+            Phase::Failed => (false, s.error.clone()),
+        },
+    }
 }
 
 fn run(rx: std::sync::mpsc::Receiver<Option<Value>>) {
@@ -145,16 +185,30 @@ fn run(rx: std::sync::mpsc::Receiver<Option<Value>>) {
             continue; // uygulama kimliği girilmemiş
         }
         let key = want.as_ref().map(|v| v.to_string());
+        if !ENABLED.load(std::sync::atomic::Ordering::Relaxed) {
+            if let Some(mut c) = conn.take() {
+                let _ = c.set_activity(&None);
+            }
+            *STATUS.lock().unwrap() = None;
+            sent = None;
+            continue;
+        }
         if conn.is_none() {
-            if want.is_none() || Instant::now() < retry_at {
+            // Valorant kapalıyken de bağlanılır: Ayarlar Discord'un durumunu gösterebilsin. Kart yalnızca oyun açıkken gider.
+            if Instant::now() < retry_at {
                 continue;
             }
-            conn = Conn::open();
-            *CONNECTED.lock().unwrap() = conn.is_some();
             sent = None;
-            if conn.is_none() {
-                retry_at = Instant::now() + Duration::from_secs(30); // Discord kapalı: yarım dakikada bir dene
-                continue;
+            match Conn::open() {
+                Ok(c) => {
+                    conn = Some(c);
+                    note(Phase::Connected, None);
+                }
+                Err(e) => {
+                    note(Phase::Failed, Some(e));
+                    retry_at = Instant::now() + Duration::from_secs(15); // Discord kapalı: 15 saniyede bir dene
+                    continue;
+                }
             }
         }
         if key == sent {
@@ -176,14 +230,15 @@ fn run(rx: std::sync::mpsc::Receiver<Option<Value>>) {
         if key == sent {
             continue;
         }
-        let ok = conn.as_mut().map(|c| c.set_activity(&want).is_ok()).unwrap_or(false);
+        let res = conn.as_mut().map(|c| c.set_activity(&want)).unwrap_or_else(|| Err(std::io::Error::other("bağlantı yok")));
         sends.push_back(Instant::now());
-        if ok {
-            sent = key;
-        } else {
-            conn = None;
-            *CONNECTED.lock().unwrap() = false;
-            retry_at = Instant::now() + Duration::from_secs(10);
+        match res {
+            Ok(()) => sent = key,
+            Err(e) => {
+                conn = None;
+                note(Phase::Failed, Some(format!("Discord bağlantısı koptu: {e}")));
+                retry_at = Instant::now() + Duration::from_secs(5);
+            }
         }
     }
 }
@@ -209,6 +264,6 @@ mod tests {
         let mut c = Conn { io: Box::new(a), nonce: 0 };
         c.set_activity(&Some(json!({ "type": 5, "details": "Menüde" }))).unwrap();
         server.join().unwrap();
-        assert_eq!(status().1.as_deref(), Some("bad"));
+        assert_eq!(status().1.as_deref(), Some("Discord kartı kabul etmedi: bad"));
     }
 }

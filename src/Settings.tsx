@@ -42,13 +42,13 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
   const hide = hideOf(theme);
   // F2 kısayolunun durumu: başka bir program tutuyorsa kullanıcı nedenini burada görür.
   const [hotkey, setHotkey] = useState<boolean | null>(null);
-  const [discordOn, setDiscordOn] = useState<boolean | null>(null);
+  const [discordOn, setDiscordOn] = useState<[boolean, string | null] | null>(null);
   useEffect(() => {
     if (!inTauri || sec !== "overlay") return;
     let live = true;
     const ask = () => {
       invoke<boolean>("hotkey_ok").then((v) => live && setHotkey(v)).catch(() => undefined);
-      invoke<[boolean, string | null]>("discord_status").then(([c]) => live && setDiscordOn(c)).catch(() => undefined);
+      invoke<[boolean, string | null]>("discord_status").then((v) => live && setDiscordOn(v)).catch(() => undefined);
     };
     ask();
     const t = window.setInterval(ask, 5000);
@@ -178,9 +178,12 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
               <section>
                 <h3 className="h2">Discord</h3>
                 <div className="box">
-                  <Row title={<>Discord'da göster{theme.discord && discordOn !== null && <span className={discordOn ? "ustat ok" : "ustat bad"}><i />{discordOn ? "Bağlı" : "Discord kapalı"}</span>}</>} desc="Profilinde &quot;Celeste Overlay oynuyor&quot; görünür: haritan, ajanın, skor, sıradaysan bekleme süresi; maçtan sonra rank atlama, MVP ya da galibiyet serisi. Bilgiler yalnızca bu bilgisayardaki Discord uygulamasına gider.">
+                  <Row title={<>Discord'da göster{theme.discord && discordOn && <span className={discordOn[0] && !discordOn[1] ? "ustat ok" : "ustat bad"}><i />{discordOn[0] ? (discordOn[1] ? "Sorun var" : "Bağlı") : discordOn[1] ? "Bağlanamadı" : "Bağlanıyor"}</span>}</>} desc="Profilinde &quot;Celeste Overlay oynuyor&quot; görünür: haritan, ajanın, skor, sıradaysan bekleme süresi; maçtan sonra rank atlama, MVP ya da galibiyet serisi. Bilgiler yalnızca bu bilgisayardaki Discord uygulamasına gider.">
                     <Toggle on={theme.discord} label="Discord'da göster" onChange={(v) => set({ discord: v })} />
                   </Row>
+                  {theme.discord && discordOn?.[1] && (
+                    <Row title="Discord'un cevabı" desc={`${discordOn[1]} Çözülmezse bu satırın ekran görüntüsünü Öneri / Hata'dan gönder.`} />
+                  )}
                   {theme.discord && (
                     <Row title="Yayıncı modu" desc="Discord kartında rankın, RR'ın ve maç skoru gizlenir. Harita, ajan ve süre görünmeye devam eder.">
                       <Toggle on={theme.streamer} label="Yayıncı modu" onChange={(v) => set({ streamer: v })} />

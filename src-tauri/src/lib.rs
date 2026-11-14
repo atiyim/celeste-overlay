@@ -94,8 +94,8 @@ async fn verify_install(app: AppHandle) -> Result<riot_core::verify::InstallChec
 /// OBS tarayıcı kaynağını açar/kapatır; adresi döner.
 /// Discord kartı: arayüzün hazırladığı etkinlik (`None`: kaldır).
 #[tauri::command]
-fn discord_set(activity: Option<serde_json::Value>) {
-    discord::set(activity);
+fn discord_set(activity: Option<serde_json::Value>, enabled: Option<bool>) {
+    discord::set(activity, enabled.unwrap_or(true));
 }
 
 /// Discord kartının durumu: (bağlı mı, Discord'un son hata mesajı).
