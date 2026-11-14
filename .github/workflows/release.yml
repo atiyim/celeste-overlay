@@ -88,7 +88,7 @@ jobs:
           $exe = $roots | ForEach-Object { Get-ChildItem $_ -Recurse -Filter "valorant-overlay.exe" -ErrorAction SilentlyContinue } | Select-Object -First 1
           if (-not $exe) { throw "Kurulan valorant-overlay.exe bulunamadı" }
           $h = (Get-FileHash $exe.FullName).Hash
-          $lines = Get-Content SHA256SUMS.txt | Where-Object { $_ -notmatch '  uygulama/' }
+          $lines = @(Get-Content SHA256SUMS.txt | Where-Object { $_ -notmatch '  uygulama/' })
           $lines += "$h  uygulama/valorant-overlay.exe"
           [IO.File]::WriteAllLines("$PWD/SHA256SUMS.txt", $lines)
           Get-Content SHA256SUMS.txt
