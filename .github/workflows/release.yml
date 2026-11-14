@@ -77,6 +77,21 @@ jobs:
             cat "$GITHUB_WORKSPACE/SHA256SUMS.txt"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+      # Parmak izi: kurulumdan sonra diskte çalışan dosya. Derleme klasöründeki dosyayla bire bir aynı olması garanti değil,
+      # bu yüzden kurulum dosyası Windows'ta gerçekten (sessizce) kurulur ve kurulan dosya ölçülür.
+      - name: Kurulan dosyanın parmak izi
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem src-tauri/target/release/bundle/nsis -Filter "*setup.exe").FullName
+          Start-Process -FilePath $setup -ArgumentList "/S" -Wait
+          $roots = @($env:LOCALAPPDATA, $env:ProgramFiles, ${env:ProgramFiles(x86)})
+          $exe = $roots | ForEach-Object { Get-ChildItem $_ -Recurse -Filter "valorant-overlay.exe" -ErrorAction SilentlyContinue } | Select-Object -First 1
+          if (-not $exe) { throw "Kurulan valorant-overlay.exe bulunamadı" }
+          $h = (Get-FileHash $exe.FullName).Hash
+          $lines = Get-Content SHA256SUMS.txt | Where-Object { $_ -notmatch '  uygulama/' }
+          $lines += "$h  uygulama/valorant-overlay.exe"
+          [IO.File]::WriteAllLines("$PWD/SHA256SUMS.txt", $lines)
+          Get-Content SHA256SUMS.txt
       - name: Derleme kanıtı
         uses: actions/attest-build-provenance@v2
         with:

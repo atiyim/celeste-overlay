@@ -1,0 +1,48 @@
+name: Parmak izi listesini düzelt
+
+# Yayınlanmış bir sürümün kurulum dosyasını Windows'ta sessizce kurar, KURULAN uygulama dosyasının parmak izini
+# SHA256SUMS.txt'e yazar. Kurulum dosyasına ve sürüme dokunmaz, yeniden derleme yapmaz.
+# Çalıştırma: Actions → Parmak izi listesini düzelt → Run workflow → etiket (ör. v0.8.0)
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Sürüm etiketi (ör. v0.8.0)"
+        required: true
+
+jobs:
+  fix:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Kurulum dosyasını ve listeyi indir
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release download "${{ inputs.tag }}" --pattern "*setup.exe" --pattern "SHA256SUMS.txt" --dir dl --clobber
+          Get-ChildItem dl | Format-Table Name, Length
+          Get-Content dl/SHA256SUMS.txt
+      - name: Sessiz kur ve kurulan dosyayı bul
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem dl -Filter "*setup.exe").FullName
+          Write-Host "Kurulum dosyası: $setup  $((Get-FileHash $setup).Hash)"
+          Start-Process -FilePath $setup -ArgumentList "/S" -Wait
+          $roots = @($env:LOCALAPPDATA, $env:ProgramFiles, ${env:ProgramFiles(x86)})
+          $exe = $roots | ForEach-Object { Get-ChildItem $_ -Recurse -Filter "valorant-overlay.exe" -ErrorAction SilentlyContinue } | Select-Object -First 1
+          if (-not $exe) { throw "Kurulan valorant-overlay.exe bulunamadı" }
+          $h = (Get-FileHash $exe.FullName).Hash
+          Write-Host "Kurulan: $($exe.FullName)  boyut $($exe.Length)  $h"
+          $lines = Get-Content dl/SHA256SUMS.txt | Where-Object { $_ -notmatch '  uygulama/' }
+          $lines += "$h  uygulama/valorant-overlay.exe"
+          [IO.File]::WriteAllLines("$PWD/SHA256SUMS.txt", $lines)
+          Get-Content SHA256SUMS.txt
+      - name: Listeyi sürüme yükle
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "${{ inputs.tag }}" SHA256SUMS.txt --clobber
