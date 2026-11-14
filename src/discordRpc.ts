@@ -16,7 +16,7 @@ const inTauri = "__TAURI_INTERNALS__" in window;
 const MENU_ART = "https://raw.githubusercontent.com/atiyim/celeste-overlay/main/docs/discord/menu-ay.png";
 const DOWNLOAD = "https://github.com/atiyim/celeste-overlay/releases/latest";
 const BUTTONS = [
-  { label: "⬇️ Overlay'i ücretsiz indir", url: DOWNLOAD },
+  { label: "⬇️ Overlay'i indir", url: DOWNLOAD },
   { label: "💬 Discord'a katıl", url: DISCORD_URL },
 ];
 /** Maç sonu anı menüde en fazla bu kadar kalır (sıraya girince ya da ajan seçimi başlayınca kalkar). */
@@ -144,7 +144,8 @@ export function useDiscordPresence(snapNow: Snapshot, assetsNow: Assets | null, 
     const mapName = nice(assets.maps.get(mapKey) ?? "");
     const mapArt = assets.mapArt.get(mapKey);
     const q = queueName((fresh && snap.queueId) || p?.queue) || "Valorant";
-    const party = p?.size && p.max && p.max > 1 && p.size > 1 ? { size: [p.size, p.max] } : undefined;
+    // Parti sayısı yazıyla gösterilir; Discord'un kendi "(1 / 5)" eki yazıyla çakışmasın diye party alanı gönderilmez.
+    const partyText = `Parti (${Math.max(1, p?.size ?? 1)}/${Math.max(2, p?.max ?? 5)})`;
     const queued = phase === "menu" && p?.partyState === "MATCHMAKING";
     if (queued) moment.current = null;
     const mo = moment.current && Date.now() - moment.current.at < MOMENT_MS ? moment.current : null;
@@ -175,7 +176,7 @@ export function useDiscordPresence(snapNow: Snapshot, assetsNow: Assets | null, 
         smallText: mo.rankIcon ? ag?.name : rankText ?? ag?.name,
       };
     } else {
-      a = { details: "Menüde", state: party ? "Partide" : "Tek başına", large: MENU_ART, small: tier?.icon, smallText: rankText };
+      a = { details: "Menüde", state: partyText, large: MENU_ART, small: tier?.icon, smallText: rankText };
     }
 
     const activity = {
@@ -189,7 +190,6 @@ export function useDiscordPresence(snapNow: Snapshot, assetsNow: Assets | null, 
         large_url: DOWNLOAD,
         ...(a.small ? { small_image: a.small, ...(a.smallText ? { small_text: cut(a.smallText) } : {}) } : {}),
       },
-      party,
       buttons: BUTTONS,
     };
     invoke("discord_set", { activity }).catch(() => undefined);
