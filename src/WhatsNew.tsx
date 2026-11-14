@@ -3,6 +3,17 @@ import { useState } from "react";
 /* Güncellemeden sonra bir kez görünen "neler yeni" kartı. Kapatınca bu sürüm için bir daha çıkmaz. */
 const KEY = "overlay-whatsnew";
 const NOTES: Record<string, string[]> = {
+  "0.8.0": [
+    "Yeni görünüm: yumuşak mor gece teması, yeni ay ikonu, sol menü ve hızlı ayarlar.",
+    "Lobi üç düzende: sade liste, ajan seçimi gibi kartlar ya da takımını rakiple yan yana karşılaştıran Karşı karşıya (Ayarlar › Oyuncu tablosu).",
+    "Lobide Celeste kullananların yanında küçük bir ay işareti çıkar. İstemezsen Ayarlar'dan kapatabilirsin.",
+    "Araçlar: DPI/eDPI hesabı, spike ve özel sayaçlar, karşılaştığın oyuncular arasında arama, etiketlediğin oyuncular lobiye girince uyaran İzleme listesi.",
+    "Meta: son yamaya göre haritalarda hangi ajanların öne çıktığı.",
+    "Premium sekmesi: rollere özel temalar, lobi plakası ve Akış'ta isim stili; Discord hesabını bağlayabilirsin.",
+    "Discord'da \"Celeste Overlay oynuyor\": modun, haritan, skorun ve maç sonu anların (Ayarlar › Overlay › Discord).",
+    "Pencereyi üst kenara sürükleyip bırakınca tam ekran olur.",
+  ],
+
   "0.7.2": [
     "Akış'ta yorum yapmak tek adım: her paylaşımın altında yorum kutusu, hızlı yorumlar (GG WP, Efsane 🔥…) ve son yorumlar tıklamadan görünür.",
     "Maç sırasında çok daha az internet: maç bilgisi ve kaplamalar maç başına bir kez çekilir, oyuncu geçmişi azar azar yüklenir; overlay gizliyken denetim seyrekleşir.",
