@@ -103,6 +103,10 @@ export function accelFromEvent(e: KeyboardEvent): string | null {
   return [e.ctrlKey && "Control", e.altKey && "Alt", e.shiftKey && "Shift", key].filter(Boolean).join("+");
 }
 
+/** Spike sayacının o anki hali (yoksa null) ve değişiklik aboneliği: oyun üstü şerit bunu kullanır. */
+export const currentSpike = (): Timer | null => list.find((t) => t.name === SPIKE_NAME) ?? null;
+export function subscribeTimers(f: () => void) { subs.add(f); return () => { subs.delete(f); }; }
+
 export function onTimerDone(fn: ((t: Timer) => void) | null) { alertFn = fn; }
 
 export function useTimers(): Timer[] {

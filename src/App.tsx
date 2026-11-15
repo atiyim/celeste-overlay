@@ -29,6 +29,7 @@ import { Search } from "./Search";
 import { Meta } from "./Meta";
 import { TimerPill } from "./TimerPill";
 import { onTimerDone, startSpike, useSpikeKey } from "./timerStore";
+import { initSpikeWindow } from "./spikeWindow";
 import { register, unregister } from "@tauri-apps/plugin-global-shortcut";
 import { AccountPanel } from "./AccountPanel";
 import { StorePanel } from "./StorePanel";
@@ -550,6 +551,8 @@ export function App() {
     register(spikeKey, (e) => { if (e.state === "Pressed") startSpike(); }).catch(() => showToast("Spike tuşu kaydedilemedi, başka bir program kullanıyor olabilir"));
     return () => { unregister(spikeKey).catch(() => undefined); };
   }, [spikeKey]);
+  // Oyun üstü spike şeridi: sayaç başlayınca küçük pencereye bildirilir.
+  useEffect(() => (inTauri ? initSpikeWindow() : undefined), []);
   useEffect(() => { onTimerDone((t) => { setToast(t.name === "Spike" ? "Spike patladı" : `${t.name} bitti`); window.setTimeout(() => setToast(null), 3500); }); return () => onTimerDone(null); }, []);
   const copyName = async (name: string | null, label?: string) => {
     if (!name) { showToast("Bu oyuncunun ismi gizli, kopyalanacak bir şey yok"); return; }

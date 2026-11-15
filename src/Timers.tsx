@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { PanelHead } from "./ui";
+import { setStripOn, stripOn } from "./spikeWindow";
 import { accelFromEvent, addTimer, clock, DEFUSE_FULL, DEFUSE_HALF, parseDuration, removeTimer, restartTimer, setSound, setSpikeKey, SPIKE_NAME, SPIKE_SECONDS, soundOn, spikePhase, spikePhaseOf, startSpike, stopSpike, useSpikeKey, useTimers, type Timer } from "./timerStore";
 
 const PRESETS = [["30 sn", 30], ["45 sn", 45], ["1 dk", 60], ["2 dk", 120]] as const;
@@ -33,6 +34,7 @@ function SpikeGauge({ t }: { t: Timer }) {
 }
 
 export function Timers({ onClose }: { onClose: () => void }) {
+  const [strip, setStrip] = useState(stripOn);
   const list = useTimers();
   const [name, setName] = useState("");
   const [dur, setDur] = useState("");
@@ -74,6 +76,7 @@ export function Timers({ onClose }: { onClose: () => void }) {
         <span className="spi"><b>Spike patlama sayacı</b><small>{SPIKE_SECONDS} saniye. Spike kurulunca tuşa bas ya da Başlat'a tıkla; oyundan otomatik okunmaz. Çizgiler çözmenin hâlâ yetişip yetişmediğini gösterir.</small></span>
         <button className="x go" type="button" onClick={startSpike}>{spike ? "Yeniden" : "Başlat"}</button>
         {spike && <button className="x" type="button" onClick={stopSpike}>Durdur</button>}
+        <button className={strip ? "x on" : "x"} type="button" aria-pressed={strip} title="Sayaç çalışırken ekranın üst ortasında küçük bir şerit gösterir. Tıklamalar oyuna geçer." onClick={() => { setStripOn(!strip); setStrip(!strip); }}>Oyun üstü şerit {strip ? "açık" : "kapalı"}</button>
         <span className="spkey">
           <kbd>{capture ? "Bir tuşa bas…" : spikeKey ? spikeKey.replace("Control", "Ctrl") : "Atanmadı"}</kbd>
           <button className={capture ? "x on" : "x"} type="button" onClick={() => setCapture((c) => !c)}>{capture ? "Vazgeç" : "Tuş ata"}</button>
