@@ -72,7 +72,7 @@ export function FormDots({ p, assets }: { p: Player; assets: Assets }) {
   return (
     <span className="fdots">
       {p.form.slice(0, 5).map((f, i) => (
-        <i key={i} className={`${f.won ? "w" : "l"}${isComp(f) ? "" : " alt"}`} title={`${modeName(f.queue)} · ${f.won ? "Galibiyet" : "Mağlubiyet"} · ${assets.maps.get(lookup(f.mapId)) ?? "?"} · ${assets.agents.get(lookup(f.agentId))?.name ?? "?"} · ${f.kills}/${f.deaths}/${f.assists}`} />
+        <i key={i} className={`${f.won ? "w" : "l"}${isComp(f) ? "" : " alt"}`} title={`${modeName(f.queue)} · ${f.won ? "Galibiyet" : "Mağlubiyet"} · ${assets.maps.get(lookup(f.mapId)) ?? "?"} · ${assets.agents.get(lookup(f.agentId))?.name ?? "?"} · ${f.kills}/${f.deaths}/${f.assists}`} >{f.won ? "W" : "L"}</i>
       ))}
     </span>
   );
@@ -126,7 +126,7 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
           <span className="fl">
             {cols.wr && <b>{v.wrPct != null ? `%${v.wrPct}` : "–"}</b>}
             {p.kd != null && <small title="Son rekabet maçlarının K/D'si">K/D {p.kd.toFixed(2)}</small>}
-            {cols.wr && v.g > 0 && <small>{v.g} maç</small>}
+            {cols.wr && v.g > 0 && <small className="wlrec" title={`${v.g} maç`}><em className="rw">{v.w}W</em><em className="rl">{v.g - v.w}L</em></small>}
           </span>
           <FormDots p={p} assets={assets} />
         </div>

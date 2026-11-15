@@ -2542,3 +2542,14 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 .ks-bcol .ks-skd.std::after { display: none; }
 .ks-bcol .ks-skim { height: 44px; }
 @container pnl (max-width: 700px) { .ks-buy { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 14px; } }
+
+/* 0.8.1 · Okunaklı W/L: son 5 maç harfli rozet, kazanma oranı ve W-L sayıları renkli */
+.fdots { gap: 4px; }
+.fdots i, .fdots i.w, .fdots i.l { width: 17px; height: 17px; border-radius: 5px; display: inline-grid; place-items: center; font-style: normal; font-size: 9.5px; font-weight: 800; letter-spacing: 0; box-shadow: none; line-height: 1; }
+.fdots i.w { color: var(--win); background: color-mix(in srgb, var(--win) 20%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--win) 55%, transparent); }
+.fdots i.l { color: var(--loss); background: color-mix(in srgb, var(--loss) 18%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--loss) 50%, transparent); }
+.fdots i.alt { opacity: .4; }
+.wlrec { display: inline-flex; gap: 6px; font-weight: 700; }
+.wlrec em { font-style: normal; }
+.wlrec .rw { color: var(--win); }
+.wlrec .rl { color: var(--loss); }
