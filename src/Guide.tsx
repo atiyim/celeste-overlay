@@ -314,7 +314,7 @@ export function Guide({ onDone }: Props) {
       </div>
       <div className="gs-stage" key={s.scene === "stage" ? "stage" : `${s.scene}${i}`}>{scenes[s.scene]}</div>
       <div className="gs-cap" aria-live="polite">
-        <Mascot ref={mascotRef} cheer={cheer} />
+        <Mascot ref={mascotRef} cheer={cheer} mood={cheer ? "happy" : s.scene === "finish" ? "wink" : s.act && !done ? "surprised" : undefined} />
         <div className="gs-txt">
           {begun
             ? <p key={sayKey} className="gs-say">{s.say.split(" ").map((w, k, all) => <span key={k} style={{ animationDelay: `${((k / all.length) * s.d * 0.9).toFixed(2)}s` }}>{w} </span>)}</p>

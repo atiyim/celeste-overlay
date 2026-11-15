@@ -895,7 +895,7 @@ export function App() {
         {!collapsed && guide && <Guide onDone={closeGuide} />}
         {!collapsed && !guide && (outdated ? <ForceUpdate info={outdated} updater={updater} onOpen={openTracker} /> : content)}
         </div>
-        {!collapsed && !guide && theme.buddy && <Buddy phase={snap.phase} onGuide={() => { setGuide(true); setView("roster"); }} />}
+        {!collapsed && !guide && theme.buddy && <Buddy snap={snap} onGuide={() => { setGuide(true); setView("roster"); }} />}
         {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} onFeedback={() => { setGuide(false); setCollapsed(false); go("feedback"); }} onTrust={() => go("trust")} />}
       </div>
       <PreviewBar onOpen={openTracker} />

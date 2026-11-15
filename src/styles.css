@@ -2993,7 +2993,7 @@ html[data-skin="obsidyen"] .step { background: rgba(12, 12, 14, .82); }
 .buddy:hover .buddy-win, .buddy.talk .buddy-win { height: 45px; }
 .buddy .mascot { position: static; width: 50px; height: 60px; animation: none; }
 .buddy .mascot svg { width: 50px; height: 60px; filter: none; }
-.buddy-bub { position: relative; margin-bottom: 14px; max-width: 230px; padding: 6px 11px; font-size: 12px; line-height: 1.35; text-align: left; color: var(--text, #eceaf2); background: #16151b; border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); border-radius: 12px 12px 3px 12px; box-shadow: 0 8px 22px rgba(0, 0, 0, .5); opacity: 0; transform: translateX(6px) scale(.96); transform-origin: 100% 100%; transition: opacity .22s, transform .22s; pointer-events: none; }
+.buddy-bub { position: relative; margin-bottom: -38px; max-width: 230px; padding: 6px 11px; font-size: 12px; line-height: 1.35; text-align: left; color: var(--text, #eceaf2); background: #16151b; border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); border-radius: 12px 3px 12px 12px; box-shadow: 0 8px 22px rgba(0, 0, 0, .5); opacity: 0; transform: translateX(6px) scale(.96); transform-origin: 100% 100%; transition: opacity .22s, transform .22s; pointer-events: none; }
 .buddy.talk .buddy-bub, .buddy:hover .buddy-bub, .buddy:focus-visible .buddy-bub { opacity: 1; transform: none; }
 .buddy:focus-visible { outline: none; }
 .buddy:focus-visible .buddy-win { outline: 1px solid var(--accent); border-radius: 8px; }
@@ -3027,3 +3027,21 @@ html.fps .buddy-anchor { display: none; }
 .tpill.ph-dead { color: #ff4d5e; border-color: #ff4d5e; background: color-mix(in srgb, #ff4d5e 14%, transparent); }
 .tpill.ph-safe { color: var(--win); border-color: color-mix(in srgb, var(--win) 45%, transparent); }
 @media (prefers-reduced-motion: reduce) { .spg-bar i.cur, .spg.ph-dead .spg-n { animation: none; } }
+
+/* Celeste yüz ifadeleri */
+.mc-x { display: none; }
+.mascot[data-mood="happy"] .mc-eo, .mascot[data-mood="wink"] .mc-eo.mc-r, .mascot[data-mood="flirt"] .mc-eo.mc-r { opacity: 0; animation: none; }
+.mascot[data-mood="happy"] .mc-ec, .mascot[data-mood="wink"] .mc-ec.mc-r, .mascot[data-mood="flirt"] .mc-ec.mc-r { opacity: 1; animation: none; }
+.mascot[data-mood="flirt"] .mc-heart, .mascot[data-mood="flirt"] .mc-blush2 { display: block; }
+.mascot[data-mood="flirt"] .mc-heart { animation: mcheart 1.1s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes mcheart { 50% { transform: translateY(-3px) scale(1.18); } }
+.mascot[data-mood="surprised"] .mc-eo { transform: scale(.82); transform-box: fill-box; transform-origin: center; }
+.mascot[data-mood="surprised"][data-mouth="0"] .mc-m0 { display: none; }
+.mascot[data-mood="surprised"][data-mouth="0"] .mc-m1 { display: block; }
+.mascot[data-mood="sad"] .mc-sad { display: block; }
+.mascot[data-mood="sad"][data-mouth="0"] .mc-m0 { display: none; }
+.mascot[data-mood="sad"]:not([data-mouth="0"]) .mc-sad > path:first-child { display: none; }
+.mascot[data-mood="sad"] .mc-eo { transform: translateY(1.5px) scaleY(.86); transform-box: fill-box; transform-origin: center; }
+.buddy .buddy-win { height: 39px; }
+.buddy[data-mood="flirt"] .buddy-win { overflow: visible; }
+@media (prefers-reduced-motion: reduce) { .mascot .mc-heart { animation: none; } }

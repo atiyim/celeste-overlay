@@ -5,9 +5,12 @@ import { forwardRef, useEffect, useRef, useState, type RefObject } from "react";
 /** Elin karakter kutusu içindeki yeri (piksel) */
 export const HAND = { x: 11, y: 79 };
 
-export const Mascot = forwardRef<HTMLDivElement, { cheer?: boolean }>(function Mascot({ cheer }, ref) {
+/** Yüz ifadesi: mutlu (gözler kısık), göz kırpma, şaşkın, üzgün, flört (göz kırpma + kalp) */
+export type Mood = "happy" | "wink" | "surprised" | "sad" | "flirt";
+
+export const Mascot = forwardRef<HTMLDivElement, { cheer?: boolean; mood?: Mood }>(function Mascot({ cheer, mood }, ref) {
   return (
-    <div ref={ref} className={`mascot${cheer ? " cheer" : ""}`} data-mouth="0" aria-hidden="true">
+    <div ref={ref} className={`mascot${cheer ? " cheer" : ""}`} data-mouth="0" data-mood={mood ?? ""} aria-hidden="true">
       <svg viewBox="0 0 96 116" width="96" height="116">
         <defs>
           <linearGradient id="mcHair" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f4f0ff" /><stop offset="1" stopColor="#b3a8ee" /></linearGradient>
@@ -37,18 +40,23 @@ export const Mascot = forwardRef<HTMLDivElement, { cheer?: boolean }>(function M
         {/* yüz */}
         <ellipse cx="48" cy="45" rx="30" ry="27" fill="url(#mcSkin)" />
         <ellipse cx="27" cy="58" rx="5.2" ry="3" fill="#ff9db3" opacity=".55" /><ellipse cx="69" cy="58" rx="5.2" ry="3" fill="#ff9db3" opacity=".55" />
-        <g className="mc-eo">
-          {[36, 60].map((x) => (
-            <g key={x}>
+        {([[36, "l"], [60, "r"]] as const).map(([x, side]) => (
+          <g key={side}>
+            <g className={`mc-eo mc-${side}`}>
               <ellipse cx={x} cy="50" rx="6.2" ry="8" fill="url(#mcEye)" />
               <path d={`M${x - 7} 46.5 Q${x} 39.5 ${x + 7} 46.5`} fill="none" stroke="#231a55" strokeWidth="2" strokeLinecap="round" />
               <circle cx={x - 2.2} cy="46.6" r="2.5" fill="#fff" /><circle cx={x + 2.6} cy="53.6" r="1.2" fill="#fff" opacity=".9" />
             </g>
-          ))}
+            <path className={`mc-ec mc-${side}`} d={`M${x - 6.5} 52 Q${x} 45 ${x + 6.5} 52`} fill="none" stroke="#231a55" strokeWidth="2.2" strokeLinecap="round" />
+          </g>
+        ))}
+        {/* ifadeler */}
+        <g className="mc-x mc-sad" fill="none" stroke="#231a55" strokeWidth="1.8" strokeLinecap="round">
+          <path d="M44.6 63 Q48 60 51.4 63" stroke="#b5475d" />
+          <path d="M70 53 q1.6 3.4 0 4.6 q-1.6 -1.2 0 -4.6Z" fill="#8fd3ff" stroke="none" />
         </g>
-        <g className="mc-ec" fill="none" stroke="#231a55" strokeWidth="2.2" strokeLinecap="round">
-          <path d="M29.5 52 Q36 45 42.5 52" /><path d="M53.5 52 Q60 45 66.5 52" />
-        </g>
+        <path className="mc-x mc-heart" d="M84 12 c-2.6 -3.4 -7.6 -.4 -5.2 3.6 c1.2 2 3.4 3.4 5.2 5 c1.8 -1.6 4 -3 5.2 -5 c2.4 -4 -2.6 -7 -5.2 -3.6Z" fill="#ff7b9c" />
+        <ellipse className="mc-x mc-blush2" cx="27" cy="58" rx="6" ry="3.6" fill="#ff7b9c" opacity=".55" /><ellipse className="mc-x mc-blush2" cx="69" cy="58" rx="6" ry="3.6" fill="#ff7b9c" opacity=".55" />
         <path className="mc-m mc-m0" d="M44.6 60.5 Q48 63.6 51.4 60.5" fill="none" stroke="#b5475d" strokeWidth="1.8" strokeLinecap="round" />
         <ellipse className="mc-m mc-m1" cx="48" cy="61.6" rx="3" ry="2.4" fill="#8a2440" />
         <g className="mc-m mc-m2"><ellipse cx="48" cy="62.4" rx="4.2" ry="4.3" fill="#8a2440" /><ellipse cx="48" cy="64.6" rx="2.6" ry="1.7" fill="#ff8fa6" /></g>

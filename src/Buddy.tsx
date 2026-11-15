@@ -1,43 +1,46 @@
 import { useEffect, useRef, useState } from "react";
 import { Mascot } from "./Mascot";
+import { AFTER_MATCH, contextLines, nextLine, type Line } from "./buddyLines";
+import type { Snapshot } from "./types";
 
 /* Köşedeki Celeste: durum çubuğunun arkasından başını uzatır, arada bir kısa bir şey söyler.
-   Tıklanınca rehberi yeniden açar. FPS modunda ve rehber açıkken görünmez. */
-const ANY = [
-  "Derin nefes al, sıradaki raunt senin.",
-  "Nişangâh kafa hizasında, gerisi gelir.",
-  "Su içmeyi unutma.",
-  "Kaybettiysen takılma, sıradaki maça bak.",
-  "Takımına bir \"iyi oyunlar\" yaz, fark eder.",
-  "Bugün formundasın, hissediyorum.",
-  "Bana tıklarsan rehberi yeniden açarım.",
-];
-const BY_PHASE: Record<string, string[]> = {
-  offline: ["Valorant'ı açınca lobini göstereceğim.", "Ben buradayım, oyunu bekliyorum."],
-  menu: ["Sıraya girince herkesi senin için çıkarırım.", "Hazır mısın? Ben hazırım."],
-  pregame: ["Ajanını seç, ben rakiplere bakıyorum.", "İyi bir kadro gibi duruyor."],
-  ingame: ["İyi oyunlar! Sakin kal, tek tek al.", "Sen oyna, gerisi bende."],
-};
-const SHOW_MS = 6500, FIRST_MS = 5000, GAP_MS = [70000, 130000];
+   Maça göre konuşur, yüz ifadesi cümleye uyar. Tıklanınca rehberi yeniden açar. FPS modunda ve rehber açıkken görünmez. */
+const SHOW_MS = 6500, FIRST_MS = 5000, PHASE_MS = 2500, GAP_MS = [70000, 130000];
 
-export function Buddy({ phase, onGuide }: { phase: string; onGuide: () => void }) {
-  const [line, setLine] = useState<string | null>(null);
+export function Buddy({ snap, onGuide }: { snap: Snapshot; onGuide: () => void }) {
+  const [line, setLine] = useState<Line | null>(null);
   const ref = useRef<HTMLDivElement>(null);
-  const phaseRef = useRef(phase); phaseRef.current = phase;
+  const snapRef = useRef(snap); snapRef.current = snap;
   const last = useRef("");
+  const timer = useRef(0);
+  const prevPhase = useRef(snap.phase);
+
+  const schedule = (ms: number, make: () => Line) => {
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      const l = make();
+      last.current = l.text; setLine(l);
+      timer.current = window.setTimeout(() => {
+        setLine(null);
+        schedule(GAP_MS[0] + Math.random() * (GAP_MS[1] - GAP_MS[0]), () => nextLine(snapRef.current, last.current));
+      }, SHOW_MS);
+    }, ms);
+  };
 
   useEffect(() => {
-    let t = 0, stop = false;
-    const say = () => {
-      if (stop) return;
-      const pool = [...(BY_PHASE[phaseRef.current] ?? []), ...ANY].filter((l) => l !== last.current);
-      const l = pool[Math.floor(Math.random() * pool.length)];
-      last.current = l; setLine(l);
-      t = window.setTimeout(() => { setLine(null); t = window.setTimeout(say, GAP_MS[0] + Math.random() * (GAP_MS[1] - GAP_MS[0])); }, SHOW_MS);
-    };
-    t = window.setTimeout(say, FIRST_MS);
-    return () => { stop = true; clearTimeout(t); };
+    schedule(FIRST_MS, () => nextLine(snapRef.current, last.current));
+    return () => window.clearTimeout(timer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Aşama değişince (maç bulundu, maç bitti) duruma özel bir cümle
+  useEffect(() => {
+    const from = prevPhase.current; prevPhase.current = snap.phase;
+    if (from === snap.phase) return;
+    if (from === "ingame" && snap.phase === "menu") schedule(PHASE_MS, () => AFTER_MATCH[Math.floor(Math.random() * AFTER_MATCH.length)]);
+    else if (snap.phase === "pregame" || snap.phase === "ingame") schedule(PHASE_MS + 2500, () => { const c = contextLines(snapRef.current); return c[0] ?? nextLine(snapRef.current, last.current); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snap.phase]);
 
   // Konuşurken ağız oynar
   useEffect(() => {
@@ -45,14 +48,14 @@ export function Buddy({ phase, onGuide }: { phase: string; onGuide: () => void }
     if (!line) { el.dataset.mouth = "0"; return; }
     const seq = [1, 2, 1, 0, 2, 1, 0], t0 = Date.now();
     const id = window.setInterval(() => { el.dataset.mouth = Date.now() - t0 > 2400 ? "0" : String(seq[Math.floor((Date.now() - t0) / 130) % seq.length]); }, 130);
-    return () => clearInterval(id);
+    return () => { clearInterval(id); el.dataset.mouth = "0"; };
   }, [line]);
 
   return (
     <div className="buddy-anchor">
-      <button className={`buddy${line ? " talk" : ""}`} type="button" onClick={onGuide} aria-label="Celeste: rehberi aç">
-        <span className="buddy-bub" role="status">{line ?? "Rehberi aç"}</span>
-        <span className="buddy-win"><Mascot ref={ref} /></span>
+      <button className={`buddy${line ? " talk" : ""}`} type="button" data-mood={line?.mood ?? ""} onClick={onGuide} aria-label="Celeste: rehberi aç">
+        <span className="buddy-bub" role="status">{line?.text ?? "Rehberi aç"}</span>
+        <span className="buddy-win"><Mascot ref={ref} mood={line?.mood} /></span>
       </button>
     </div>
   );
