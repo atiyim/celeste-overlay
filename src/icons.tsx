@@ -37,6 +37,10 @@ const P: Record<string, ReactNode> = {
   lock: <><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>,
   crown: <><path d="M4.300 17.500L2.800 8.600l5 3.400L12 5.800l4.200 6.200 5-3.400-1.500 8.900z" /><path d="M5 20.500h14" /></>,
   chevron: <path d="M9 6l6 6-6 6" />,
+  volume: <><path d="M4 9.500v5h3.500L12 18.500v-13L7.500 9.500z" /><path d="M15.500 9a4 4 0 0 1 0 6" /><path d="M18.200 6.500a7.500 7.500 0 0 1 0 11" /></>,
+  mute: <><path d="M4 9.500v5h3.500L12 18.500v-13L7.500 9.500z" /><path d="M16 9.500l5 5M21 9.500l-5 5" /></>,
+  play: <path d="M8 5.500v13l11-6.500z" />,
+  pause: <><rect x="6.500" y="5" width="3.800" height="14" rx="1" /><rect x="13.700" y="5" width="3.800" height="14" rx="1" /></>,
   collapse: <path d="M6 15l6-6 6 6" />,
   expand: <path d="M6 9l6 6 6-6" />,
 };
@@ -45,7 +49,7 @@ export type IconName = keyof typeof P;
 
 /* Yumuşak dolgulu (duotone) simgeler: kapalı şekillerin içi, çizgi renginin açık tonuyla dolar; böylece küçük boyutta
    da seçilir ve daha dolgun, "tatlı" görünür. Düz çizgi kalması gerekenler (oklar, çarpı, eksi…) listede yok. */
-const SOFT = new Set<string>(["users", "user", "msg", "chat", "spark", "help", "info", "gear", "clock", "shield", "moon", "bolt", "store", "target", "timer", "layers", "lock", "crown", "mouse", "link", "repeat", "chart", "search", "sliders", "power", "text", "eyeoff", "blur", "check"]);
+const SOFT = new Set<string>(["users", "user", "msg", "chat", "spark", "help", "info", "gear", "clock", "shield", "moon", "bolt", "store", "target", "timer", "layers", "lock", "crown", "mouse", "link", "repeat", "chart", "search", "sliders", "power", "text", "eyeoff", "blur", "check", "play", "pause"]);
 const NOFILL = new Set<string>(["link", "repeat", "chart", "search", "sliders", "power", "text", "eyeoff", "blur", "check"]);
 
 export function Icon({ name, size = 18, stroke = 2 }: { name: IconName; size?: number; stroke?: number }) {
