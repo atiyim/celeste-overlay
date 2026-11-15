@@ -2529,3 +2529,16 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 .ks-skp button:hover, .ks-skp button.on { color: var(--fg); border-color: var(--line-2); }
 .panel { container: pnl / inline-size; }
 @container pnl (max-width: 560px) { .ks-shw { grid-template-columns: minmax(0, 1fr); } }
+
+/* Alım menüsü düzeni (B tuşu): dört sütun, her sütunda oyundaki sırayla silahlar */
+.ks-buy { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 10px; align-items: start; }
+.ks-bcol { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.ks-bcol section { display: flex; flex-direction: column; gap: 6px; }
+.ks-bh { margin: 0 0 2px; font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); }
+.ks-bcol .ks-skd { width: 100%; }
+.ks-bcol .ks-skd.std { background: var(--s1); border-color: var(--line); }
+.ks-bcol .ks-skd.std .ks-skim { opacity: .4; }
+.ks-bcol .ks-skd.std .ks-skn { color: var(--fg-3); font-weight: 500; }
+.ks-bcol .ks-skd.std::after { display: none; }
+.ks-bcol .ks-skim { height: 44px; }
+@container pnl (max-width: 700px) { .ks-buy { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 14px; } }

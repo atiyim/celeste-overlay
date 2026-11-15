@@ -9,17 +9,21 @@ const inTauri = "__TAURI_INTERNALS__" in window;
    Her bilgi Riot'un gönderdiği kimliklerden gelir: takılı seviye, takılı renk ve uğurluk kesindir.
    Hangi renklerin açık olduğu yalnızca kendi hesabında bilinir (diğer oyuncular için Riot bunu göndermez). */
 
-/* Oyun içi cephanelik sırası (ucuzdan pahalıya), yakın dövüş en sonda. */
+/* Oyun içi alım menüsü (B tuşu) ile aynı düzen: yan silahlar | hafif makineli + pompalı | tüfek + yakın dövüş | keskin nişancı + makineli. */
+const LAYOUT: [string, string][][] = [
+  [["Sidearm", "Yan silahlar"]],
+  [["SMG", "Hafif makineliler"], ["Shotgun", "Pompalılar"]],
+  [["Rifle", "Tüfekler"], ["Melee", "Yakın dövüş"]],
+  [["Sniper", "Keskin nişancılar"], ["Heavy", "Makineli tüfekler"]],
+];
+/* Her kategoride silahlar oyundaki gibi fiyata göre, ucuzdan pahalıya. */
 const ORDER = [
   "classic", "shorty", "frenzy", "ghost", "bandit", "sheriff",
   "stinger", "spectre", "bucky", "judge",
   "bulldog", "guardian", "warden", "phantom", "vandal",
   "marshal", "outlaw", "operator", "ares", "odin",
 ];
-const armory = (d: SkinDetail) => (d.weapon.category === "Melee" ? 100 : (() => { const i = ORDER.indexOf(d.weapon.name.toLowerCase()); return i < 0 ? 99 : i; })());
-
-type Sort = "value" | "weapon";
-const SORT_KEY = "overlay-skin-sort";
+const armory = (d: SkinDetail) => { const i = ORDER.indexOf(d.weapon.name.toLowerCase()); return i < 0 ? 99 : i; };
 
 /** Kendi hesabın: sahip olunan kaplama seviyeleri ve renkler (yalnızca kendi panelinde, bir kez sorulur). */
 function useOwned(self: boolean) {
@@ -122,61 +126,56 @@ function Showcase({ d, owned, self }: { d: SkinDetail; owned: { levels: Set<stri
 }
 
 export function SkinsTab({ p, assets }: { p: Player; assets: Assets }) {
-  const [sort, setSort] = useState<Sort>(() => { try { return localStorage.getItem(SORT_KEY) === "weapon" ? "weapon" : "value"; } catch { return "value"; } });
   const owned = useOwned(p.isSelf);
   const all = useMemo(() => assets.weapons.map((w) => skinDetail(assets, w, p.loadout.weapons.find((x) => lookup(x.weaponId) === w.id))), [assets, p.loadout]);
-  const custom = all.filter((d) => !d.isDefault || d.charm);
-  const plain = all.filter((d) => d.isDefault && !d.charm).sort((a, b) => armory(a) - armory(b));
-  const list = [...custom].sort(sort === "weapon"
-    ? (a, b) => armory(a) - armory(b)
-    : (a, b) => (b.tier?.rank ?? 0) - (a.tier?.rank ?? 0) || (b.level ?? 0) - (a.level ?? 0) || armory(a) - armory(b));
   const [pick, setPick] = useState<string | null>(null);
   useEffect(() => setPick(null), [p.puuid]);
-  const sel = all.find((d) => d.weapon.id === pick) ?? list[0] ?? all[0];
-  const setS = (s: Sort) => { setSort(s); try { localStorage.setItem(SORT_KEY, s); } catch { /* depolama kapalı */ } };
+  // Vitrin: seçilen silah; seçilmediyse en değerli özel kaplama.
+  const best = [...all].filter((d) => !d.isDefault).sort((a, b) => (b.tier?.rank ?? 0) - (a.tier?.rank ?? 0) || (b.level ?? 0) - (a.level ?? 0))[0];
+  const sel = all.find((d) => d.weapon.id === pick) ?? best ?? all[0];
 
   const noLoadout = p.loadout.weapons.length === 0 && (p.loadout.allIds?.length ?? 0) === 0;
   if (noLoadout) return <p className="d none">Kaplamalar oyun başlayınca görünür.</p>;
+  const custom = all.filter((d) => !d.isDefault).length;
   const charms = all.filter((d) => d.charm).length;
+  const by = (cat: string) => all.filter((d) => d.weapon.category === cat).sort((a, b) => armory(a) - armory(b));
 
   return (
     <div className="ks-skt fade">
       {sel && <Showcase d={sel} owned={owned} self={p.isSelf} />}
       <div className="ks-skh">
-        <span className="ks-skc"><b>{all.length - plain.length}</b> özel kaplama<span className="sep" /><b>{charms}</b> uğurluk</span>
-        <span className="seg" role="group" aria-label="Sıralama">
-          <button type="button" className={sort === "value" ? "on" : ""} aria-pressed={sort === "value"} onClick={() => setS("value")}>Değere göre</button>
-          <button type="button" className={sort === "weapon" ? "on" : ""} aria-pressed={sort === "weapon"} onClick={() => setS("weapon")}>Silaha göre</button>
-        </span>
+        <span className="ks-skc"><b>{custom}</b> özel kaplama<span className="sep" /><b>{charms}</b> uğurluk<span className="sep" />Oyundaki alım menüsüyle aynı sıra</span>
       </div>
-      <div className="ks-skg">
-        {list.map((d) => (
-          <button key={d.weapon.id} type="button" className={`ks-skd${d.isDefault ? " std" : ""}${sel?.weapon.id === d.weapon.id ? " on" : ""}`}
-            style={d.tier ? ({ "--tc": d.tier.color } as React.CSSProperties) : undefined} onClick={() => setPick(d.weapon.id)}>
-            <span className="ks-skt1">
-              {d.tier?.icon && <img className="ks-skti" src={d.tier.icon} alt="" />}
-              <small>{d.weapon.name}</small>
-              {d.charm && <img className="ks-skch" src={d.charm.icon} alt="" title={`Uğurluk: ${d.charm.name}`} />}
-            </span>
-            <img className="ks-skim" src={d.image} alt="" loading="lazy" />
-            <span className="ks-skn">{d.isDefault ? "Standart" : d.name}</span>
-            <span className="ks-skm">
-              {d.levels.length > 1 && <small>Sv. {d.level ?? "?"}/{d.levels.length}</small>}
-              <Swatches d={d} />
-            </span>
-          </button>
+      <div className="ks-buy">
+        {LAYOUT.map((col, i) => (
+          <div className="ks-bcol" key={i}>
+            {col.map(([cat, name]) => (
+              <section key={cat}>
+                <h3 className="ks-bh">{name}</h3>
+                {by(cat).map((d) => (
+                  <button key={d.weapon.id} type="button" className={`ks-skd${d.isDefault ? " std" : ""}${sel?.weapon.id === d.weapon.id ? " on" : ""}`}
+                    style={d.tier ? ({ "--tc": d.tier.color } as React.CSSProperties) : undefined} onClick={() => setPick(d.weapon.id)}
+                    title={`${d.weapon.name}: ${d.isDefault ? "Standart" : d.name}`}>
+                    <span className="ks-skt1">
+                      <small>{d.weapon.name}</small>
+                      {d.charm && <img className="ks-skch" src={d.charm.icon} alt="" title={`Uğurluk: ${d.charm.name}`} />}
+                      {d.tier?.icon && <img className="ks-skti" src={d.tier.icon} alt="" />}
+                    </span>
+                    <img className="ks-skim" src={d.image} alt="" loading="lazy" />
+                    <span className="ks-skn">{d.isDefault ? "Standart" : d.name}</span>
+                    {!d.isDefault && (
+                      <span className="ks-skm">
+                        {d.levels.length > 1 ? <small>Sv. {d.level ?? "?"}/{d.levels.length}</small> : <small />}
+                        <Swatches d={d} />
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </section>
+            ))}
+          </div>
         ))}
       </div>
-      {plain.length > 0 && (
-        <div className="ks-skp">
-          <span className="ks-skph">Standart</span>
-          {plain.map((d) => (
-            <button key={d.weapon.id} type="button" className={sel?.weapon.id === d.weapon.id ? "on" : ""} title={`${d.weapon.name}: Standart`} onClick={() => setPick(d.weapon.id)}>
-              {d.weapon.name}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
