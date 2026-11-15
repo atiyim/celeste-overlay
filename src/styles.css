@@ -2727,3 +2727,15 @@ html[data-skin="obsidyen"] .hero::after { background: linear-gradient(90deg, rgb
 .ri:hover svg { transform: scale(1.08); }
 .ri.on svg { fill-opacity: .42; }
 html[data-skin="obsidyen"] .step { background: rgba(12, 12, 14, .82); }
+
+/* ---- Profilim: ajan simgesi (tam boy portre yerine). Kartın sağında, kart yüksekliğine göre ölçeklenir;
+   alta ve sola doğru eriyerek kartla birleşir. Kart boyutu değişince kendini hizalar, yazının üstüne binmez. ---- */
+.dhero, .dmini { overflow: hidden; }
+.hic, .mic { position: absolute; top: 0; right: 0; height: 100%; aspect-ratio: 1; max-width: 48%; object-fit: cover; object-position: center top; pointer-events: none; user-select: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 98%), linear-gradient(to left, #000 55%, transparent 100%); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to bottom, #000 45%, transparent 98%), linear-gradient(to left, #000 55%, transparent 100%); mask-composite: intersect; }
+.hic { filter: drop-shadow(0 0 26px color-mix(in srgb, var(--accent) 22%, transparent)); }
+.mic { max-width: 54%; opacity: .9; }
+.dmx h4, .dmx b { text-shadow: 0 1px 6px rgba(0, 0, 0, .8); }
+.hx { max-width: 56%; } .dmx { max-width: 62%; }
+.fps .hic, .fps .mic { display: none; }

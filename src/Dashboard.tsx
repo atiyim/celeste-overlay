@@ -94,7 +94,7 @@ export function Dashboard({ matches, rank, assets, onCard }: Props) {
           {/* En çok oynanan ajan */}
           {top && (
             <section className="dc dhero" style={{ "--ac": "var(--accent)" } as React.CSSProperties}>
-              {topInfo?.portrait && <img className="hport" src={topInfo.portrait} alt="" loading="lazy" />}
+              {topInfo?.icon && <img className="hic" src={topInfo.icon} alt="" loading="lazy" />}
               <div className="hx">
                 <span className="dk">En çok oynadığın ajan</span>
                 <h3 className="hname">{topInfo?.name ?? "?"}</h3>
@@ -119,7 +119,7 @@ export function Dashboard({ matches, rank, assets, onCard }: Props) {
               const info = assets.agents.get(a.id);
               return (
                 <section className="dc dmini" key={a.id}>
-                  {info?.portrait && <img className="mport" src={info.portrait} alt="" loading="lazy" />}
+                  {info?.icon && <img className="mic" src={info.icon} alt="" loading="lazy" />}
                   <div className="dmx">
                     <h4>{info?.name ?? "?"}</h4>
                     <small>Kazanma</small>
