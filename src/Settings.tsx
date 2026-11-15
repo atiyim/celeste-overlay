@@ -1,3 +1,5 @@
+import { applyHotkey, captureHotkey, DEFAULT_HOTKEY, hotkeyLabel, useHotkey } from "./hotkey";
+import { accelFromEvent, spikeKey_ as spikeKey } from "./timerStore";
 import { useEffect, useState, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { CLASSIC_ACCENT, CLASSIC_SKIN, MAIN_ACCENT, MAIN_SKIN } from "./vip";
@@ -36,6 +38,30 @@ export function Settings({ zoom, onZoom, zooms, theme, onChange, onToast, onClos
   const hide = hideOf(theme);
   // F2 kısayolunun durumu: başka bir program tutuyorsa kullanıcı nedenini burada görür.
   const [hotkey, setHotkey] = useState<boolean | null>(null);
+  const hk = useHotkey(), hkLabel = hotkeyLabel(hk);
+  const [hkCapture, setHkCapture] = useState(false);
+  const [hkMsg, setHkMsg] = useState<string | null>(null);
+  // Tuş seçimi: kısayol geçici bırakılır, basılan sonraki tuş yeni kısayol olur. Esc vazgeçer.
+  useEffect(() => {
+    if (!hkCapture) return;
+    captureHotkey(true);
+    const on = async (e: KeyboardEvent) => {
+      e.preventDefault(); e.stopPropagation();
+      if (e.key === "Escape") { setHkCapture(false); return; }
+      if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
+      const a = accelFromEvent(e);
+      if (!a) { setHkMsg("Bu tuş olmaz"); return; }
+      if (!/F\d+$/.test(a) && !/[+]/.test(a)) { setHkMsg("Ctrl, Alt ya da Shift ile birlikte bas"); return; }
+      if (a === spikeKey()) { setHkMsg("Spike tuşuyla aynı"); return; }
+      const m = await applyHotkey(a);
+      if (m) { setHkMsg(m); return; }
+      setHkCapture(false);
+      onToast(`Göster / gizle tuşu: ${hotkeyLabel(a)}`);
+    };
+    window.addEventListener("keydown", on, true);
+    return () => { window.removeEventListener("keydown", on, true); captureHotkey(false); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hkCapture]);
   const [discordOn, setDiscordOn] = useState<[boolean, string | null] | null>(null);
   useEffect(() => {
     if (!inTauri || sec !== "overlay") return;
@@ -156,11 +182,17 @@ export function Settings({ zoom, onZoom, zooms, theme, onChange, onToast, onClos
                 <h3 className="h2">Kısayol</h3>
                 <div className="box">
                   <Row
-                    title={<>F2 ile göster / gizle{hotkey !== null && <span className={hotkey ? "ustat ok" : "ustat bad"}><i />{hotkey ? "Çalışıyor" : "Çalışmıyor"}</span>}</>}
+                    title={<>{hkLabel} ile göster / gizle{hotkey !== null && <span className={hotkey ? "ustat ok" : "ustat bad"}><i />{hotkey ? "Çalışıyor" : "Çalışmıyor"}</span>}</>}
                     desc={hotkey === false
-                      ? "Başka bir program F2'yi kullanıyor. O program kapanınca kendiliğinden çalışır; bu arada sistem tepsisindeki simgeye tıklayarak açıp kapatabilirsin."
-                      : "Oyunun içindeyken de çalışır. Sistem tepsisindeki simgeye tıklamak da aynı işi yapar."}
-                  />
+                      ? `Başka bir program ${hkLabel} tuşunu kullanıyor. O program kapanınca kendiliğinden çalışır; istersen başka bir tuş seç. Bu arada sistem tepsisindeki simgeye tıklayarak açıp kapatabilirsin.`
+                      : "Oyunun içindeyken de çalışır. Sistem tepsisindeki simgeye tıklamak da aynı işi yapar. Harf ve rakam tuşları için Ctrl, Alt ya da Shift ile birlikte bas."}
+                  >
+                    <span className="spkey">
+                      <kbd>{hkCapture ? (hkMsg ?? "Bir tuşa bas…") : hkLabel}</kbd>
+                      <button className={hkCapture ? "x on" : "x"} type="button" onClick={() => { setHkMsg(null); setHkCapture((c) => !c); }}>{hkCapture ? "Vazgeç" : "Değiştir"}</button>
+                      {hk !== DEFAULT_HOTKEY && !hkCapture && <button className="x" type="button" onClick={async () => { const m = await applyHotkey(DEFAULT_HOTKEY); onToast(m ?? "F2'ye döndü"); }}>Varsayılan</button>}
+                    </span>
+                  </Row>
                 </div>
               </section>
               <section>

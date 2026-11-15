@@ -92,14 +92,15 @@ export function setSpikeKey(k: string) {
   try { localStorage.setItem(SPIKE_KEY, k); } catch { /* depolama kapalı */ }
   keySubs.forEach((f) => f());
 }
+export const spikeKey_ = () => spikeKey;
 export function useSpikeKey(): string {
   return useSyncExternalStore((f) => { keySubs.add(f); return () => { keySubs.delete(f); }; }, () => spikeKey);
 }
-/** Basılan tuşu global kısayol biçimine çevirir ("Control+Shift+F6"). Desteklenmeyen tuşta null. F2 overlay'e ayrılmıştır. */
+/** Basılan tuşu global kısayol biçimine çevirir ("Control+Shift+F6"). Desteklenmeyen tuşta null. Overlay'in göster/gizle tuşuyla çakışma çağıran tarafta denetlenir. */
 export function accelFromEvent(e: KeyboardEvent): string | null {
   const c = e.code;
   const key = /^Key([A-Z])$/.exec(c)?.[1] ?? /^Digit(\d)$/.exec(c)?.[1] ?? (/^F([1-9]|1[0-9]|2[0-4])$/.test(c) ? c : null);
-  if (!key || key === "F2" && !e.ctrlKey && !e.altKey && !e.shiftKey) return null;
+  if (!key) return null;
   return [e.ctrlKey && "Control", e.altKey && "Alt", e.shiftKey && "Shift", key].filter(Boolean).join("+");
 }
 

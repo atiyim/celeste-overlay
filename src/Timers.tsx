@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { PanelHead } from "./ui";
 import { setStripOn, stripOn } from "./spikeWindow";
+import { hotkey, hotkeyLabel } from "./hotkey";
 import { accelFromEvent, addTimer, clock, DEFUSE_FULL, DEFUSE_HALF, parseDuration, removeTimer, restartTimer, setSound, setSpikeKey, SPIKE_NAME, SPIKE_SECONDS, soundOn, spikePhase, spikePhaseOf, startSpike, stopSpike, useSpikeKey, useTimers, type Timer } from "./timerStore";
 
 const PRESETS = [["30 sn", 30], ["45 sn", 45], ["1 dk", 60], ["2 dk", 120]] as const;
@@ -41,6 +42,7 @@ export function Timers({ onClose }: { onClose: () => void }) {
   const [sound, setSnd] = useState(soundOn);
   const spikeKey = useSpikeKey();
   const [capture, setCapture] = useState(false);
+  const [clash, setClash] = useState(false);
   const secs = parseDuration(dur);
 
   // "Tuş ata": basılan sonraki tuş kısayol olur. Esc vazgeçer.
@@ -51,6 +53,7 @@ export function Timers({ onClose }: { onClose: () => void }) {
       if (e.key === "Escape") { setCapture(false); return; }
       if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
       const a = accelFromEvent(e);
+      if (a === hotkey()) { setClash(true); return; }
       if (a) { setSpikeKey(a); setCapture(false); }
     };
     window.addEventListener("keydown", on, true);
@@ -78,8 +81,8 @@ export function Timers({ onClose }: { onClose: () => void }) {
         {spike && <button className="x" type="button" onClick={stopSpike}>Durdur</button>}
         <button className={strip ? "x on" : "x"} type="button" aria-pressed={strip} title="Sayaç çalışırken ekranın üst ortasında küçük bir şerit gösterir. Tıklamalar oyuna geçer." onClick={() => { setStripOn(!strip); setStrip(!strip); }}>Oyun üstü şerit {strip ? "açık" : "kapalı"}</button>
         <span className="spkey">
-          <kbd>{capture ? "Bir tuşa bas…" : spikeKey ? spikeKey.replace("Control", "Ctrl") : "Atanmadı"}</kbd>
-          <button className={capture ? "x on" : "x"} type="button" onClick={() => setCapture((c) => !c)}>{capture ? "Vazgeç" : "Tuş ata"}</button>
+          <kbd>{capture ? (clash ? `${hotkeyLabel()} overlay'e ayrılı` : "Bir tuşa bas…") : spikeKey ? spikeKey.replace("Control", "Ctrl") : "Atanmadı"}</kbd>
+          <button className={capture ? "x on" : "x"} type="button" onClick={() => { setClash(false); setCapture((c) => !c); }}>{capture ? "Vazgeç" : "Tuş ata"}</button>
           {spikeKey && !capture && <button className="x" type="button" onClick={() => setSpikeKey("")}>Kaldır</button>}
         </span>
         </div>

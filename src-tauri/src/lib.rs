@@ -2,8 +2,8 @@ mod discord;
 mod obs;
 use riot_core::netlog::{self, NetReport};
 use riot_core::{Account, Engine, HealthEntry, MatchReport, MyStats, PremierTeam, Snapshot, Store};
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{
     menu::{Menu, MenuItem},
@@ -156,10 +156,52 @@ fn card_save(app: AppHandle, request: tauri::ipc::Request<'_>) -> Result<String,
     Ok(path.display().to_string())
 }
 
-/// F2 kısayolu şu an bu uygulamaya kayıtlı mı? (Başka bir program tutuyorsa false.)
+/// Göster/gizle kısayolu (varsayılan F2). Ayarlardan değiştirilebilir.
+static HOTKEY: Mutex<Option<Shortcut>> = Mutex::new(None);
+/// Ayarlarda yeni tuş seçilirken kısayol geçici olarak bırakılır; otomatik yeniden kayıt da durur.
+static CAPTURING: AtomicBool = AtomicBool::new(false);
+
+fn current_hotkey() -> Option<Shortcut> {
+    HOTKEY.lock().ok().and_then(|g| g.clone())
+}
+
+/// Kısayol şu an bu uygulamaya kayıtlı mı? (Başka bir program tutuyorsa false.)
 #[tauri::command]
 fn hotkey_ok(app: AppHandle) -> bool {
-    app.global_shortcut().is_registered(Shortcut::new(None, Code::F2))
+    current_hotkey().map(|k| app.global_shortcut().is_registered(k)).unwrap_or(false)
+}
+
+/// Yeni göster/gizle tuşunu kaydeder ("F2", "Control+Shift+F6"). Başarısızsa eski tuş çalışmaya devam eder.
+#[tauri::command]
+fn set_hotkey(app: AppHandle, accel: String) -> Result<(), String> {
+    let new: Shortcut = accel.parse().map_err(|_| "Bu tuş desteklenmiyor".to_string())?;
+    let gs = app.global_shortcut();
+    let mut cur = HOTKEY.lock().map_err(|_| "Kısayol ayarlanamadı".to_string())?;
+    let same = cur.as_ref().map(|c| c.id() == new.id()).unwrap_or(false);
+    if !gs.is_registered(new.clone()) {
+        gs.register(new.clone()).map_err(|_| "Bu tuşu başka bir program kullanıyor".to_string())?;
+    }
+    if !same {
+        if let Some(old) = cur.take() {
+            let _ = gs.unregister(old);
+        }
+    }
+    *cur = Some(new);
+    Ok(())
+}
+
+/// Tuş seçerken: mevcut kısayolu bırakır ki seçilen tuş arayüze ulaşsın; bitince geri alır.
+#[tauri::command]
+fn hotkey_capture(app: AppHandle, on: bool) {
+    CAPTURING.store(on, Ordering::SeqCst);
+    if let Some(k) = current_hotkey() {
+        let gs = app.global_shortcut();
+        if on {
+            let _ = gs.unregister(k);
+        } else if !gs.is_registered(k.clone()) {
+            let _ = gs.register(k);
+        }
+    }
 }
 
 /// Arayüzün kendi attığı istekleri (sözlük dosyaları, güncelleme denetimi) günlüğe ekler.
@@ -212,7 +254,9 @@ fn reset_position(app: &AppHandle) {
 
 pub fn run() {
     let f2 = Shortcut::new(None, Code::F2);
-    let f2_id = f2.id();
+    if let Ok(mut g) = HOTKEY.lock() {
+        *g = Some(f2.clone());
+    }
 
     tauri::Builder::default()
         // Tek kopya: uygulama zaten açıkken tekrar açılırsa yeni kopya başlamaz, açık olan öne gelir.
@@ -226,7 +270,8 @@ pub fn run() {
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |app, shortcut, event| {
-                    if shortcut.id() == f2_id && event.state() == ShortcutState::Pressed {
+                    let mine = current_hotkey().map(|k| k.id() == shortcut.id()).unwrap_or(false);
+                    if mine && event.state() == ShortcutState::Pressed {
                         toggle_overlay(app);
                     }
                 })
@@ -237,7 +282,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState { engine: Arc::new(Engine::new()) })
-        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note, hotkey_ok, get_riot_id, get_my_puuid, get_id_token, verify_install, obs_set, obs_push, card_copy, card_save, discord_set, discord_status, get_presence])
+        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note, hotkey_ok, set_hotkey, hotkey_capture, get_riot_id, get_my_puuid, get_id_token, verify_install, obs_set, obs_push, card_copy, card_save, discord_set, discord_status, get_presence])
         .setup(move |app| {
             // F2 başka bir uygulamada kayıtlıysa uygulama yine açılır, tepsi simgesi çalışmaya devam eder.
             if let Err(e) = app.global_shortcut().register(f2) {
@@ -247,18 +292,22 @@ pub fn run() {
             let handle = app.handle().clone();
             std::thread::spawn(move || loop {
                 std::thread::sleep(Duration::from_secs(4));
-                let key = Shortcut::new(None, Code::F2);
-                if !handle.global_shortcut().is_registered(key) {
-                    let _ = handle.global_shortcut().register(key);
+                if CAPTURING.load(Ordering::SeqCst) {
+                    continue;
+                }
+                if let Some(key) = current_hotkey() {
+                    if !handle.global_shortcut().is_registered(key.clone()) {
+                        let _ = handle.global_shortcut().register(key);
+                    }
                 }
             });
 
-            let toggle_item = MenuItem::with_id(app, "toggle", "Göster / Gizle (F2)", true, None::<&str>)?;
+            let toggle_item = MenuItem::with_id(app, "toggle", "Göster / Gizle", true, None::<&str>)?;
             let reset_item = MenuItem::with_id(app, "reset", "Konumu sıfırla", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Çıkış", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&toggle_item, &reset_item, &quit_item])?;
             let mut tray = TrayIconBuilder::new()
-                .tooltip("Celeste Overlay (F2: göster/gizle)")
+                .tooltip("Celeste Overlay")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {

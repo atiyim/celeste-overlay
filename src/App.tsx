@@ -20,6 +20,7 @@ import { LoadoutPanel } from "./LoadoutPanel";
 import { QuickChat } from "./QuickChat";
 import { Guide } from "./Guide";
 import { Buddy } from "./Buddy";
+import { restoreHotkey, useHotkey, hotkeyLabel } from "./hotkey";
 import { Crosshairs } from "./CrosshairPanel";
 import { Settings } from "./Settings";
 import { StatusBar } from "./StatusBar";
@@ -356,7 +357,7 @@ export function App() {
       getCurrentWindow().setIgnoreCursorEvents(false).catch(() => undefined);
     }).then((f) => { un = f; }).catch(() => undefined);
     // Uygulama zaten açıkken tekrar açılmaya çalışıldı: yeni kopya başlamadı, bu pencere öne geldi.
-    listen("second-instance", () => showToast("Celeste Overlay zaten açık. Gizliyken F2 ile açılır, tepsideki simgeden kapatılır."))
+    listen("second-instance", () => showToast("Celeste Overlay zaten açık. Gizliyken " + hotkeyLabel() + " ile açılır, tepsideki simgeden kapatılır."))
       .then((f) => { un2 = f; }).catch(() => undefined);
     return () => { un?.(); un2?.(); };
   }, []);
@@ -551,6 +552,8 @@ export function App() {
     register(spikeKey, (e) => { if (e.state === "Pressed") startSpike(); }).catch(() => showToast("Spike tuşu kaydedilemedi, başka bir program kullanıyor olabilir"));
     return () => { unregister(spikeKey).catch(() => undefined); };
   }, [spikeKey]);
+  useEffect(() => { if (inTauri) restoreHotkey(); }, []);
+  const hk = hotkeyLabel(useHotkey());
   // Oyun üstü spike şeridi: sayaç başlayınca küçük pencereye bildirilir.
   useEffect(() => (inTauri ? initSpikeWindow() : undefined), []);
   useEffect(() => { onTimerDone((t) => { setToast(t.name === "Spike" ? "Spike patladı" : `${t.name} bitti`); window.setTimeout(() => setToast(null), 3500); }); return () => onTimerDone(null); }, []);
@@ -865,7 +868,7 @@ export function App() {
         {hideAt && !autoHidden && !manualKeep.current && (
           <div className="hidebar" role="status">
             <span className="hbt">
-              <b>Maç başladı.</b> Overlay {Math.max(0, Math.ceil((hideAt - Date.now()) / 1000))} saniye sonra gizlenecek; uygulama kapanmıyor. Geri getirmek için <kbd>F2</kbd>.
+              <b>Maç başladı.</b> Overlay {Math.max(0, Math.ceil((hideAt - Date.now()) / 1000))} saniye sonra gizlenecek; uygulama kapanmıyor. Geri getirmek için <kbd>{hk}</kbd>.
             </span>
             <span className="hba">
               <button type="button" onClick={() => { manualKeep.current = true; setHideAt(null); showToast("Bu maç boyunca açık kalacak"); }}>Bu maç açık kalsın</button>
