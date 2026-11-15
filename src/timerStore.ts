@@ -15,13 +15,14 @@ const emit = () => { list = [...list]; subs.forEach((f) => f()); };
 export const soundOn = () => { try { return localStorage.getItem(SOUND_KEY) !== "0"; } catch { return true; } };
 export const setSound = (on: boolean) => { try { localStorage.setItem(SOUND_KEY, on ? "1" : "0"); } catch { /* depolama kapalı */ } };
 
-function beep() {
+function beep(notes: number[] = [784, 988]) {
   if (!soundOn()) return;
   try {
     const ctx = new AudioContext();
-    [0, 0.22].forEach((at, i) => {
+    notes.forEach((hz, i) => {
+      const at = i * 0.22;
       const o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = "sine"; o.frequency.value = i ? 988 : 784;
+      o.type = "sine"; o.frequency.value = hz;
       g.gain.setValueAtTime(0.0001, ctx.currentTime + at);
       g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + at + 0.02);
       g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + at + 0.2);
@@ -37,7 +38,12 @@ function run() {
   tick = window.setInterval(() => {
     const now = Date.now();
     for (const t of list) {
-      if (!t.done && t.endsAt <= now) { t.done = true; beep(); alertFn?.(t); }
+      if (!t.done && t.endsAt <= now) { t.done = true; beep(t.name === SPIKE_NAME ? [330, 247, 196] : undefined); alertFn?.(t); }
+      else if (!t.done && t.name === SPIKE_NAME) {
+        // Aşama değişince kısa uyarı: 7 sn (tam çözme biter) ve 3,5 sn (yarım çözme de biter)
+        const ph = spikePhase(t.endsAt - now).id;
+        if (ph !== lastPhase) { if (ph === "half") beep([660]); else if (ph === "dead") beep([520, 392]); lastPhase = ph; }
+      }
     }
     if (!list.some((t) => !t.done)) { window.clearInterval(tick); tick = undefined; }
     emit();
@@ -60,7 +66,22 @@ export const SPIKE_SECONDS = 45;
 const SPIKE_KEY = "overlay-spike-key";
 let spikeKey = (() => { try { return localStorage.getItem(SPIKE_KEY) ?? ""; } catch { return ""; } })();
 const keySubs = new Set<() => void>();
+/** Çözme süreleri: tam 7 sn, yarıdan devam 3,5 sn. */
+export const DEFUSE_FULL = 7, DEFUSE_HALF = 3.5, SPIKE_HURRY = 12;
+export type SpikePhaseId = "safe" | "hurry" | "half" | "dead";
+export interface SpikePhase { id: SpikePhaseId; label: string; hint: string }
+const PHASES: Record<SpikePhaseId, SpikePhase> = {
+  safe: { id: "safe", label: "Çözülebilir", hint: "Tam çözmeye rahatça vakit var." },
+  hurry: { id: "hurry", label: "Acele et", hint: "Tam çözme için son saniyeler. Şimdi başlamalısın." },
+  half: { id: "half", label: "Sadece yarım çözülmüşse", hint: "Sıfırdan çözme yetişmez. Yarısı çözülmüşse hâlâ yetişir." },
+  dead: { id: "dead", label: "Artık çözülmez", hint: "Yarım çözme bile yetişmez. Uzaklaş." },
+};
+export const spikePhaseOf = (sec: number): SpikePhaseId => (sec <= DEFUSE_HALF ? "dead" : sec <= DEFUSE_FULL ? "half" : sec <= SPIKE_HURRY ? "hurry" : "safe");
+export const spikePhase = (leftMs: number): SpikePhase => PHASES[spikePhaseOf(leftMs / 1000)];
+let lastPhase: SpikePhaseId = "safe";
+export function stopSpike() { list = list.filter((t) => t.name !== SPIKE_NAME); emit(); }
 export function startSpike() {
+  lastPhase = "safe";
   list = list.filter((t) => t.name !== SPIKE_NAME);
   addTimer(SPIKE_NAME, SPIKE_SECONDS);
 }

@@ -550,7 +550,7 @@ export function App() {
     register(spikeKey, (e) => { if (e.state === "Pressed") startSpike(); }).catch(() => showToast("Spike tuşu kaydedilemedi, başka bir program kullanıyor olabilir"));
     return () => { unregister(spikeKey).catch(() => undefined); };
   }, [spikeKey]);
-  useEffect(() => { onTimerDone((t) => { setToast(`${t.name} bitti`); window.setTimeout(() => setToast(null), 3500); }); return () => onTimerDone(null); }, []);
+  useEffect(() => { onTimerDone((t) => { setToast(t.name === "Spike" ? "Spike patladı" : `${t.name} bitti`); window.setTimeout(() => setToast(null), 3500); }); return () => onTimerDone(null); }, []);
   const copyName = async (name: string | null, label?: string) => {
     if (!name) { showToast("Bu oyuncunun ismi gizli, kopyalanacak bir şey yok"); return; }
     try {

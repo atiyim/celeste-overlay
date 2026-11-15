@@ -2999,3 +2999,30 @@ html[data-skin="obsidyen"] .step { background: rgba(12, 12, 14, .82); }
 .buddy:focus-visible .buddy-win { outline: 1px solid var(--accent); border-radius: 8px; }
 html.fps .buddy-anchor { display: none; }
 @media (prefers-reduced-motion: reduce) { .buddy-win, .buddy-bub { transition: none; } }
+
+/* ================= Spike göstergesi ================= */
+.spk { flex-direction: column; align-items: stretch; gap: 12px; }
+.spk-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.spg { --pc: var(--win); display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.spg.ph-hurry { --pc: #f5c451; } .spg.ph-half { --pc: #ff9a3d; } .spg.ph-dead, .spg.ph-boom { --pc: #ff4d5e; }
+.spg-top { display: flex; align-items: center; gap: 14px; }
+.spg-n { min-width: 104px; font-size: 34px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--pc); transition: color .2s; }
+.spg-n small { margin-left: 4px; font-size: 12px; font-weight: 500; color: var(--fg-3); }
+.spg-st { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.spg-st b { font-size: 13.5px; font-weight: 600; color: var(--pc); transition: color .2s; }
+.spg-st small { font-size: 11.5px; color: var(--fg-3); }
+.spg-bar { display: flex; gap: 3px; height: 26px; align-items: stretch; }
+.spg-bar i { flex: 1 1 0; min-width: 2px; border-radius: 2px; background: var(--win); transition: opacity .25s, transform .25s; }
+.spg-bar i.z-hurry { background: #f5c451; } .spg-bar i.z-half { background: #ff9a3d; } .spg-bar i.z-dead { background: #ff4d5e; }
+.spg-bar i.gone { opacity: .13; transform: scaleY(.55); }
+.spg-bar i.cur { box-shadow: 0 0 8px currentColor; animation: spgcur .5s ease-in-out infinite alternate; }
+@keyframes spgcur { to { opacity: .45; } }
+.spg.ph-dead .spg-n { animation: spgcur .25s ease-in-out infinite alternate; }
+.spg-marks { position: relative; height: 15px; font-size: 10.5px; color: var(--fg-3); white-space: nowrap; }
+.spg-marks span { position: absolute; top: 0; transform: translateX(-100%); padding-right: 6px; border-right: 1px solid #ff9a3d; color: #ff9a3d; }
+.spg-marks span.r { transform: none; padding: 0 0 0 6px; border-right: 0; border-left: 1px solid #ff4d5e; color: #ff4d5e; }
+.tpill.ph-hurry { color: #f5c451; border-color: color-mix(in srgb, #f5c451 50%, transparent); }
+.tpill.ph-half { color: #ff9a3d; border-color: color-mix(in srgb, #ff9a3d 55%, transparent); }
+.tpill.ph-dead { color: #ff4d5e; border-color: #ff4d5e; background: color-mix(in srgb, #ff4d5e 14%, transparent); }
+.tpill.ph-safe { color: var(--win); border-color: color-mix(in srgb, var(--win) 45%, transparent); }
+@media (prefers-reduced-motion: reduce) { .spg-bar i.cur, .spg.ph-dead .spg-n { animation: none; } }
