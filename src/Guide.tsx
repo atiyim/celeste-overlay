@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "./icons";
-import { music, pop, sfx } from "./sfx";
+import { audioCtx, music, pop, sfx } from "./sfx";
+import { Mascot, Wand } from "./Mascot";
 
 /* Sesli rehber: gerçek arayüzün küçük bir sahnesinde ok ve ışıkla gösterir, Celeste sesle anlatır, altyazı hep açıktır.
    Adımlar sesi bitince kendiliğinden ilerler; iki adımda kullanıcıdan küçük bir hareket beklenir. Ses dosyaları public/guide. */
@@ -72,6 +73,12 @@ export function Guide({ onDone }: Props) {
   const [bye, setBye] = useState(false);
   const [burst, setBurst] = useState(0);
   const [sayKey, setSayKey] = useState(0);
+  const [cheer, setCheer] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const mascotRef = useRef<HTMLDivElement>(null);
+  const analyser = useRef<AnalyserNode | null>(null);
+  /** Ağzın nasıl oynayacağı: gerçek ses seviyesi, sessizken sahte konuşma, ya da kapalı */
+  const talk = useRef<"audio" | "fake" | null>(null);
   const audio = useRef<HTMLAudioElement | null>(null);
   const timer = useRef<number | undefined>(undefined);
   const mutedRef = useRef(muted); mutedRef.current = muted;
@@ -82,18 +89,23 @@ export function Guide({ onDone }: Props) {
   const stop = () => {
     window.clearTimeout(timer.current);
     music.duck(false);
+    talk.current = null; analyser.current = null;
     if (audio.current) { audio.current.onended = null; audio.current.onerror = null; audio.current.pause(); audio.current = null; }
     setSpeaking(false);
   };
   /** Sesi çalar; sessizken ya da çalamazsa `ms` sonra devam eder. */
   const speak = (file: string, ms: number, then?: () => void) => {
     stop();
-    const fallback = () => { setSpeaking(false); timer.current = window.setTimeout(() => then?.(), ms); };
+    const fallback = () => { setSpeaking(false); talk.current = ms > 1500 ? "fake" : null; timer.current = window.setTimeout(() => { talk.current = null; then?.(); }, ms); };
     if (mutedRef.current) { fallback(); return; }
     const a = new Audio(`/guide/${file}.mp3`);
     audio.current = a;
-    a.onplay = () => { setSpeaking(true); music.duck(true); };
-    a.onended = () => { setSpeaking(false); music.duck(false); then?.(); };
+    try {
+      const c = audioCtx();
+      if (c) { const src = c.createMediaElementSource(a), an = c.createAnalyser(); an.fftSize = 512; src.connect(an); an.connect(c.destination); analyser.current = an; }
+    } catch { analyser.current = null; }
+    a.onplay = () => { setSpeaking(true); talk.current = analyser.current ? "audio" : "fake"; music.duck(true); };
+    a.onended = () => { setSpeaking(false); talk.current = null; music.duck(false); then?.(); };
     a.onerror = fallback;
     a.play().catch(fallback);
   };
@@ -119,6 +131,29 @@ export function Guide({ onDone }: Props) {
   }, [i, begun]);
 
   useEffect(() => () => { stop(); music.stop(0.3); }, []);
+  // Ağız: sesin gücüne göre kapalı / yarım / açık. Sessiz modda ritimli sahte konuşma.
+  useEffect(() => {
+    let raf = 0, lv = 0;
+    const buf = new Uint8Array(512);
+    const tick = () => {
+      const el = mascotRef.current;
+      if (el) {
+        let m = 0;
+        if (talk.current === "audio" && analyser.current) {
+          analyser.current.getByteTimeDomainData(buf);
+          let sum = 0;
+          for (let k = 0; k < buf.length; k++) { const v = (buf[k] - 128) / 128; sum += v * v; }
+          lv = Math.max(Math.sqrt(sum / buf.length), lv * 0.84);
+          m = lv > 0.085 ? 2 : lv > 0.028 ? 1 : 0;
+        } else if (talk.current === "fake") m = [0, 1, 2, 1, 2, 0, 1][Math.floor(Date.now() / 130) % 7];
+        else lv = 0;
+        if (el.dataset.mouth !== String(m)) el.dataset.mouth = String(m);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   const begin = (silent: boolean) => {
     if (silent) { setMuted(true); mutedRef.current = true; try { localStorage.setItem(MUTE_KEY, "1"); } catch { /* depolama kapalı */ } }
@@ -149,7 +184,7 @@ export function Guide({ onDone }: Props) {
   const finish = () => { stop(); music.stop(0.4); onDone(); };
   /** Yumuşak çıkış: müzik ve ekran birlikte söner. */
   const leave = () => { stop(); music.stop(1); setBye(true); window.setTimeout(onDone, 750); };
-  const confetti = () => { setBurst((b) => b + 1); if (!mutedRef.current) { pop(); sfx.chime(); } };
+  const confetti = () => { setBurst((b) => b + 1); setCheer(true); window.setTimeout(() => setCheer(false), 1300); if (!mutedRef.current) { pop(); sfx.chime(); } };
 
   const L = (k: string) => (s.t?.includes(k) ? " lit" : "");
   const stage = (
@@ -267,7 +302,7 @@ export function Guide({ onDone }: Props) {
   };
 
   return (
-    <div className={`panel guide gsx${bye ? " bye" : ""}`} role="dialog" aria-label="Başlangıç rehberi">
+    <div ref={rootRef} className={`panel guide gsx${bye ? " bye" : ""}`} role="dialog" aria-label="Başlangıç rehberi">
       {burst > 0 && <Confetti key={burst} />}
       <div className="gbar" aria-hidden="true"><i style={{ width: `${((i + (begun ? 1 : 0)) / STEPS.length) * 100}%` }} /></div>
       <div className="ph">
@@ -278,7 +313,7 @@ export function Guide({ onDone }: Props) {
       </div>
       <div className="gs-stage" key={s.scene === "stage" ? "stage" : `${s.scene}${i}`}>{scenes[s.scene]}</div>
       <div className="gs-cap" aria-live="polite">
-        <span className={`gs-mo${speaking ? " on" : ""}`}><img src="/celeste-mark.png" alt="" draggable={false} /><span className="gs-eq" aria-hidden="true"><i /><i /><i /><i /></span></span>
+        <Mascot ref={mascotRef} cheer={cheer} />
         <div className="gs-txt">
           {begun
             ? <p key={sayKey} className="gs-say">{s.say.split(" ").map((w, k, all) => <span key={k} style={{ animationDelay: `${((k / all.length) * s.d * 0.9).toFixed(2)}s` }}>{w} </span>)}</p>
@@ -287,6 +322,7 @@ export function Guide({ onDone }: Props) {
         </div>
         <button className="gs-ic" type="button" onClick={replay} disabled={!begun} title="Bu adımı tekrar dinle" aria-label="Bu adımı tekrar dinle"><Icon name="repeat" size={15} /></button>
       </div>
+      <Wand root={rootRef} hand={mascotRef} aim={begun && !!s.t && s.scene !== "hello" && s.scene !== "finish"} />
       <div className="gnav">
         <button className="x" type="button" onClick={() => go(-1)} disabled={!begun || i === 0}>Geri</button>
         <span className="gs-ctl">

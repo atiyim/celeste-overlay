@@ -2959,3 +2959,29 @@ html[data-skin="obsidyen"] .step { background: rgba(12, 12, 14, .82); }
 .mshi { max-width: 58%; opacity: .95; }
 .mshx { max-width: 60%; }
 .mshx b, .mshx strong { text-shadow: 0 1px 6px rgba(0, 0, 0, .7); }
+
+/* ================= Celeste (piksel karakter) ================= */
+.gs-cap { position: relative; overflow: visible; padding-right: 168px; min-height: 66px; }
+.gs-cap .gs-ic { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); }
+.mascot { position: absolute; right: 56px; bottom: 5px; z-index: 12; width: 96px; height: 116px; pointer-events: none; animation: mcbob 2.6s ease-in-out infinite; transform-origin: 50% 100%; }
+.mascot svg { display: block; filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .28)); }
+.mc-m { display: none; }
+.mascot[data-mouth="0"] .mc-m0, .mascot[data-mouth="1"] .mc-m1, .mascot[data-mouth="2"] .mc-m2 { display: block; }
+.mc-eo { animation: mcblink 4.4s steps(1) infinite; }
+.mc-ec { opacity: 0; animation: mcblink2 4.4s steps(1) infinite; }
+@keyframes mcblink { 0%, 94%, 100% { opacity: 1; } 95%, 98% { opacity: 0; } }
+@keyframes mcblink2 { 0%, 94%, 100% { opacity: 0; } 95%, 98% { opacity: 1; } }
+@keyframes mcbob { 50% { transform: translateY(-3px); } }
+.mascot.cheer { animation: mcjump .65s cubic-bezier(.3, 1.4, .5, 1) 2; }
+.mascot.cheer .mc-eo { opacity: 0; animation: none; } .mascot.cheer .mc-ec { opacity: 1; animation: none; }
+@keyframes mcjump { 0%, 100% { transform: translateY(0) scale(1, 1); } 20% { transform: translateY(0) scale(1.06, .92); } 55% { transform: translateY(-22px) scale(.96, 1.06); } }
+
+/* Asa ve sihirli iz */
+.gs-wand { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 14; pointer-events: none; overflow: visible; }
+.gs-trail { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1 11; opacity: .85; animation: gsmarch 1s linear infinite; filter: drop-shadow(0 0 4px var(--accent)); }
+@keyframes gsmarch { to { stroke-dashoffset: -12; } }
+.gs-wstar { fill: #fff3b0; stroke: var(--accent); stroke-width: 1; animation: gsstar 1.2s ease-in-out infinite; transform-box: fill-box; }
+@keyframes gsstar { 50% { opacity: .55; } }
+.gs-ring { fill: none; stroke: var(--accent); stroke-width: 2; animation: gsringp 1.3s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes gsringp { 0% { opacity: .9; transform: scale(.6); } 100% { opacity: 0; transform: scale(2.2); } }
+@media (prefers-reduced-motion: reduce) { .mascot, .mc-eo, .mc-ec, .gs-trail, .gs-wstar, .gs-ring { animation: none; } }

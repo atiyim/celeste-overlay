@@ -1,5 +1,7 @@
 /* Küçük efekt sesleri: dosya yok, Web Audio ile üretilir. Hepsi kısa ve alçak sesli. */
 let ctx: AudioContext | null = null;
+/** Ses bağlamı (konuşan ağız için ses seviyesi okumada kullanılır). */
+export const audioCtx = () => ac();
 function ac(): AudioContext | null {
   try {
     const C = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
