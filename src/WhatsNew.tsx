@@ -11,6 +11,7 @@ const NOTES: Record<string, string[]> = {
     "Maç sırasında Riot Client çok daha seyrek sorgulanır; ajan seçiminde ve maç başında sunucuya yalnızca 1-2 istek gider.",
     "Akış: paylaşım ve yorumlara görsel ekleyebilirsin (dosya, yapıştırma ya da Tenor/Giphy/Imgur GIF bağlantısı).",
     "Hakkında bölümü sol panele taşındı; simgeler yenilendi.",
+    "Lobide üç silahın kaplaması geri geldi (Vandal, Phantom, Operator); istemezsen Ayarlar > Oyuncu tablosu'ndan kapatabilirsin.",
     "Oyuncu paneli alttan açılır. Kaplamalar oyundaki alım menüsü (B) gibi sıralanır: yan silahlar, hafif makineli ve pompalı, tüfek ve yakın dövüş, keskin nişancı ve makineli. Her silahta tam ad, seviye, takılı renk ve uğurluk; tıklayınca ayrıntısı büyük görünür.",
   ],
 

@@ -43,7 +43,6 @@ export function AboutPanel({ updater, onOpen, onFeedback, onGuide, onToast, onCl
             </h3>
             <p className="ab-sub">Açık kaynak, <b>Celeste Overlay Atıf Lisansı</b> ile yayınlanır: kullanabilir ve geliştirebilirsin, ama kendi eserin gibi tanıtamaz ve Celeste adıyla yayınlayamazsın.</p>
             <div className="ab-links">
-              <button type="button" className="ab-lk dc" onClick={() => open(OWNER_DISCORD_URL)}><Icon name="chat" size={15} />Discord profilim</button>
               <button type="button" className="ab-lk" onClick={() => open(INSTAGRAM_URL)}><Icon name="user" size={15} />@bneceleste</button>
               <button type="button" className="ab-lk" onClick={() => open(REPO_URL)}><Icon name="link" size={15} />Kaynak kodu</button>
             </div>

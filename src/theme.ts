@@ -11,7 +11,7 @@ export const COLS: ColDef[] = [
   { id: "peak", label: "Peak rank", px: 116 },
   { id: "wr", label: "Kazanma oranı", px: 0, inline: true },
   { id: "form", label: "Form", px: 140 },
-  { id: "skins", label: "Vandal", px: 168 },
+  { id: "skins", label: "Silahlar", px: 132 },
   { id: "party", label: "Parti", px: 0, inline: true },
   { id: "pool", label: "Ajanlar", px: 84 },
   { id: "badges", label: "Öne çıkan", px: 150 },
@@ -61,8 +61,9 @@ export interface Theme {
   v: number;
 }
 /** v2: lobi sadeleşti; Vandal, Ajanlar ve Tracker sütunları varsayılan olarak kapalı (Ayarlar'dan açılır). */
-const THEME_V = 2;
-const V2_OFF: ColId[] = ["skins", "pool", "tracker"];
+/** v3: üç silah (Vandal, Phantom, Operator) sütunu geri geldi ve varsayılan açık. */
+const THEME_V = 3;
+const V2_OFF: ColId[] = ["pool", "tracker"];
 
 const ALL_ON = Object.fromEntries(COLS.map((c) => [c.id, !V2_OFF.includes(c.id)])) as Record<ColId, boolean>;
 
@@ -103,6 +104,9 @@ export function loadTheme(): Theme {
   try {
     const t = JSON.parse(localStorage.getItem(KEY) ?? "null") as Partial<Theme> | null;
     if (!t) return DEFAULT_THEME;
+    // Ana temaya ilk geçiş (bir kez): Obsidyen Altın altın vurguyla başlar. Sonradan seçilen renk korunur.
+    if (!localStorage.getItem("overlay-gold") && t.skin !== "klasik") t.accent = DEFAULT_THEME.accent;
+    localStorage.setItem("overlay-gold", "1");
     return {
       // Tema seçmemiş eski kayıt ana temaya (Obsidyen Altın) geçer; eski mor varsayılan vurgu da altına döner.
       accent: typeof t.accent === "string" && /^#[0-9a-f]{6}$/i.test(t.accent) && !OLD_DEFAULT_ACCENTS.includes(t.accent.toLowerCase()) && !(!t.skin && t.accent.toLowerCase() === "#8b9cff") ? t.accent : DEFAULT_THEME.accent,
@@ -110,7 +114,7 @@ export function loadTheme(): Theme {
       swapSides: t.swapSides === true,
       autoHide: t.autoHide !== false,
       hideAfter: HIDE_AFTER_OPTIONS.includes(t.hideAfter as number) ? (t.hideAfter as number) : DEFAULT_THEME.hideAfter,
-      cols: t.v === THEME_V ? { ...ALL_ON, ...(t.cols ?? {}) } : { ...ALL_ON, ...(t.cols ?? {}), ...Object.fromEntries(V2_OFF.map((c) => [c, false])) },
+      cols: t.v === THEME_V ? { ...ALL_ON, ...(t.cols ?? {}) } : { ...ALL_ON, ...(t.cols ?? {}), ...((t.v ?? 0) < 2 ? Object.fromEntries(V2_OFF.map((c) => [c, false])) : {}), skins: true },
       th: Object.fromEntries(
         (Object.keys(DEFAULT_TH) as (keyof Thresholds)[]).map((k) => {
           const v = (t.th as Partial<Thresholds> | undefined)?.[k];
@@ -140,7 +144,7 @@ export function loadTheme(): Theme {
 
 export function applyTheme(t: Theme) {
   const r = document.documentElement.style;
-  r.setProperty("--accent", t.accent);
+  // Vurgu rengini applyLook (vip.ts) yazar: burada yazılırsa her ayar değişiminde temanın/rolün rengini ezerdi.
   r.setProperty("--alpha", String(t.alpha));
   document.documentElement.classList.toggle("fps", t.fps);
   try { localStorage.setItem(KEY, JSON.stringify(t)); } catch { /* depolama dolu */ }

@@ -5,7 +5,7 @@ import { Roles } from "./RoleBadge";
 import { Icon } from "./icons";
 import { NameLine } from "./ui";
 import { partyColor, playerView } from "./playerView";
-import { BadgePill, FormDots, Moon, MoreBadges, Peak, type RowProps } from "./PlayerRow";
+import { BadgePill, FormDots, Moon, MoreBadges, Peak, type RowProps, Guns } from "./PlayerRow";
 
 /* Kart düzeni: ajan seçim ekranı gibi; her takım 5 dikey kart. Tıklayınca aynı ayrıntı paneli açılır. */
 export function PlayerCard({ p, index, assets, entry, cols, th, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles, plate, top, hot, celeste }: Omit<RowProps, "template" | "blur">) {
@@ -58,6 +58,7 @@ export function PlayerCard({ p, index, assets, entry, cols, th, onOpen, onCopy, 
           <span><b>{p.kd != null ? p.kd.toFixed(2) : "–"}</b><small>K/D</small></span>
           <FormDots p={p} assets={assets} />
         </div>
+        {cols.skins && <Guns v={v} />}
         <div className="pcbd">
           {v.badges[0] ? <BadgePill b={v.badges[0]} /> : <span className="d">–</span>}
           <MoreBadges list={v.badges.slice(1)} />

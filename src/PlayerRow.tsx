@@ -11,7 +11,7 @@ import { partyInfo } from "./party";
 import { Roles } from "./RoleBadge";
 import type { Role } from "./feed";
 import { Icon } from "./icons";
-import { partyColor, playerView, shortSkin } from "./playerView";
+import { partyColor, playerView } from "./playerView";
 import type { Badge } from "./playstyle";
 
 export interface RowProps {
@@ -47,6 +47,24 @@ export function BadgePill({ b }: { b: Badge }) {
   return <span className={`bd ${tone}`} title={b.tip}>{b.text}</span>;
 }
 /** Rolü olmayan Celeste kullanıcısı: adın yanında küçük ay. */
+/** Üç silahın (Vandal, Phantom, Operator) kaplaması: yalnızca görsel, adlar ipucunda. Sabit genişlik, taşmaz. */
+export function Guns({ v }: { v: { thumbs: ({ weapon: { name: string; icon: string }; skin: { image: string; isDefault: boolean; tier?: { rank: number; color: string } | null } } | null)[]; skinTip: string; noLoadout: boolean } }) {
+  if (v.noLoadout) return <div className="gun3"><span className="d">Oyunda görünür</span></div>;
+  return (
+    <div className="gun3" title={v.skinTip}>
+      {v.thumbs.slice(0, 3).map((t, i) => t ? (
+        <img
+          key={i}
+          className={t.skin.isDefault ? "th dim" : t.skin.tier ? `th tr t${t.skin.tier.rank}` : "th"}
+          style={t.skin.tier && !t.skin.isDefault ? ({ "--tc": t.skin.tier.color } as React.CSSProperties) : undefined}
+          src={t.skin.image} alt={t.weapon.name} loading="lazy"
+          onError={(e) => { const el = e.currentTarget; if (el.dataset.fb !== "1" && t.weapon.icon) { el.dataset.fb = "1"; el.src = t.weapon.icon; } }}
+        />
+      ) : <i key={i} className="th" />)}
+    </div>
+  );
+}
+
 export const Moon = () => <span className="cmoon" title="Celeste Overlay kullanıyor" aria-label="Celeste Overlay kullanıyor"><Icon name="moon" size={11} stroke={2} /></span>;
 
 /** Peak rank: küçük simge ve rank adı. Üç lobi düzeninde de aynı görünür; rank bilinmiyorsa çizgi. */
@@ -131,23 +149,7 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
           <FormDots p={p} assets={assets} />
         </div>
       )}
-      {cols.skins && (
-        <div className="skin1" title={v.noLoadout ? undefined : v.skinTip}>
-          {v.noLoadout ? <span className="d">Oyunda görünür</span> : v.vandal ? (
-            <>
-              <img
-                className={v.vandal.skin.isDefault ? "th dim" : v.vandal.skin.tier ? `th tr t${v.vandal.skin.tier.rank}` : "th"}
-                style={v.vandal.skin.tier && !v.vandal.skin.isDefault ? ({ "--tc": v.vandal.skin.tier.color } as React.CSSProperties) : undefined}
-                src={v.vandal.skin.image}
-                alt=""
-                loading="lazy"
-                onError={(e) => { const el = e.currentTarget; if (el.dataset.fb !== "1" && v.vandal!.weapon.icon) { el.dataset.fb = "1"; el.src = v.vandal!.weapon.icon; } }}
-              />
-              <span className="skn">{v.vandal.skin.isDefault ? "Varsayılan" : shortSkin(v.vandal.skin.name, v.vandal.weapon.name)}</span>
-            </>
-          ) : <span className="d">–</span>}
-        </div>
-      )}
+      {cols.skins && <Guns v={v} />}
       {cols.pool && (
         <div className="pool" title={v.pool ? `Son ${v.pool.n} maçında oynadığı ajanlar (ölüm maçı hariç)` : undefined}>
           {v.pool ? v.pool.top.map((a) => {

@@ -2,14 +2,14 @@ import type { ReactNode } from "react";
 
 /* Arayüz simgeleri: tek çizgi kalınlığı, 24'lük ızgara. Hepsi currentColor ile boyanır. */
 const P: Record<string, ReactNode> = {
-  users: <><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M2 21v-1a6 6 0 0 1 12 0v1" /><path d="M16 3.5a4 4 0 0 1 0 7.5" /><path d="M22 21v-1a6 6 0 0 0-4-5.6" /></>,
-  clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
-  user: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>,
-  msg: <path d="M4 5h16v11H9l-5 4z" />,
-  spark: <><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z" /><path d="M19 16.5l.6 1.8 1.9.7-1.9.7-.6 1.8-.6-1.8-1.9-.7 1.9-.7z" /></>,
-  help: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6" /><path d="M12 17h.01" /></>,
-  info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6h.01" /></>,
-  gear: <><circle cx="12" cy="12" r="3" /><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6" /><circle cx="12" cy="12" r="6.5" /></>,
+  users: <><circle cx="9" cy="8" r="3.6" /><path d="M2.5 19.4c0-3.2 2.9-5.4 6.5-5.4s6.5 2.2 6.5 5.4c0 .6-.5 1.1-1.1 1.1H3.6c-.6 0-1.1-.5-1.1-1.1z" /><path d="M16.2 4.7a3.6 3.6 0 0 1 0 6.6" /><path d="M18.6 14.7c1.8.9 2.9 2.5 2.9 4.5" /></>,
+  clock: <><circle cx="12" cy="12.5" r="8.5" /><path d="M12 8v4.8l3 1.8" /><path d="M9.5 2.5h5" /></>,
+  user: <><circle cx="12" cy="8" r="4.2" /><path d="M4.5 19.4c0-3.5 3.3-5.9 7.5-5.9s7.5 2.4 7.5 5.9c0 .6-.5 1.1-1.1 1.1H5.600c-.6 0-1.1-.5-1.1-1.1z" /></>,
+  msg: <><path d="M12 4c4.7 0 8.5 3.1 8.5 7s-3.8 7-8.5 7c-.9 0-1.800-.1-2.600-.3L5 19.800l.900-3.600C4.400 14.900 3.500 13 3.500 11c0-3.900 3.800-7 8.500-7z" /><path d="M8.500 11h.01M12 11h.01M15.500 11h.01" /></>,
+  spark: <><path d="M10.5 3c.5 4 2.300 5.800 6.300 6.300-4 .5-5.800 2.300-6.300 6.300-.5-4-2.300-5.800-6.300-6.300 4-.5 5.800-2.300 6.300-6.300z" /><path d="M18 14.500c.2 1.800 1 2.600 2.800 2.800-1.800.2-2.600 1-2.800 2.800-.2-1.800-1-2.600-2.800-2.800 1.800-.2 2.600-1 2.800-2.800z" /></>,
+  help: <><circle cx="12" cy="12" r="9" /><path d="M9.300 9.400a2.800 2.800 0 1 1 4 2.500c-.8.400-1.300 1-1.300 1.900" /><path d="M12 17.200h.01" /></>,
+  info: <><rect x="3.500" y="3.500" width="17" height="17" rx="5.500" /><path d="M12 11.200v5" /><path d="M12 7.800h.01" /></>,
+  gear: <><path d="M12.220 2h-.440a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.730l-.430.250a2 2 0 0 1-2 0l-.150-.080a2 2 0 0 0-2.730.730l-.220.380a2 2 0 0 0 .730 2.730l.150.100a2 2 0 0 1 1 1.720v.510a2 2 0 0 1-1 1.740l-.150.090a2 2 0 0 0-.730 2.730l.220.380a2 2 0 0 0 2.730.730l.150-.080a2 2 0 0 1 2 0l.430.250a2 2 0 0 1 1 1.730V20a2 2 0 0 0 2 2h.440a2 2 0 0 0 2-2v-.180a2 2 0 0 1 1-1.730l.430-.250a2 2 0 0 1 2 0l.150.080a2 2 0 0 0 2.730-.730l.220-.390a2 2 0 0 0-.730-2.730l-.150-.080a2 2 0 0 1-1-1.740v-.500a2 2 0 0 1 1-1.740l.150-.090a2 2 0 0 0 .730-2.730l-.220-.380a2 2 0 0 0-2.730-.730l-.150.080a2 2 0 0 1-2 0l-.430-.250a2 2 0 0 1-1-1.730V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></>,
   sliders: <><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" /><circle cx="15" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="18" r="2" /></>,
   minus: <path d="M5 12h14" />,
   full: <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />,
@@ -35,7 +35,7 @@ const P: Record<string, ReactNode> = {
   layers: <><path d="M12 3l9 5-9 5-9-5z" /><path d="M3 13l9 5 9-5" /></>,
   chat: <><path d="M4 5h16v11H9l-5 4z" /><path d="M8 9.5h8M8 12.5h5" /></>,
   lock: <><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>,
-  crown: <path d="M4 18h16l1.5-10-5 3.5L12 5 7.5 11.5 2.5 8z" />,
+  crown: <><path d="M4.300 17.500L2.800 8.600l5 3.400L12 5.800l4.200 6.200 5-3.400-1.500 8.900z" /><path d="M5 20.500h14" /></>,
   chevron: <path d="M9 6l6 6-6 6" />,
   collapse: <path d="M6 15l6-6 6 6" />,
   expand: <path d="M6 9l6 6 6-6" />,
@@ -51,7 +51,7 @@ const NOFILL = new Set<string>(["link", "repeat", "chart", "search", "sliders", 
 export function Icon({ name, size = 18, stroke = 2 }: { name: IconName; size?: number; stroke?: number }) {
   const soft = SOFT.has(name) && !NOFILL.has(name);
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={soft ? "currentColor" : "none"} fillOpacity={soft ? 0.2 : undefined} stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={soft ? "currentColor" : "none"} fillOpacity={soft ? 0.24 : undefined} stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {P[name]}
     </svg>
   );

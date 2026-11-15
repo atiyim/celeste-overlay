@@ -62,7 +62,7 @@ export function playerView(p: Player, { assets, entry, th, mapId, mapName, index
   const badges: Badge[] = [poolBadge(p, agent?.name), gunBadge(p), mapBadge(p, mapId, mapName), mmrBadge(p, (t) => assets.tiers.get(t)?.name), formBadge(p), styleBadge(play, th), activityBadge(p)]
     .filter((b): b is Badge => !!b);
 
-  return { agent, cur, peak, anonymous, label, tag, name, copyName, prevText, times, trackerUrl, w, g, scope, wrPct, vandal: thumbs[0], skinTip, noLoadout, pool, badges };
+  return { agent, cur, peak, anonymous, label, tag, name, copyName, prevText, times, trackerUrl, w, g, scope, wrPct, vandal: thumbs[0], thumbs, skinTip, noLoadout, pool, badges };
 }
 
 /** Parti harfi → renk. Aynı partidekiler aynı renkte çizgiyle birleşir. */
