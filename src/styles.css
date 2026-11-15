@@ -2641,3 +2641,14 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 .ab-lk.dc { background: #5865f2; border-color: #5865f2; color: #fff; }
 .ab-lk.dc:hover { background: #4752c4; border-color: #4752c4; }
 .ab-lk:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* ---- Akış görselleri ---- */
+.fmimg{display:block;margin:6px 0 2px;padding:0;border:0;background:var(--bg2,rgba(255,255,255,.04));border-radius:10px;overflow:hidden;cursor:zoom-in;max-width:100%}
+.fmimg img{display:block;max-width:100%;max-height:220px;width:auto;height:auto;object-fit:contain}
+.fmimg.big{cursor:zoom-out}.fmimg.big img{max-height:70vh}
+.fmimg.sm img{max-height:120px}.fmimg.sm.big img{max-height:50vh}
+.fmgone{display:block;margin:4px 0}
+.fmdraft{display:flex;align-items:flex-end;gap:10px;margin-top:6px}
+.fmdraft img{max-height:90px;max-width:60%;border-radius:8px;object-fit:contain}
+.fqm{display:inline-flex;gap:6px}
+.fprevc .fmimg{margin-top:4px}

@@ -7,7 +7,9 @@ const NOTES: Record<string, string[]> = {
     "Lobi küçüldü: üç düzen de ekranda çok daha az yer kaplıyor, bilgiler aynı.",
     "Peak rank geri geldi: listede kendi sütununda, kartlarda ve Karşı karşıya'da rankın hemen altında.",
     "Oyundayken efektler durur: overlay arka plandayken hiçbir şey hareket etmez, öne gelince kaldığı yerden devam eder.",
-    "Maç sırasında Riot Client çok daha seyrek sorgulanır.",
+    "Maç sırasında Riot Client çok daha seyrek sorgulanır; ajan seçiminde ve maç başında sunucuya yalnızca 1-2 istek gider.",
+    "Akış: paylaşım ve yorumlara görsel ekleyebilirsin (dosya, yapıştırma ya da Tenor/Giphy/Imgur GIF bağlantısı).",
+    "Hakkında bölümü sol panele taşındı; simgeler yenilendi.",
     "Oyuncu paneli alttan açılır. Kaplamalar oyundaki alım menüsü (B) gibi sıralanır: yan silahlar, hafif makineli ve pompalı, tüfek ve yakın dövüş, keskin nişancı ve makineli. Her silahta tam ad, seviye, takılı renk ve uğurluk; tıklayınca ayrıntısı büyük görünür.",
   ],
 

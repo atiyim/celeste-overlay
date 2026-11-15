@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import type { Assets } from "./assets";
 import { lookup } from "./assets";
+import { FeedImage, useMedia } from "./Media";
 import { tierColor } from "./LoadoutPanel";
 import type { MyStats } from "./types";
 import { Empty, NameLine, PanelHead } from "./ui";
@@ -268,6 +269,7 @@ function Comments({ post, canWrite, onToast, onCount }: { post: Post; canWrite: 
   const [err, setErr] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const m = useMedia(onToast, 960);
 
   const load = useCallback(async () => {
     try { const r = await feedComments(post.id); setList(r.comments); onCount(r.comments.length); setErr(null); }
@@ -277,9 +279,9 @@ function Comments({ post, canWrite, onToast, onCount }: { post: Post; canWrite: 
 
   const send = async () => {
     const t = text.trim();
-    if (!t) return;
+    if (!t && !m.ref) return;
     setBusy(true);
-    try { await feedComment(post.id, t); setText(""); await load(); }
+    try { await feedComment(post.id, t, m.ref); setText(""); m.clear(); await load(); }
     catch (e) { onToast((e as Error).message); }
     setBusy(false);
   };
@@ -299,15 +301,20 @@ function Comments({ post, canWrite, onToast, onCount }: { post: Post; canWrite: 
             {!c.mine && !adm.on && canWrite && <button className="lnk" type="button" onClick={() => act(() => feedReport(`c:${c.id}`), "Bildirildi, teşekkürler")}>Bildir</button>}
             {adm.on && <AdminButtons target={`c:${c.id}`} riot={c.riot} mine={c.mine} onToast={onToast} onDone={load} />}
           </div>
-          <RichText text={c.text} />
+          {c.text && <RichText text={c.text} />}
+          {c.img && <FeedImage src={c.img} small />}
         </div>
       ))}
       {list && list.length === 0 && <small className="d">Henüz yorum yok.</small>}
       {canWrite && (
-        <div className="fcin">
-          <input className="inp" value={text} maxLength={COMMENT_MAX} placeholder="Yorum yaz · @isim#etiket ile etiketle" onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
-          <button className="x" type="button" onClick={send} disabled={busy || !text.trim()}>Gönder</button>
-        </div>
+        <>
+          <div className="fcin">
+            <input className="inp" value={text} maxLength={COMMENT_MAX} placeholder="Yorum yaz · @isim#etiket ile etiketle" onChange={(e) => setText(e.target.value)} onPaste={m.onPaste} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
+            {m.buttons}
+            <button className="x" type="button" onClick={send} disabled={busy || m.busy || (!text.trim() && !m.ref)}>Gönder</button>
+          </div>
+          {m.extra}
+        </>
       )}
     </div>
   );
@@ -351,6 +358,7 @@ function PostView({ p, assets, canWrite, onToast, onChanged }: { p: Post; assets
       </header>
       {p.text && <RichText className="fpt" text={p.text} />}
       {p.card && <FeedCardView c={p.card} assets={assets} />}
+      {p.img && <FeedImage src={p.img} />}
       {p.clip && <ClipView clip={p.clip} />}
       <footer className="fpf">
         <button type="button" className={liked ? "fgg on" : "fgg"} onClick={gg} disabled={!canWrite} aria-pressed={liked} title="GG ver">GG <b>{likes}</b></button>
@@ -365,7 +373,7 @@ function PostView({ p, assets, canWrite, onToast, onChanged }: { p: Post; assets
         <div className="fprev">
           {count > (p.preview?.length ?? 0) && <button className="lnk" type="button" onClick={() => setOpen(true)}>Tüm yorumları gör ({count})</button>}
           {p.preview!.map((c) => (
-            <div key={c.id} className="fprevc"><Who riot={c.riot} /><RichText text={c.text} /></div>
+            <div key={c.id} className="fprevc"><Who riot={c.riot} />{c.text && <RichText text={c.text} />}{c.img && <FeedImage src={c.img} small />}</div>
           ))}
         </div>
       )}
@@ -382,11 +390,12 @@ function QuickComment({ post, first, onSent, onToast }: { post: Post; first: boo
   const [text, setText] = useState("");
   const [focus, setFocus] = useState(false);
   const [busy, setBusy] = useState(false);
+  const m = useMedia(onToast, 960);
   const send = async (t: string) => {
     const v = t.trim();
-    if (!v || busy) return;
+    if ((!v && !m.ref) || busy) return;
     setBusy(true);
-    try { await feedComment(post.id, v); setText(""); onSent(); onToast("Yorumun gönderildi"); }
+    try { await feedComment(post.id, v, m.ref); setText(""); m.clear(); onSent(); onToast("Yorumun gönderildi"); }
     catch (e) { onToast((e as Error).message); }
     setBusy(false);
   };
@@ -398,10 +407,12 @@ function QuickComment({ post, first, onSent, onToast }: { post: Post; first: boo
           placeholder={first ? "İlk yorumu sen yap…" : "Yorum yaz…"}
           aria-label="Yorum yaz"
           onFocus={() => setFocus(true)} onBlur={() => window.setTimeout(() => setFocus(false), 150)}
-          onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(text); }}
+          onChange={(e) => setText(e.target.value)} onPaste={m.onPaste} onKeyDown={(e) => { if (e.key === "Enter") send(text); }}
         />
-        {text.trim() && <button className="x pri" type="button" onClick={() => send(text)} disabled={busy}>Gönder</button>}
+        {(focus || first || m.ref) && !m.ref && <span onMouseDown={(e) => e.preventDefault()} className="fqm">{m.buttons}</span>}
+        {(text.trim() || m.ref) && <button className="x pri" type="button" onClick={() => send(text)} disabled={busy || m.busy}>Gönder</button>}
       </div>
+      {m.extra}
       {(focus || first) && !text && (
         <div className="fqchips" aria-label="Hızlı yorum">
           {QUICK.map((q) => <button key={q} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => send(q)} disabled={busy}>{q}</button>)}
@@ -539,6 +550,7 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
   const [unseen, setUnseen] = useState(0);
   const [clip, setClip] = useState("");
   const [clipOpen, setClipOpen] = useState(false);
+  const pm = useMedia(onToast);
   const [posts, setPosts] = useState<Post[] | null>(null);
   const [more, setMore] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -619,8 +631,8 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
   const share = async () => {
     setBusy(true);
     try {
-      await feedPost(text.trim(), card, clip.trim());
-      setText(""); setCard(null); setClip(""); setClipOpen(false); onToast("Paylaşıldı");
+      await feedPost(text.trim(), card, clip.trim(), pm.ref);
+      setText(""); pm.clear(); setCard(null); setClip(""); setClipOpen(false); onToast("Paylaşıldı");
       if (tab !== "new") setTab("new"); else load("new");
     } catch (e) { onToast((e as Error).message); }
     setBusy(false);
@@ -656,7 +668,8 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
             : <Empty text={authing ? "Riot hesabın doğrulanıyor…" : "Paylaşmak için Riot Client açık olmalı."} onRetry={authing ? undefined : auth} />
         ) : tab !== "admin" && !profileOf && (
           <div className="fcomp box pad">
-            <textarea ref={area} className="inp" rows={2} maxLength={POST_MAX} value={text} placeholder={card ? "Maçın hakkında bir şey yaz (isteğe bağlı)" : "Ne düşünüyorsun?"} onChange={(e) => setText(e.target.value)} />
+            <textarea ref={area} className="inp" rows={2} maxLength={POST_MAX} value={text} placeholder={card ? "Maçın hakkında bir şey yaz (isteğe bağlı)" : "Ne düşünüyorsun?"} onChange={(e) => setText(e.target.value)} onPaste={pm.onPaste} />
+            {pm.extra}
             {clipOpen && (
               <div className="fcin">
                 <input className="inp" value={clip} placeholder="YouTube, TikTok, Medal ya da Twitch klip bağlantısı" onChange={(e) => setClip(e.target.value)} />
@@ -671,11 +684,12 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
             )}
             <div className="fcbar">
               {!card && <button className="x" type="button" onClick={attachLast}>Son maçımı ekle</button>}
+              {pm.buttons}
               {!clipOpen && <button className="x" type="button" onClick={() => setClipOpen(true)}>Klip ekle</button>}
               <small className="d">Paylaşımın Riot ID'nle herkese açık görünür ve Celeste Discord sunucusuna da düşer. Küfür ve hakaret yazılamaz.</small>
               <span className="sp" />
               <small className={text.length > POST_MAX - 20 ? "neg" : "d"}>{text.length}/{POST_MAX}</small>
-              <button className="x pri" type="button" onClick={share} disabled={busy || (!text.trim() && !card && !clip.trim())}>{busy ? "Paylaşılıyor" : "Paylaş"}</button>
+              <button className="x pri" type="button" onClick={share} disabled={busy || pm.busy || (!text.trim() && !card && !clip.trim() && !pm.ref)}>{busy ? "Paylaşılıyor" : "Paylaş"}</button>
             </div>
           </div>
         )}

@@ -24,14 +24,14 @@ export interface FeedCard {
   board?: { a: string; k: number; d: number; as: number; acs: number; me: boolean; ally: boolean }[];
 }
 export interface Post { id: number; riot: string; text: string; card: FeedCard | null; created: number; likes: number; comments: number; liked: boolean; mine: boolean; pinned?: boolean; roles: Role[]; reports?: number; hidden?: boolean;
-  reacts?: Record<string, number>; myReacts?: string[]; clip?: Clip | null;
+  reacts?: Record<string, number>; myReacts?: string[]; clip?: Clip | null; img?: string;
   /** Son 2 yorum (akışta tıklamadan görünür). */
-  preview?: { id: number; riot: string; text: string; created: number }[] }
+  preview?: { id: number; riot: string; text: string; created: number; img?: string }[] }
 export interface Clip { url: string; kind: "youtube" | "tiktok" | "medal" | "twitch"; id: string }
 export interface Note { id: number; kind: "gg" | "react" | "comment" | "mention" | "weekly"; post: number; by: string; text: string; at: number; seen: boolean }
 export interface Profile { riot: string; puuid: string; roles: Role[]; tier: { tier: number; name: string } | null; stats: { posts: number; gg: number; comments: number; since: number | null }; agents: { agentId: string; name: string; n: number; w: number }[]; posts: Post[] }
 export const REACTS = [["fire", "🔥"], ["skull", "💀"], ["lol", "😂"], ["clap", "👏"]] as const;
-export interface Comment { id: number; riot: string; text: string; created: number; mine: boolean; roles: Role[] }
+export interface Comment { id: number; riot: string; text: string; created: number; mine: boolean; roles: Role[]; img?: string }
 export interface RoleDef { id: number; name: string; color: string; icon?: string; glow?: boolean; members: { puuid: string; riot: string }[] }
 export interface AdminList { posts: Post[]; comments: (Comment & { post: number; reports: number; hidden: boolean })[]; bans: { riot: string; at: number }[]; roles: RoleDef[]; adminColor?: string }
 export interface Me { session: string; riot: string; puuid: string; verifiedName: boolean; admin: boolean; banned: boolean; roles: Role[]; discord?: boolean }
@@ -95,11 +95,34 @@ async function fresh() {
   const now = await invoke<string>("get_riot_id").catch(() => "");
   if (now && now.toLocaleLowerCase("tr-TR") !== me.riot.toLocaleLowerCase("tr-TR")) await login();
 }
-export const feedPost = async (text: string, card: FeedCard | null, clip?: string) => { await fresh(); return send<{ id: number }>("post", { text, card, clip: clip || undefined }); };
+export const feedPost = async (text: string, card: FeedCard | null, clip?: string, img?: string) => { await fresh(); return send<{ id: number }>("post", { text, card, clip: clip || undefined, img: img || undefined }); };
 export const feedReact = (post: number, kind: string) => send<{ on: boolean; count: number }>("react", { post, kind });
 export const feedNotes = (seen = false) => send<{ unseen: number; notes: Note[] }>("notes", { seen });
 export const feedProfile = (riot: string) => getJson<Profile>(`${API}/profile?riot=${encodeURIComponent(riot)}&p=${me?.puuid ?? ""}`);
-export const feedComment = async (post: number, text: string) => { await fresh(); return send<{ id: number }>("comment", { post, text }); };
+export const feedComment = async (post: number, text: string, img?: string) => { await fresh(); return send<{ id: number }>("comment", { post, text, img: img || undefined }); };
+
+/** Görseli küçültüp (WebP, en çok ~120 KB) Celeste sunucusuna yükler; paylaşımda kullanılacak kimliği döner. */
+export async function feedUploadImage(file: Blob, maxSide = 1280): Promise<string> {
+  if (file.type === "image/gif") throw new Error("GIF dosyası yüklenemez. Tenor ya da Giphy GIF bağlantısını yapıştır.");
+  if (!file.type.startsWith("image/")) throw new Error("Yalnızca görsel dosyası seçebilirsin.");
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
+  c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
+  bmp.close();
+  let blob: Blob | null = null;
+  for (const q of [0.85, 0.72, 0.58, 0.45, 0.32]) {
+    blob = await new Promise<Blob | null>((r) => c.toBlob(r, "image/webp", q));
+    if (blob && blob.type === "image/webp" && blob.size <= 140_000) break;
+  }
+  if (!blob || blob.size > 140_000) throw new Error("Görsel çok büyük, daha küçük bir görsel dene.");
+  const data = await new Promise<string>((res, rej) => { const f = new FileReader(); f.onload = () => res(String(f.result).split(",")[1] ?? ""); f.onerror = () => rej(new Error("Görsel okunamadı")); f.readAsDataURL(blob!); });
+  await fresh();
+  return (await send<{ id: string }>("image", { data })).id;
+}
+/** Sunucudaki göreli görsel adresini tam adrese çevirir. */
+export const imgSrc = (u: string) => (u.startsWith("/") ? `${SITE}${u}` : u);
 export const feedLike = (post: number) => send<{ liked: boolean; likes: number }>("like", { post });
 export const feedReport = (target: string) => send<{ ok: true }>("report", { target });
 export const feedDelete = (target: string) => send<{ ok: true }>("delete", { target });
