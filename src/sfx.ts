@@ -71,7 +71,7 @@ const STEP = 60 / BPM / 4; // 16'lık
 const CHORDS = [[174.61, 220, 261.63, 329.63], [164.81, 196, 246.94, 293.66], [146.83, 174.61, 220, 261.63], [130.81, 164.81, 196, 246.94]];
 const BASS = [87.31, 82.41, 73.42, 65.41];
 const KICK = [0, 7, 10], SNARE = [4, 12];
-const VOL = 0.5, DUCK = 0.2;
+const VOL = 0.5, DUCK = 0.24;
 let bus: GainNode | null = null;
 let loop: number | undefined;
 let nextAt = 0, stepNo = 0;
@@ -99,7 +99,7 @@ function note2(c: AudioContext, f0: number, f1: number, at: number, dur: number,
 export const music = {
   start() {
     const c = ac(); if (!c || loop !== undefined) return;
-    bus = c.createGain(); bus.gain.setValueAtTime(0.0001, c.currentTime); bus.gain.exponentialRampToValueAtTime(VOL * 0.16, c.currentTime + 1.2);
+    bus = c.createGain(); bus.gain.setValueAtTime(0.0001, c.currentTime); bus.gain.exponentialRampToValueAtTime(VOL * 0.34, c.currentTime + 1.2);
     const lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2600; // lo-fi: tizler kısık
     bus.connect(lp).connect(c.destination);
     nextAt = c.currentTime + 0.1; stepNo = 0;
@@ -111,7 +111,7 @@ export const music = {
   duck(on: boolean) {
     const c = ctx; if (!c || !bus) return;
     bus.gain.cancelScheduledValues(c.currentTime);
-    bus.gain.setTargetAtTime((on ? DUCK : VOL) * 0.16, c.currentTime, 0.18);
+    bus.gain.setTargetAtTime((on ? DUCK : VOL) * 0.34, c.currentTime, 0.18);
   },
   stop(fade = 0.8) {
     if (loop === undefined) return;

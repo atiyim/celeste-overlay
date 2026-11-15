@@ -2953,3 +2953,9 @@ html[data-skin="obsidyen"] .step { background: rgba(12, 12, 14, .82); }
   100% { opacity: 0; transform: translate(calc(var(--x) * 1.15), calc(var(--y) + 260px)) rotate(calc(var(--r) * 2)) scale(.9); }
 }
 @media (prefers-reduced-motion: reduce) { .gs-conf, .gs-card::after { display: none; } .gs-say span, .gs-tip, .gs-stage, .gs-mo.on img, .gs-eq i, .gs-ch li.on i { animation: none; opacity: 1; color: var(--fg); } }
+
+/* Meta lider kartları: Profilim'deki gibi büyük, eriyen ajan simgesi */
+.mshc { overflow: hidden; }
+.mshi { max-width: 58%; opacity: .95; }
+.mshx { max-width: 60%; }
+.mshx b, .mshx strong { text-shadow: 0 1px 6px rgba(0, 0, 0, .7); }

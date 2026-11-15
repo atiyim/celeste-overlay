@@ -86,11 +86,11 @@ export function Meta({ assets, currentMapId, onClose }: Props) {
               // Rolün lideri: en iyi tier, eşitse en yüksek kazanma oranı.
               const lead = data.agents.filter((a) => a.role === id).sort((x, y) => TIERS.indexOf(x.tier) - TIERS.indexOf(y.tier) || y.wr - x.wr)[0];
               if (!lead) return null;
-              const pic = info(lead.a)?.portrait;
+              const pic = info(lead.a)?.icon;
               return (
                 <button type="button" key={id} className="dc mshc" style={{ "--ac": ["var(--loss)", "var(--teal)", "var(--violet)", "var(--gold)"][i] } as React.CSSProperties}
                   onClick={() => { setAgentSel(lead.a); setTab("agent"); }} title={`${up(lead.a)} haritalarını aç`}>
-                  {pic && <img className="mshp" src={pic} alt="" loading="lazy" />}
+                  {pic && <img className="mic mshi" src={pic} alt="" loading="lazy" />}
                   <span className="mshx">
                     <span className="dk">{label} lideri</span>
                     <b>{up(lead.a)}</b>
