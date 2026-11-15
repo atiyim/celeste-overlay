@@ -1,8 +1,9 @@
 import type { Mood } from "./Mascot";
 import type { Player, Snapshot } from "./types";
+import { unseenTools, type ToolId } from "./toolTips";
 
 /* Köşedeki Celeste'nin cümleleri. Maça göre olanlar yalnızca overlay'in zaten gösterdiği veriden çıkar. */
-export interface Line { text: string; mood?: Mood }
+export interface Line { text: string; mood?: Mood; /** Tıklanınca açılacak araç (araç ipucu) */ tool?: ToolId }
 
 const GENERAL: Line[] = [
   { text: "Derin nefes al, sıradaki raunt senin." },
@@ -67,6 +68,8 @@ const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
 /** Sıradaki cümle: çoğunlukla maça özel, arada genel, seyrek olarak flört. */
 export function nextLine(snap: Snapshot, last: string): Line {
   const ctx = contextLines(snap), r = Math.random();
-  const pool = (r < 0.18 ? FLIRT : r < 0.6 && ctx.length ? ctx : [...(PHASE[snap.phase] ?? []), ...GENERAL]).filter((l) => l.text !== last);
+  // Maç dışında, henüz açılmamış araçlar varsa arada onları önerir (tıklayınca o araç açılır).
+  const tools: Line[] = snap.phase === "menu" || snap.phase === "offline" ? unseenTools().map((t) => ({ text: t.say, mood: "wink", tool: t.id })) : [];
+  const pool = (r < 0.18 ? FLIRT : r < 0.45 && tools.length ? tools : r < 0.7 && ctx.length ? ctx : [...(PHASE[snap.phase] ?? []), ...GENERAL]).filter((l) => l.text !== last);
   return pick(pool.length ? pool : GENERAL);
 }

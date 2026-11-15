@@ -3059,3 +3059,18 @@ html.spikewin, html.spikewin body, html.spikewin #root { width: 100%; height: 10
 .sps-bar i.z-hurry { background: #f5c451; } .sps-bar i.z-half { background: #ff9a3d; } .sps-bar i.z-dead { background: #ff4d5e; }
 .sps-bar i.gone { opacity: .16; }
 .sps.ph-dead { background: rgba(48, 8, 14, .8); }
+
+/* ================= Araçları keşfet kartı ================= */
+.tspot { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius: var(--r); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, var(--box)), var(--box) 60%); }
+.tspot-ic { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; color: var(--accent); background: color-mix(in srgb, var(--accent) 13%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); animation: tspin .35s ease-out; }
+.tspot-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; animation: tspin .35s ease-out; }
+@keyframes tspin { from { opacity: 0; transform: translateY(4px); } }
+.tspot-tx small { font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--fg-3); }
+.tspot-tx b { font-size: 13.5px; font-weight: 600; color: var(--fg); }
+.tspot-tx > span { font-size: 12px; color: var(--fg-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tspot-dots { display: inline-flex; gap: 5px; }
+.tspot-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line-2); cursor: pointer; transition: background .2s, transform .2s; }
+.tspot-dots i.on { background: var(--accent); transform: scale(1.25); }
+@media (max-width: 760px) { .tspot-dots { display: none; } }
+@media (prefers-reduced-motion: reduce) { .tspot-ic, .tspot-tx { animation: none; } }
+.buddy-go { margin-left: 8px; padding: 1px 8px; font-size: 11px; font-weight: 600; color: #16151b; background: var(--accent); border-radius: 999px; }
