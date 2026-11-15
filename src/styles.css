@@ -2961,9 +2961,9 @@ html[data-skin="obsidyen"] .step { background: rgba(12, 12, 14, .82); }
 .mshx b, .mshx strong { text-shadow: 0 1px 6px rgba(0, 0, 0, .7); }
 
 /* ================= Celeste (piksel karakter) ================= */
-.gs-cap { position: relative; overflow: visible; padding-right: 168px; min-height: 66px; }
+.gs-cap { position: relative; overflow: visible; padding-right: 176px; min-height: 66px; }
 .gs-cap .gs-ic { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); }
-.mascot { position: absolute; right: 56px; bottom: 5px; z-index: 12; width: 96px; height: 116px; pointer-events: none; animation: mcbob 2.6s ease-in-out infinite; transform-origin: 50% 100%; }
+.mascot { position: absolute; right: 50px; bottom: 3px; z-index: 12; width: 115px; height: 139px; pointer-events: none; animation: mcbob 2.6s ease-in-out infinite; transform-origin: 50% 100%; }
 .mascot svg { display: block; filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .28)); }
 .mc-m { display: none; }
 .mascot[data-mouth="0"] .mc-m0, .mascot[data-mouth="1"] .mc-m1, .mascot[data-mouth="2"] .mc-m2 { display: block; }
