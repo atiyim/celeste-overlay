@@ -2,13 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { Mascot } from "./Mascot";
 import { AFTER_MATCH, contextLines, nextLine, type Line } from "./buddyLines";
 import type { Snapshot } from "./types";
-import type { ToolId } from "./toolTips";
 
 /* Köşedeki Celeste: durum çubuğunun arkasından başını uzatır, arada bir kısa bir şey söyler.
    Maça göre konuşur, yüz ifadesi cümleye uyar. Tıklanınca rehberi yeniden açar. FPS modunda ve rehber açıkken görünmez. */
 const SHOW_MS = 6500, FIRST_MS = 5000, PHASE_MS = 2500, GAP_MS = [70000, 130000];
 
-export function Buddy({ snap, onGuide, onOpen }: { snap: Snapshot; onGuide: () => void; onOpen: (tool: ToolId) => void }) {
+export function Buddy({ snap, onGuide }: { snap: Snapshot; onGuide: () => void }) {
   const [line, setLine] = useState<Line | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const snapRef = useRef(snap); snapRef.current = snap;
@@ -54,8 +53,8 @@ export function Buddy({ snap, onGuide, onOpen }: { snap: Snapshot; onGuide: () =
 
   return (
     <div className="buddy-anchor">
-      <button className={`buddy${line ? " talk" : ""}`} type="button" data-mood={line?.mood ?? ""} onClick={() => { if (line?.tool) { onOpen(line.tool); setLine(null); } else onGuide(); }} aria-label={line?.tool ? "Celeste: aracı aç" : "Celeste: rehberi aç"}>
-        <span className="buddy-bub" role="status">{line?.text ?? "Rehberi aç"}{line?.tool && <b className="buddy-go">Aç</b>}</span>
+      <button className={`buddy${line ? " talk" : ""}`} type="button" data-mood={line?.mood ?? ""} onClick={onGuide} aria-label="Celeste: rehberi aç">
+        <span className="buddy-bub" role="status">{line?.text ?? "Rehberi aç"}</span>
         <span className="buddy-win"><Mascot ref={ref} mood={line?.mood} /></span>
       </button>
     </div>

@@ -20,8 +20,6 @@ import { LoadoutPanel } from "./LoadoutPanel";
 import { QuickChat } from "./QuickChat";
 import { Guide } from "./Guide";
 import { Buddy } from "./Buddy";
-import { ToolSpot } from "./ToolSpot";
-import { markToolSeen } from "./toolTips";
 import { Crosshairs } from "./CrosshairPanel";
 import { Settings } from "./Settings";
 import { StatusBar } from "./StatusBar";
@@ -625,7 +623,7 @@ export function App() {
     setView(v);
     if (v === "feed") feedSeen();
     if (PROFILE.some(([id]) => id === v)) { lastProfile.current = v as ProfileView; try { localStorage.setItem("overlay-profile-tab", v); } catch { /* depolama kapalı */ } }
-    if (TOOLS.some(([id]) => id === v)) { markToolSeen(v); lastTool.current = v as ToolView; try { localStorage.setItem("overlay-tool-tab", v); } catch { /* depolama kapalı */ } }
+    if (TOOLS.some(([id]) => id === v)) { lastTool.current = v as ToolView; try { localStorage.setItem("overlay-tool-tab", v); } catch { /* depolama kapalı */ } }
   };
   const pickGroup = (g: Group) => go(g === "profile" ? lastProfile.current : g === "tools" ? lastTool.current : g);
   const loading = <Empty text="Görseller yükleniyor…" />;
@@ -897,11 +895,10 @@ export function App() {
         <div className="obody">
         {!collapsed && !guide && notices.length > 0 && <NoticeCard list={notices} onClose={clearNotices} />}
         {!collapsed && !guide && view === "roster" && !active && <WhatsNew version={updater.version} />}
-        {!collapsed && !guide && !outdated && view === "roster" && (snap.phase === "menu" || snap.phase === "offline") && <ToolSpot onOpen={go} />}
         {!collapsed && guide && <Guide onDone={closeGuide} />}
         {!collapsed && !guide && (outdated ? <ForceUpdate info={outdated} updater={updater} onOpen={openTracker} /> : content)}
         </div>
-        {!collapsed && !guide && theme.buddy && <Buddy snap={snap} onGuide={() => { setGuide(true); setView("roster"); }} onOpen={go} />}
+        {!collapsed && !guide && theme.buddy && <Buddy snap={snap} onGuide={() => { setGuide(true); setView("roster"); }} />}
         {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} onFeedback={() => { setGuide(false); setCollapsed(false); go("feedback"); }} onTrust={() => go("trust")} />}
       </div>
       <PreviewBar onOpen={openTracker} />
