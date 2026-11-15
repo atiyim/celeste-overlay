@@ -3,7 +3,7 @@ import { Icon, type IconName } from "./icons";
 
 /* Sol menü: bölümler gruplanmış simgeler. Üstüne gelince adı görünür.
    Boş alanından tutup pencere sürüklenebilir. */
-export type Group = "roster" | "report" | "profile" | "feed" | "tools" | "premium" | "trust" | "settings";
+export type Group = "roster" | "report" | "profile" | "feed" | "tools" | "premium" | "trust" | "about" | "settings";
 
 interface Item { id: Group; label: string; icon: IconName }
 const TOP: Item[] = [
@@ -16,6 +16,7 @@ const TOP: Item[] = [
 ];
 const BOTTOM: Item[] = [
   { id: "trust", label: "S.S.S ve güven", icon: "help" },
+  { id: "about", label: "Hakkında", icon: "info" },
   { id: "settings", label: "Ayarlar", icon: "gear" },
 ];
 

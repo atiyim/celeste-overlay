@@ -45,6 +45,7 @@ import { ForceUpdate, useOutdated } from "./ForceUpdate";
 import { Empty } from "./ui";
 import { Icon } from "./icons";
 import { Rail, type Group } from "./Rail";
+import { AboutPanel } from "./About";
 import { QuickMenu } from "./QuickMenu";
 import { Hub } from "./Hub";
 import { Waiting } from "./Waiting";
@@ -70,7 +71,7 @@ const PROFILE = [["stats", "İstatistik"], ["store", "Mağaza"], ["account", "He
 const TOOLS = [["chat", "Hızlı mesajlar"], ["cross", "Nişangah"], ["device", "DPI/eDPI"], ["timers", "Sayaçlar"], ["search", "Oyuncu arama"], ["watch", "İzleme listesi"], ["meta", "Meta"]] as const;
 type ProfileView = (typeof PROFILE)[number][0];
 type ToolView = (typeof TOOLS)[number][0];
-type View = "roster" | "report" | "feed" | "feedback" | "premium" | "trust" | "settings" | ProfileView | ToolView;
+type View = "roster" | "report" | "feed" | "feedback" | "premium" | "trust" | "about" | "settings" | ProfileView | ToolView;
 const groupOf = (v: View): Group =>
   PROFILE.some(([id]) => id === v) ? "profile" : TOOLS.some(([id]) => id === v) ? "tools" : v === "feedback" ? "roster" : (v as Group);
 const saved = <T extends string>(key: string, list: readonly (readonly [T, string])[], fallback: T): T => {
@@ -230,9 +231,11 @@ export function App() {
     }
     let stop = false;
     let t = 0;
+    let phase = "";
     const tick = async () => {
-      try { if (!stop) setSnap(await invoke<Snapshot>("get_snapshot")); } catch { /* sonraki turda tekrar dene */ }
-      if (!stop) t = window.setTimeout(tick, idle() ? (fpsRef.current ? 15000 : 8000) : 2500); // gizliyken seyrek: maç sırasında bağlantıya yük olmasın
+      try { if (!stop) { const s = await invoke<Snapshot>("get_snapshot"); phase = s.phase; setSnap(s); } } catch { /* sonraki turda tekrar dene */ }
+      // Gizliyken seyrek; menüde 4 sn (aşama yerel presence'tan okunur), ajan seçiminde ve maçta 3 sn.
+      if (!stop) t = window.setTimeout(tick, idle() ? (fpsRef.current ? 15000 : 8000) : phase === "menu" || phase === "offline" ? 4000 : 3000);
     };
     tick();
     return () => { stop = true; window.clearTimeout(t); };
@@ -718,9 +721,11 @@ export function App() {
   );
 
   const content = view === "settings" ? (
-    <Settings updater={updater} onOpen={openTracker} onFeedback={() => go("feedback")} theme={theme} onChange={setTheme} onGuide={() => { setGuide(true); setView("roster"); }} zoom={zoom} onZoom={setZoom} zooms={ZOOMS} onToast={showToast} onClose={() => go("roster")} />
+    <Settings theme={theme} onChange={setTheme} zoom={zoom} onZoom={setZoom} zooms={ZOOMS} onToast={showToast} onClose={() => go("roster")} />
   ) : view === "feed" ? (
     assets ? <FeedPanel assets={assets} draft={feedDraft} onDraftUsed={() => setFeedDraft(null)} onToast={showToast} onClose={() => go("roster")} /> : loading
+  ) : view === "about" ? (
+    <AboutPanel updater={updater} onOpen={openTracker} onFeedback={() => go("feedback")} onGuide={() => { setGuide(true); setView("roster"); }} onToast={showToast} onClose={() => go("roster")} />
   ) : view === "feedback" ? (
     <FeedbackPanel version={updater.version} onOpen={openTracker} onClose={() => go("roster")} />
   ) : view === "report" ? (

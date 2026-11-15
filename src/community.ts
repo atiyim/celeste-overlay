@@ -9,6 +9,12 @@ import { tfetch } from "./net";
 export const SITE = "https://celeste-feed.celestimbenim.workers.dev";
 /** Uygulamadaki Discord düğmeleri: sunucunun kalıcı daveti (tarayıcı Discord uygulamasını açar). */
 export const DISCORD_URL = "https://discord.gg/celestevlr";
+/** Geliştirici: Discord profili. Kimlik girilince "Discord profilim" düğmesi doğrudan profile gider; boşsa topluluk sunucusuna. */
+export const OWNER_NAME = "respectwar";
+export const OWNER_DISCORD_ID = "";
+export const OWNER_DISCORD_URL = /^\d{17,20}$/.test(OWNER_DISCORD_ID) ? `https://discord.com/users/${OWNER_DISCORD_ID}` : DISCORD_URL;
+export const REPO_URL = "https://github.com/atiyim/celeste-overlay";
+export const INSTAGRAM_URL = "https://www.instagram.com/bneceleste";
 /** Öneri / Hata formunun gönderildiği adres; Celeste buradan alıp yetkililerin kanalına koyar. */
 export const FEEDBACK_API = `${SITE}/api/overlay/feedback`;
 
@@ -67,10 +73,10 @@ export function useNotices(): [Notice[], () => void] {
         if (Array.isArray(got) && got.length) setList((l) => [...l, ...got.filter((n) => n.kind === "oneri" || n.kind === "hata").map((n) => ({ ...n, message: typeof n.message === "string" ? n.message.slice(0, 300) : "" }))]);
       } catch { /* sonraki turda */ }
     };
-    // Overlay açıkken dakikada bir; gizliyken 5 dakikada bir. F2 ile açılınca hemen sorulur.
+    // Overlay açıkken 3 dakikada bir; gizliyken 10 dakikada bir. F2 ile açılınca hemen sorulur.
     let last = 0;
     const tick = () => {
-      const gap = document.hidden ? 5 * 60_000 : 60_000;
+      const gap = document.hidden ? 10 * 60_000 : 3 * 60_000;
       if (Date.now() - last < gap - 1_000) return;
       last = Date.now();
       void ask();

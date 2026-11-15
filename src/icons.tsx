@@ -8,6 +8,7 @@ const P: Record<string, ReactNode> = {
   msg: <path d="M4 5h16v11H9l-5 4z" />,
   spark: <><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z" /><path d="M19 16.5l.6 1.8 1.9.7-1.9.7-.6 1.8-.6-1.8-1.9-.7 1.9-.7z" /></>,
   help: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6" /><path d="M12 17h.01" /></>,
+  info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6h.01" /></>,
   gear: <><circle cx="12" cy="12" r="3" /><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6" /><circle cx="12" cy="12" r="6.5" /></>,
   sliders: <><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" /><circle cx="15" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="18" r="2" /></>,
   minus: <path d="M5 12h14" />,
@@ -42,9 +43,15 @@ const P: Record<string, ReactNode> = {
 
 export type IconName = keyof typeof P;
 
-export function Icon({ name, size = 18, stroke = 1.7 }: { name: IconName; size?: number; stroke?: number }) {
+/* Yumuşak dolgulu (duotone) simgeler: kapalı şekillerin içi, çizgi renginin açık tonuyla dolar; böylece küçük boyutta
+   da seçilir ve daha dolgun, "tatlı" görünür. Düz çizgi kalması gerekenler (oklar, çarpı, eksi…) listede yok. */
+const SOFT = new Set<string>(["users", "user", "msg", "chat", "spark", "help", "info", "gear", "clock", "shield", "moon", "bolt", "store", "target", "timer", "layers", "lock", "crown", "mouse", "link", "repeat", "chart", "search", "sliders", "power", "text", "eyeoff", "blur", "check"]);
+const NOFILL = new Set<string>(["link", "repeat", "chart", "search", "sliders", "power", "text", "eyeoff", "blur", "check"]);
+
+export function Icon({ name, size = 18, stroke = 2 }: { name: IconName; size?: number; stroke?: number }) {
+  const soft = SOFT.has(name) && !NOFILL.has(name);
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={soft ? "currentColor" : "none"} fillOpacity={soft ? 0.2 : undefined} stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {P[name]}
     </svg>
   );

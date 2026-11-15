@@ -433,6 +433,8 @@ fn to_rank(m: &Mmr) -> Rank {
 
 #[derive(Default)]
 struct State {
+    /// Presence'tan öğrenilen aşamanın maç kimliği: aşama değişmedikçe her turda yeniden sorulmaz.
+    track: Option<(&'static str, String, Instant)>,
     /// Riot Client kapalıyken ya da oturum açılmamışken her turda tekrar sorulmaz; bu ana kadar son durum döner.
     retry_at: Option<(Instant, Snapshot)>,
     /// Maç kimliği → (maç bilgisi, kaplamalar, alındığı an).
@@ -567,6 +569,42 @@ impl Engine {
                 status: Status { riot_client: true, valorant: false, data: false, fault: None, detail: None },
                 ..Default::default()
             });
+        }
+
+        // Aşama, Riot Client'ın yerel presence kaydından okunur (Riot sunucularına istek atmaz). Menüdeyken sunucuya hiç
+        // sorulmaz; maç kimliği aşama başına bir kez öğrenilir ve aşama değişene kadar tekrar sorulmaz.
+        // Presence okunamazsa (telefon oturumu, Riot Client yanıt vermiyor) eski yöntem: her turda sunucuya sor.
+        let loop_state = s.my_presence().await.and_then(|p| {
+            let st = p["matchPresenceData"]["sessionLoopState"].as_str().or_else(|| p["sessionLoopState"].as_str())?;
+            Some(st.to_string())
+        });
+        match loop_state.as_deref() {
+            Some("MENUS") => {
+                st.track = None;
+                return Ok(Snapshot { phase: Phase::Menu, status: Status::ok(), ..Default::default() });
+            }
+            Some(kind @ ("PREGAME" | "INGAME")) => {
+                let tag: &'static str = if kind == "PREGAME" { "PREGAME" } else { "INGAME" };
+                let known = st.track.as_ref().filter(|t| t.0 == tag && t.2.elapsed() < Duration::from_secs(90)).map(|t| t.1.clone());
+                let mid = match known {
+                    Some(m) => Some(m),
+                    None => {
+                        let path = if tag == "PREGAME" { format!("/pregame/v1/players/{}", s.puuid) } else { format!("/core-game/v1/players/{}", s.puuid) };
+                        let r = self.get(&s, &s.glz, &path).await?;
+                        let m = r.as_ref().and_then(|v| v["MatchID"].as_str()).map(String::from);
+                        st.track = m.clone().map(|m| (tag, m, Instant::now()));
+                        m
+                    }
+                };
+                if let Some(mid) = mid {
+                    let snap = if tag == "PREGAME" { self.pregame(st, &s, &mid).await } else { self.ingame(st, &s, &mid).await };
+                    if snap.is_err() {
+                        st.track = None;
+                    }
+                    return snap;
+                }
+            }
+            _ => {}
         }
 
         let core = self.get(&s, &s.glz, &format!("/core-game/v1/players/{}", s.puuid)).await?;

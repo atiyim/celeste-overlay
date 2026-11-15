@@ -582,7 +582,7 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
     if (!me || me.banned) return;
     const ask = () => { if (!document.hidden) feedNotes().then((r) => setUnseen(r.unseen)).catch(() => undefined); };
     ask();
-    const t = window.setInterval(ask, 60_000);
+    const t = window.setInterval(ask, 120_000);
     return () => window.clearInterval(t);
   }, [me?.puuid, me?.banned]); // eslint-disable-line react-hooks/exhaustive-deps
   const loadAdmin = useCallback(async () => {
@@ -599,7 +599,7 @@ export function FeedPanel({ assets, draft, onDraftUsed, onToast, onClose }: { as
     } catch (e) { setErr((e as Error).message); }
   }, [tab, loadAdmin]);
   useEffect(() => { setPosts(null); load(tab); }, [tab, me?.puuid]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { const t = window.setInterval(() => { if (!document.hidden) load(); }, 60_000); return () => window.clearInterval(t); }, [load]);
+  useEffect(() => { const t = window.setInterval(() => { if (!document.hidden) load(); }, 90_000); return () => window.clearInterval(t); }, [load]);
 
   const loadMore = async () => {
     if (!posts?.length || tab === "admin") return;

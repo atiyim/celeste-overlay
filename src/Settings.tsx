@@ -1,14 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { openUrl } from "@tauri-apps/plugin-opener";
-import type { useUpdater } from "./updater";
 import { ACCENTS, COLS, DEFAULT_THEME, DEFAULT_TH, FPS_HIDE_AFTER, HIDE_AFTER_OPTIONS, hideOf, type Theme, type Thresholds } from "./theme";
-import { copyDiagnostics } from "./StatusBar";
 import { TILT_HOURS, TILT_LOSSES, TILT_RR, fmtRr } from "./tilt";
-import { DISCORD_URL, SITE } from "./community";
-import { feedAdmin } from "./feed";
-import { tfetch } from "./net";
-import { useMe } from "./vip";
 import { PanelHead, Row, Toggle } from "./ui";
 
 const TH_FIELDS: { key: keyof Thresholds; label: string; hint: string; unit: string }[] = [
@@ -19,22 +12,21 @@ const TH_FIELDS: { key: keyof Thresholds; label: string; hint: string; unit: str
   { key: "lowHs", label: "Düşük HS", hint: "Kafa isabeti en çok", unit: "%" },
 ];
 
-type Sec = "look" | "overlay" | "table" | "tilt" | "about";
+type Sec = "look" | "overlay" | "table" | "tilt";
 const ic = (d: ReactNode) => <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
 const SECS: { id: Sec; label: string; icon: ReactNode }[] = [
   { id: "look", label: "Görünüm", icon: ic(<><circle cx="8" cy="8" r="6" /><path d="M8 2v12" /></>) },
   { id: "overlay", label: "Overlay", icon: ic(<><path d="M8 2 2 5l6 3 6-3-6-3Z" /><path d="m2 8 6 3 6-3" /><path d="m2 11 6 3 6-3" /></>) },
   { id: "table", label: "Oyuncu tablosu", icon: ic(<><rect x="2" y="3" width="12" height="10" rx="1.5" /><path d="M2 6.5h12M6 6.5V13" /></>) },
   { id: "tilt", label: "Tilt koruyucu", icon: ic(<path d="M1.5 8h3l1.5-4 3 8 1.5-4h4" />) },
-  { id: "about", label: "Hakkında", icon: ic(<><circle cx="8" cy="8" r="6" /><path d="M8 7.5V11M8 5h.01" /></>) },
 ];
 const SEC_KEY = "overlay-settings-sec";
 const inTauri = "__TAURI_INTERNALS__" in window;
 const OBS_URL = "http://127.0.0.1:7317/";
 
-interface Props { onGuide: () => void; onOpen: (url: string) => void; updater: ReturnType<typeof useUpdater>; zoom: number; onZoom: (z: number) => void; zooms: number[]; theme: Theme; onChange: (t: Theme) => void; onToast: (t: string) => void; onClose: () => void; onFeedback: () => void }
+interface Props { zoom: number; onZoom: (z: number) => void; zooms: number[]; theme: Theme; onChange: (t: Theme) => void; onToast: (t: string) => void; onClose: () => void }
 
-export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme, onChange, onToast, onClose, onFeedback }: Props) {
+export function Settings({ zoom, onZoom, zooms, theme, onChange, onToast, onClose }: Props) {
   const [sec, setSecState] = useState<Sec>(() => {
     try { const v = localStorage.getItem(SEC_KEY) as Sec | null; return v && SECS.some((s) => s.id === v) ? v : "look"; } catch { return "look"; }
   });
@@ -58,11 +50,6 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
   const set = (p: Partial<Theme>) => onChange({ ...theme, ...p });
   const alphaPct = Math.round(theme.alpha * 100);
 
-  const upText = updater.state.kind === "checking" ? "Denetleniyor…"
-    : updater.state.kind === "none" ? "Güncel"
-    : updater.state.kind === "available" ? `${updater.state.version} yayında`
-    : updater.state.kind === "downloading" ? "İndiriliyor…"
-    : updater.state.kind === "error" ? "Denetlenemedi" : null;
 
   return (
     <div className="panel sets" role="dialog" aria-label="Ayarlar">
@@ -307,88 +294,8 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
             </>
           )}
 
-          {sec === "about" && (
-            <>
-              <section>
-                <h3 className="h2">Güncelleme</h3>
-                <div className="box">
-                  <Row
-                    title={<>Sürüm {updater.version || "–"}{upText && <span className={updater.state.kind === "error" ? "ustat bad" : updater.state.kind === "none" ? "ustat ok" : "ustat"}><i />{upText}</span>}</>}
-                    desc={updater.state.kind === "error" ? <span className="err">{updater.state.msg}</span> : "Açılışta ve 6 saatte bir denetlenir."}
-                  >
-                    {updater.state.kind === "available"
-                      ? <button className="x go" type="button" onClick={updater.install}>Güncelle ve yeniden başlat</button>
-                      : <button className="x" type="button" onClick={updater.check} disabled={updater.state.kind === "checking" || updater.state.kind === "downloading"}>Şimdi denetle</button>}
-                  </Row>
-                </div>
-              </section>
-              <MinVersion current={updater.version} onToast={onToast} />
-              <section>
-                <h3 className="h2">Topluluk</h3>
-                <div className="box">
-                  <Row title="Discord" desc="Soru, hata bildirimi, öneri ve yeni sürümler orada. Beta sürümleri önce orada denenir.">
-                    <span className="btns">
-                      <button className="x" type="button" onClick={onFeedback}>Öneri / Hata bildir</button>
-                      <button className="x go" type="button" onClick={() => onOpen(DISCORD_URL)}>Discord'a katıl</button>
-                    </span>
-                  </Row>
-                </div>
-              </section>
-              <section>
-                <h3 className="h2">Hakkında</h3>
-                <div className="box">
-                  <p className="snote">Celeste Overlay, Riot Games ile bağlantılı değildir. Oyuna dokunmaz, yalnızca açık Riot Client oturumunu okur. Etiketler ve notlar yalnızca bu bilgisayarda saklanır.</p>
-                  {/* Atıf: LICENSE gereği türev sürümlerde de bu satır (özgün proje bağlantısıyla) kalmak zorundadır. */}
-                  <p className="snote">Celeste Overlay — Res (<a href="https://www.instagram.com/bneceleste" onClick={(e) => { e.preventDefault(); openUrl("https://www.instagram.com/bneceleste").catch(() => undefined); }}>bneceleste</a>) tarafından geliştirildi. Kaynak kodu <a href="https://github.com/atiyim/celeste-overlay" onClick={(e) => { e.preventDefault(); openUrl("https://github.com/atiyim/celeste-overlay").catch(() => undefined); }}>github.com/atiyim/celeste-overlay</a> adresinde, Celeste Overlay Atıf Lisansı ile yayınlanır.</p>
-                  <Row title="Sorun giderme">
-                    <span className="btns">
-                      <button className="x" type="button" onClick={onGuide}>Rehberi yeniden göster</button>
-                      <button className="x" type="button" onClick={() => copyDiagnostics(updater.version, [], onToast)}>Tanı bilgisini kopyala</button>
-                    </span>
-                  </Row>
-                </div>
-              </section>
-            </>
-          )}
         </div>
       </div>
     </div>
-  );
-}
-
-const cmpVer = (a: string, b: string) => { const x = a.split(".").map(Number), y = b.split(".").map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); return 0; };
-
-/** Yönetici: zorunlu güncelleme. Bu sürümün altındakiler uygulamayı güncellemeden kullanamaz. */
-function MinVersion({ current, onToast }: { current: string; onToast: (t: string) => void }) {
-  const me = useMe();
-  const [min, setMin] = useState<string | null | undefined>(undefined);
-  const [v, setV] = useState("");
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    if (!me?.admin) return;
-    tfetch(`${SITE}/api/overlay/version`).then((r) => r.json()).then((d: { min: string | null }) => { setMin(d.min); setV(d.min ?? ""); }).catch(() => setMin(null));
-  }, [me?.admin]);
-  if (!me?.admin) return null;
-  const save = async (val: string) => {
-    if (val && !/^\d+\.\d+\.\d+$/.test(val)) { onToast("Sürüm 0.7.3 biçiminde olmalı"); return; }
-    if (val && current && cmpVer(val, current) > 0) { onToast("Kendi sürümünden yüksek olamaz; önce güncelle"); return; }
-    setBusy(true);
-    try { const r = await feedAdmin<{ min: string | null }>("min_version", { version: val }); setMin(r.min); setV(r.min ?? ""); onToast(r.min ? `v${r.min} altı artık güncellemeden kullanılamaz` : "Zorunlu güncelleme kapatıldı"); }
-    catch (e) { onToast(e instanceof Error ? e.message : "Kaydedilemedi"); }
-    setBusy(false);
-  };
-  return (
-    <section>
-      <h3 className="h2">Zorunlu güncelleme<span className="hv">Yalnızca yönetici görür</span></h3>
-      <div className="box">
-        <Row title="En düşük sürüm" desc={min ? <>Şu an <b>v{min}</b> altındakiler engelli: uygulama güncelleme ekranında durur, Akış ve roller çalışmaz.</> : "Kapalı: her sürüm kullanılabilir."}>
-          <span className="btns">
-            <input className="inp" style={{ width: 92 }} value={v} placeholder={current || "0.7.3"} onChange={(e) => setV(e.target.value.trim())} onKeyDown={(e) => e.stopPropagation()} aria-label="En düşük sürüm" />
-            <button className="x go" type="button" disabled={busy || v === (min ?? "")} onClick={() => save(v)}>Kaydet</button>
-            {min && <button className="x" type="button" disabled={busy} onClick={() => save("")}>Kapat</button>}
-          </span>
-        </Row>
-      </div>
-    </section>
   );
 }

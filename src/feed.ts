@@ -148,7 +148,7 @@ export function useFeedBadge(open: boolean): [number, () => void, number] {
       } catch { /* sessiz */ }
     };
     const t0 = window.setTimeout(ask, 3_000);
-    const t = window.setInterval(ask, 120_000);
+    const t = window.setInterval(ask, 180_000);
     return () => { window.clearTimeout(t0); window.clearInterval(t); };
   }, []);
   useEffect(() => { if (open) mark(); }, [open, top]); // eslint-disable-line react-hooks/exhaustive-deps
