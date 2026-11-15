@@ -57,7 +57,7 @@ import { PremiumPanel } from "./PremiumPanel";
 import { ROLES, roleCounts, topThreat } from "./threat";
 import { Roles } from "./RoleBadge";
 import { syncPresence, useLobbyRoles } from "./roleLookup";
-import { SAMPLE, applyLook, fxColor, isPremium, rolesUnlock, loadPremiumCfg, unlocked, useMe, usePremiumCfg, usePreview, type ItemId } from "./vip";
+import { CLASSIC_SKIN, MAIN_SKIN, SAMPLE, applyLook, fxColor, isPremium, rolesUnlock, loadPremiumCfg, unlocked, useMe, usePremiumCfg, usePreview, type ItemId } from "./vip";
 import { currentMe, login } from "./feed";
 import { applyTheme, gridCols, gridTemplate, hideOf, loadTheme, overlayWidth } from "./theme";
 
@@ -191,7 +191,8 @@ export function App() {
   const pv = usePreview();
   const can = (id: ItemId) => pv?.id === id || unlocked(me, id, pcfg);
   const pvSkin = pv?.id.startsWith("skin:") ? pv.id.slice(5) : null;
-  const skinId = pvSkin ?? (theme.skin && unlocked(me, `skin:${theme.skin}`, pcfg) ? theme.skin : "");
+  // Ana tema herkese açık; "klasik" tema uygulamaz; kilitli premium tema seçiliyse ana temaya düşer.
+  const skinId = pvSkin ?? (theme.skin === CLASSIC_SKIN ? "" : theme.skin === MAIN_SKIN || unlocked(me, `skin:${theme.skin}`, pcfg) ? theme.skin : MAIN_SKIN);
   const accentRc = pv?.id === "fx:accent" ? (fxColor(me?.roles, "fx:accent", pcfg) ?? SAMPLE) : theme.roleAccent && unlocked(me, "fx:accent", pcfg) ? fxColor(me?.roles, "fx:accent", pcfg) : undefined;
   const glowRc = pv?.id === "fx:glow" ? (fxColor(me?.roles, "fx:glow", pcfg) ?? SAMPLE) : theme.vipFx && unlocked(me, "fx:glow", pcfg) ? fxColor(me?.roles, "fx:glow", pcfg) : undefined;
   useEffect(() => {

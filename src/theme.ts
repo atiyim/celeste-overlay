@@ -45,7 +45,7 @@ export interface Theme {
   discord: boolean;
   /** Yayıncı modu: Discord kartında rank, skor ve RR gizlenir. */
   streamer: boolean;
-  /** Premium tema kimliği ("" = Celeste varsayılanı). Yalnızca rol sahiplerinde uygulanır. */
+  /** Tema: "obsidyen" ana tema, "klasik" eski sade görünüm; diğerleri rol sahiplerine açık premium temalar. */
   skin: string;
   /** Vurgu rengi rolün rengi olsun (rol sahiplerine). */
   roleAccent: boolean;
@@ -67,7 +67,7 @@ const V2_OFF: ColId[] = ["skins", "pool", "tracker"];
 const ALL_ON = Object.fromEntries(COLS.map((c) => [c.id, !V2_OFF.includes(c.id)])) as Record<ColId, boolean>;
 
 export const DEFAULT_THEME: Theme = {
-  accent: "#8b9cff",
+  accent: "#e6c27a",
   alpha: 0.94,
   swapSides: false,
   autoHide: true,
@@ -79,7 +79,7 @@ export const DEFAULT_THEME: Theme = {
   obs: false,
   discord: true,
   streamer: false,
-  skin: "",
+  skin: "obsidyen",
   roleAccent: false,
   vipFx: true,
   showRoles: true,
@@ -89,7 +89,7 @@ export const DEFAULT_THEME: Theme = {
 };
 /** Eski varsayılan vurgu: değiştirmemiş kullanıcılar yeni Celeste moruna geçer. */
 const OLD_DEFAULT_ACCENTS = ["#38bdf8", "#b89cf5"];
-export const ACCENTS = ["#8b9cff", "#b89cf5", "#f0a6ca", "#34d399", "#fbbf24", "#eceff6"];
+export const ACCENTS = ["#e6c27a", "#8b9cff", "#b89cf5", "#f0a6ca", "#34d399", "#fbbf24", "#eceff6"];
 export const HIDE_AFTER_OPTIONS = [5, 10, 15, 30];
 /** FPS modunda overlay maç başladıktan en geç bu kadar saniye sonra gizlenir. */
 export const FPS_HIDE_AFTER = 5;
@@ -104,7 +104,8 @@ export function loadTheme(): Theme {
     const t = JSON.parse(localStorage.getItem(KEY) ?? "null") as Partial<Theme> | null;
     if (!t) return DEFAULT_THEME;
     return {
-      accent: typeof t.accent === "string" && /^#[0-9a-f]{6}$/i.test(t.accent) && !OLD_DEFAULT_ACCENTS.includes(t.accent.toLowerCase()) ? t.accent : DEFAULT_THEME.accent,
+      // Tema seçmemiş eski kayıt ana temaya (Obsidyen Altın) geçer; eski mor varsayılan vurgu da altına döner.
+      accent: typeof t.accent === "string" && /^#[0-9a-f]{6}$/i.test(t.accent) && !OLD_DEFAULT_ACCENTS.includes(t.accent.toLowerCase()) && !(!t.skin && t.accent.toLowerCase() === "#8b9cff") ? t.accent : DEFAULT_THEME.accent,
       alpha: typeof t.alpha === "number" ? Math.min(1, Math.max(0.3, t.alpha)) : DEFAULT_THEME.alpha,
       swapSides: t.swapSides === true,
       autoHide: t.autoHide !== false,
@@ -126,7 +127,7 @@ export function loadTheme(): Theme {
       obs: t.obs === true,
       discord: t.discord !== false,
       streamer: t.streamer === true,
-      skin: typeof t.skin === "string" && /^[a-z]{0,16}$/.test(t.skin) ? t.skin : "",
+      skin: typeof t.skin === "string" && /^[a-z]{1,16}$/.test(t.skin) ? t.skin : "obsidyen",
       roleAccent: t.roleAccent === true,
       vipFx: t.vipFx !== false,
       showRoles: t.showRoles !== false,

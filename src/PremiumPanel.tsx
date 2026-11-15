@@ -6,8 +6,8 @@ import { Icon } from "./icons";
 import { Roles } from "./RoleBadge";
 import type { Theme } from "./theme";
 import { PanelHead, Toggle } from "./ui";
-import {
-  EFFECTS, SAMPLE, SKINS, fxColor, isPremium, loadPremiumCfg, reqRole, startPreview, stopPreview, unlocked, useMe, usePremiumCfg, usePreview,
+import { MAIN_SKIN, PREMIUM_SKINS,
+  EFFECTS, SAMPLE, fxColor, isPremium, loadPremiumCfg, reqRole, startPreview, stopPreview, unlocked, useMe, usePremiumCfg, usePreview,
   type Item, type ItemId,
 } from "./vip";
 
@@ -15,7 +15,7 @@ import {
    Kilitliyse hangi rolün gerektiği yazar; yönetici "Düzenle" ile gerekli rolü ve Discord eşlemesini buradan seçer. */
 
 const inTauri = "__TAURI_INTERNALS__" in window;
-const ALL: ItemId[] = [...SKINS.map((s) => `skin:${s.id}` as ItemId), ...EFFECTS.map((e) => e.id)];
+const ALL: ItemId[] = [...PREMIUM_SKINS.map((s) => `skin:${s.id}` as ItemId), ...EFFECTS.map((e) => e.id)];
 /** Canlı denenebilenler (bu bilgisayarda görünür). */
 const LIVE = new Set<ItemId>(["fx:accent", "fx:glow", "fx:plate"]);
 
@@ -141,7 +141,7 @@ export function PremiumPanel({ theme, onChange, onOpen, onToast, onClose, onGo }
 
       <h3 className="h2">Temalar<span className="hv">Uygulamanın tamamını değiştirir · 15 sn önizleme</span></h3>
       <div className="skgrid">
-        {SKINS.map((s) => {
+        {PREMIUM_SKINS.map((s) => {
           const id = `skin:${s.id}` as ItemId;
           const ok = unlocked(me, id, cfg);
           const on = ok && theme.skin === s.id;
@@ -156,7 +156,7 @@ export function PremiumPanel({ theme, onChange, onOpen, onToast, onClose, onGo }
               <div className="skt"><b>{s.name}</b><small>{s.tag}</small></div>
               {reqSelect(id)}
               <div className="ska">
-                {on ? <><span className="skon">Kullanımda</span><button className="x" type="button" onClick={() => set({ skin: "" })}>Kapat</button></>
+                {on ? <><span className="skon">Kullanımda</span><button className="x" type="button" onClick={() => set({ skin: MAIN_SKIN })}>Kapat</button></>
                   : ok ? <><button className="x go" type="button" onClick={() => { set({ skin: s.id }); stopPreview(); }}>Uygula</button>{tryBtn(id)}</>
                   : <>{lockLine(id)}{tryBtn(id)}</>}
               </div>

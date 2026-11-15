@@ -4,6 +4,7 @@ import { useState } from "react";
 const KEY = "overlay-whatsnew";
 const NOTES: Record<string, string[]> = {
   "0.8.1": [
+    "Yeni ana tema: Obsidyen Altın. Siyah zemin, ince altın çizgiler, altın ay. Eski görünümü seviyorsan Ayarlar > Görünüm > Tema'dan Sade'ye dönebilirsin.",
     "Lobi küçüldü: üç düzen de ekranda çok daha az yer kaplıyor, bilgiler aynı.",
     "Peak rank geri geldi: listede kendi sütununda, kartlarda ve Karşı karşıya'da rankın hemen altında.",
     "Oyundayken efektler durur: overlay arka plandayken hiçbir şey hareket etmez, öne gelince kaldığı yerden devam eder.",

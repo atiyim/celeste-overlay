@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { CLASSIC_ACCENT, CLASSIC_SKIN, MAIN_ACCENT, MAIN_SKIN } from "./vip";
 import { ACCENTS, COLS, DEFAULT_THEME, DEFAULT_TH, FPS_HIDE_AFTER, HIDE_AFTER_OPTIONS, hideOf, type Theme, type Thresholds } from "./theme";
 import { TILT_HOURS, TILT_LOSSES, TILT_RR, fmtRr } from "./tilt";
 import { PanelHead, Row, Toggle } from "./ui";
@@ -85,6 +86,15 @@ export function Settings({ zoom, onZoom, zooms, theme, onChange, onToast, onClos
               <section>
                 <h3 className="h2">Görünüm</h3>
                 <div className="box">
+                  <Row title="Tema" desc="Obsidyen Altın: siyah zemin, ince altın çizgiler. Sade: eski lacivert Celeste görünümü.">
+                    <span className="seg" role="group" aria-label="Tema">
+                      {([[MAIN_SKIN, "Obsidyen Altın", MAIN_ACCENT, CLASSIC_ACCENT], [CLASSIC_SKIN, "Sade", CLASSIC_ACCENT, MAIN_ACCENT]] as const).map(([id, label, own, other]) => {
+                        const on = theme.skin === id;
+                        // Vurgu rengi diğer temanın varsayılanıysa temayla birlikte değişir; kullanıcının kendi seçtiği renk korunur.
+                        return <button key={id} type="button" className={on ? "on" : ""} aria-pressed={on} onClick={() => set({ skin: id, ...(theme.accent.toLowerCase() === other ? { accent: own } : {}) })}>{label}</button>;
+                      })}
+                    </span>
+                  </Row>
                   <Row title="Vurgu rengi" desc="Seçili sekme, düğmeler ve tekrar karşılaşılan oyuncularda kullanılır.">
                     <span className="swatches">
                       {ACCENTS.map((c) => {
@@ -108,7 +118,7 @@ export function Settings({ zoom, onZoom, zooms, theme, onChange, onToast, onClos
                     <span className="alpha">
                       <input type="range" min={30} max={100} step={2} value={alphaPct} onChange={(e) => set({ alpha: Number(e.target.value) / 100 })} aria-label="Arka plan opaklığı" style={{ ["--p" as string]: `${((alphaPct - 30) / 70) * 100}%` }} />
                       <span className="aval">%{alphaPct}</span>
-                      <button className="ib" type="button" title="Renk ve saydamlığı varsayılana döndür" aria-label="Renk ve saydamlığı varsayılana döndür" onClick={() => set({ accent: DEFAULT_THEME.accent, alpha: DEFAULT_THEME.alpha })}>
+                      <button className="ib" type="button" title="Renk ve saydamlığı varsayılana döndür" aria-label="Renk ve saydamlığı varsayılana döndür" onClick={() => set({ accent: theme.skin === CLASSIC_SKIN ? CLASSIC_ACCENT : DEFAULT_THEME.accent, alpha: DEFAULT_THEME.alpha })}>
                         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2.5 3v3.5H6" /><path d="M3 6.5A5.5 5.5 0 1 1 2.6 9.5" /></svg>
                       </button>
                     </span>

@@ -6,6 +6,11 @@ import { currentMe, premiumInfo, subscribeMe, type Me, type Role } from "./feed"
    (/api/feed/premium); seçilmemişse herhangi bir Celeste rolü yeter. */
 
 export interface Skin { id: string; name: string; tag: string; accent: string }
+/** Ana tema (herkese açık). "klasik" eski sade Celeste görünümüdür: tema uygulanmaz. */
+export const MAIN_SKIN = "obsidyen";
+export const CLASSIC_SKIN = "klasik";
+export const MAIN_ACCENT = "#e6c27a";
+export const CLASSIC_ACCENT = "#8b9cff";
 export const SKINS: Skin[] = [
   { id: "obsidyen", name: "Obsidyen Altın", tag: "Siyah zemin, ince altın çizgiler", accent: "#e6c27a" },
   { id: "aurora", name: "Kuzey Işığı", tag: "Yavaşça akan yeşil ve mor ışık", accent: "#5eead4" },
@@ -24,6 +29,8 @@ export const EFFECTS: Item[] = [
   { id: "fx:accent", name: "Rol rengi vurgu", text: "Sekmeler, düğmeler ve halkalar rolünün rengini alır." },
   { id: "discord", name: "Discord rolü", text: "Hesabını bağla; overlay rolün Celeste Discord'unda da görünür.", seen: "Discord sunucusunda herkes görür" },
 ];
+/** Rol isteyen temalar (ana tema hariç). */
+export const PREMIUM_SKINS = SKINS.filter((s) => s.id !== MAIN_SKIN);
 export const SAMPLE = "#e6c27a";
 const PREVIEW_SECONDS = 15;
 
@@ -91,7 +98,8 @@ export function applyLook(opts: { skin: string; accent: string; vipColor?: strin
   const el = document.documentElement;
   const sk = SKINS.find((s) => s.id === opts.skin);
   if (sk) el.dataset.skin = sk.id; else delete el.dataset.skin;
-  el.style.setProperty("--accent", sk ? sk.accent : opts.accent);
+  // Ana temada vurgu rengi kullanıcının seçimidir (varsayılanı altın); premium temalar kendi rengini taşır.
+  el.style.setProperty("--accent", sk && sk.id !== MAIN_SKIN ? sk.accent : opts.accent);
   if (opts.vipColor) { el.dataset.vip = "1"; el.style.setProperty("--vip", opts.vipColor); }
   else { delete el.dataset.vip; el.style.removeProperty("--vip"); }
 }
