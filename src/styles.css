@@ -2572,3 +2572,53 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 .ks-bcol .ks-skd.std .ks-skim { height: 24px; }
 .ks-bh { margin-bottom: 0; }
 .ks-skt { gap: 8px; }
+
+/* 0.8.1 · Pencere uzamaz: oyuncu paneli kendi içinde kayar (tek kaydırma çubuğu) */
+.drawer { overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.lobbyw.hasdrawer { overflow: hidden; }
+
+/* Performans: tablo kendi genişliğine göre uyum sağlar; harita ve ajan adları kısalmasın */
+.tb { container: tbl / inline-size; }
+.tr.tmx { grid-template-columns: 24px minmax(64px, 1fr) minmax(72px, 1fr) 76px 40px 92px; column-gap: 8px; }
+.tr.tmx .ra { gap: 5px; font-size: inherit; }
+@container tbl (max-width: 470px) {
+  .tr.tmx { grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr) 72px 40px; }
+  .tr.tmx > :last-child { display: none; }
+  .tr.tmx .ra { font-size: inherit; }
+}
+@container tbl (max-width: 290px) {
+  .tr.tmx { grid-template-columns: 24px minmax(0, 1fr) 28px 66px 38px; }
+  .tr.tmx .ra { font-size: 0; }
+}
+
+/* Kartlar: W/L rozetleri K/D'nin altında */
+.pcs { flex-wrap: wrap; row-gap: 6px; }
+.pcs .fdots { flex: 1 1 100%; margin-left: 0; align-self: flex-start; }
+
+/* Karşı karşıya: sabit sütunlu ızgara, yazılar birbirine girmez */
+.vsc { display: grid; grid-template-columns: 32px minmax(0, 1fr) 82px 46px 150px; column-gap: 10px; align-items: center; }
+.vsc.foe { flex-direction: unset; direction: rtl; }
+.vsc.foe > * { direction: ltr; }
+.vsc.foe .vsn { align-items: flex-end; text-align: right; }
+.vsn { min-width: 0; }
+.vsl { overflow: hidden; }
+.vsl .nl { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vsl .vsb { flex: 0 1 auto; min-width: 0; max-width: 94px; overflow: hidden; }
+.vsl .vsb .bd { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vss { overflow: hidden; }
+.vsf { width: 82px; height: auto; align-items: center; gap: 2px; }
+.vsf i, .vsf i.w { width: 14px; height: 16px; border-radius: 4px; display: inline-grid; place-items: center; font-style: normal; font-size: 8.5px; font-weight: 800; line-height: 1; }
+.vsf i { color: var(--loss); background: color-mix(in srgb, var(--loss) 18%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--loss) 50%, transparent); }
+.vsf i.w { color: var(--win); background: color-mix(in srgb, var(--win) 20%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--win) 55%, transparent); }
+.vsf i.alt { opacity: .4; }
+.vsc.foe .vsf { flex-direction: row; justify-content: flex-end; }
+.vsw { width: auto; }
+.vsr { width: auto; min-width: 0; }
+@container vs (max-width: 900px) {
+  .vsc.foe { direction: ltr; }
+  .vsc.foe .vsn { align-items: flex-start; text-align: left; }
+  .vsc.foe .vsf { justify-content: flex-start; }
+}
+.vsl .vsb { flex: 0 100 auto; max-width: 88px; }
+.vsl .nl { flex: 0 0 auto; max-width: 100%; }
+.vsl .vsb .bd { padding-inline: 8px; }

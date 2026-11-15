@@ -31,7 +31,7 @@ export function PlayerCard({ p, index, assets, entry, cols, th, onOpen, onCopy, 
       </div>
       <div className="pcb">
         <div className="pcn">
-          <NameLine name={v.name}>{celeste && !roles?.length && <Moon />}</NameLine>
+          <NameLine name={v.name}>{(celeste || !!roles?.length) && <Moon />}</NameLine>
           <span className="qa" onClick={(e) => e.stopPropagation()}>
             {v.copyName && <button type="button" className="qb" title="Adı kopyala" aria-label="Adı kopyala" onClick={() => onCopy(v.copyName)}><Icon name="text" size={13} /></button>}
             {v.trackerUrl && <button type="button" className="qb" title="Tracker.gg'de aç" aria-label="Tracker.gg'de aç" onClick={() => onTracker(v.trackerUrl!)}><Icon name="link" size={13} /></button>}

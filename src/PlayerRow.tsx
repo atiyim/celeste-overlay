@@ -93,8 +93,8 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
         <span className="agw"><AgentIcon className="agent" icon={v.agent?.icon} name={v.agent?.name} /></span>
         <span className="n">
           {v.copyName
-            ? <button type="button" className="nmc" title="Adı kopyala" onClick={stop(() => onCopy(v.copyName))}><NameLine name={v.name}>{celeste && !roles?.length && <Moon />}</NameLine></button>
-            : <NameLine name={v.name}>{celeste && !roles?.length && <Moon />}</NameLine>}
+            ? <button type="button" className="nmc" title="Adı kopyala" onClick={stop(() => onCopy(v.copyName))}><NameLine name={v.name}>{(celeste || !!roles?.length) && <Moon />}</NameLine></button>
+            : <NameLine name={v.name}>{(celeste || !!roles?.length) && <Moon />}</NameLine>}
           <span className="sub2">
             {roles && roles.length > 0 && <Roles roles={roles} compact />}
             {v.tag && <span className="tg" style={{ color: v.tag.color, borderColor: v.tag.color }}>{v.tag.label}</span>}

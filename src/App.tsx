@@ -84,6 +84,9 @@ const PHASE_TEXT: Record<string, string> = {
   ingame: "Maç sürüyor",
 };
 
+const MAX_H = 700; // pencere en çok bu kadar uzar; fazlası pencerenin içinde kaydırılır
+const DRAWER_MAX = 470; // oyuncu paneli bu kadar yer açar; fazlası panelin içinde kaydırılır
+
 export function App() {
   const [assets, setAssets] = useState<Assets | null>(null);
   const [snap, setSnap] = useState<Snapshot>({ phase: "offline", players: [] });
@@ -766,7 +769,7 @@ export function App() {
       onGo={go}
     />
   ) : (
-    <div className={active ? "lobbyw hasdrawer" : "lobbyw"} style={active && drawerH ? { minHeight: drawerH } : undefined}>
+    <div className={active ? "lobbyw hasdrawer" : "lobbyw"} style={active && drawerH ? { minHeight: Math.min(drawerH, DRAWER_MAX) } : undefined}>
       {lobby}
       {active && (
         <div className="drawerw">
@@ -796,7 +799,7 @@ export function App() {
   const phaseTone = snap.phase === "pregame" ? "go" : snap.phase === "ingame" ? "live" : snap.phase === "menu" ? "wait" : "off";
 
   return (
-    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}${collapsed ? " mini" : ""}${full ? " fullw" : ""}`} ref={rootRef} style={full ? { width, height: fullH, maxHeight: fullH, borderRadius: 0 } : { width, maxHeight: Math.max(360, Math.floor(((window.screen?.availHeight ?? 1000) - 24) / zoom)) }}>
+    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}${collapsed ? " mini" : ""}${full ? " fullw" : ""}`} ref={rootRef} style={full ? { width, height: fullH, maxHeight: fullH, borderRadius: 0 } : { width, maxHeight: Math.max(360, Math.floor(Math.min((window.screen?.availHeight ?? 1000) - 24, MAX_H) / zoom)) }}>
       {!collapsed && !guide && <Rail active={group} onPick={pickGroup} feedCount={feedCount} feedNote={feedNotes > 0} onDrag={startDrag} />}
       <div className="ovm">
         <header className="hd drag" onMouseDown={startDrag} title="Sürükleyerek taşı">

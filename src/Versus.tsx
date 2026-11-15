@@ -38,7 +38,7 @@ function FormBars({ p }: { p: Player }) {
   const wins = list.filter((f) => f.won).length;
   return (
     <span className="vsf" role="img" aria-label={`Son ${list.length} maç: ${wins} galibiyet`} title={`Son ${list.length} maç: ${wins} galibiyet, ${list.length - wins} mağlubiyet`}>
-      {list.map((f, i) => <i key={i} className={`${f.won ? "w" : "l"}${isComp(f) ? "" : " alt"}`} />)}
+      {list.map((f, i) => <i key={i} className={`${f.won ? "w" : "l"}${isComp(f) ? "" : " alt"}`}>{f.won ? "W" : "L"}</i>)}
     </span>
   );
 }
@@ -53,8 +53,9 @@ function Cell({ p, index, assets, entry, cols, th, onOpen, mapId, mapName, roles
       <span className="vsa"><AgentIcon className="agent" icon={v.agent?.icon} name={v.agent?.name} />{v.agent?.roleIcon && <img className="vsro" src={v.agent.roleIcon} alt="" title={v.agent.role} />}</span>
       <span className="vsn">
         <span className="vsl">
-          <NameLine name={v.name}>{celeste && !roles?.length && <Moon />}</NameLine>
+          <NameLine name={v.name}>{(celeste || !!roles?.length) && <Moon />}</NameLine>
           {hot && <span className="vshot" title="Rakipler içinde en tehlikeli" aria-label="En tehlikeli rakip"><Icon name="bolt" size={12} /></span>}
+          {v.badges[0] && <span className="vsb"><BadgePill b={v.badges[0]} /></span>}
         </span>
         <span className="vss">
           {roles && roles.length > 0 && <Roles roles={roles} compact />}
@@ -62,7 +63,6 @@ function Cell({ p, index, assets, entry, cols, th, onOpen, mapId, mapName, roles
           <small className="pn">{[v.agent?.name ?? "Ajan seçiyor", v.anonymous ? "İsim gizli" : p.level != null ? `Sv. ${p.level}` : null].filter(Boolean).join(" · ")}</small>
         </span>
       </span>
-      {v.badges[0] && <span className="vsb"><BadgePill b={v.badges[0]} /></span>}
       <FormBars p={p} />
       <span className="vsw" title={v.g > 0 ? `${v.w} galibiyet, ${v.g} maç (${v.scope}, rekabet)` : "Rekabet verisi yok"}>
         <b className={v.wrPct == null ? "" : v.wrPct >= 55 ? "pos" : v.wrPct < 48 ? "neg" : ""}>{v.wrPct != null ? `%${v.wrPct}` : "–"}</b>
