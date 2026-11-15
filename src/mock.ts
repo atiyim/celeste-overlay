@@ -24,11 +24,16 @@ export function mockSnapshot(a: Assets): Snapshot {
     const weapons: WeaponSlot[] = a.weapons.map((w, j) => {
       const pool = premiumBy.get(w.id) ?? [];
       const fancy = pool.length > 0 && (i + j) % 5 !== 0;
+      const skinId = fancy ? pick(pool, i * 7 + j * 3) : w.defaultSkinId;
+      const meta = a.skinMeta.get(skinId);
+      const charmId = (i + j) % 4 === 0 ? pick(charms, i + j) : undefined;
       return {
         weaponId: w.id,
-        skinId: fancy ? pick(pool, i * 7 + j * 3) : w.defaultSkinId,
-        chromaId: undefined,
-        charmId: (i + j) % 4 === 0 ? pick(charms, i + j) : undefined,
+        skinId,
+        levelId: meta?.levels.length ? meta.levels[(i + j) % meta.levels.length] : undefined,
+        chromaId: meta?.chromas.length ? meta.chromas[(i * 3 + j) % meta.chromas.length] : undefined,
+        charmId,
+        charmLevelId: charmId,
       };
     });
     const cur = 12 + ((i * 3) % 12);

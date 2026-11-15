@@ -44,7 +44,9 @@ export interface SeasonInfo { name: string; start: number; end: number }
 export interface Tier { name: string; icon: string; color: string }
 export interface WeaponInfo { id: string; name: string; category: string; icon: string; defaultSkinId: string }
 export interface SkinInfo { name: string; icon: string }
-export interface SkinMeta { id: string; name: string; icon: string; weapon: string; weaponId: string; tierId: string; levels: string[] }
+export interface SkinMeta { id: string; name: string; icon: string; weapon: string; weaponId: string; tierId: string; levels: string[]; chromas: string[] }
+/** Kaplama seviyesi: kaçıncı seviye ve ne açtığı (efekt, animasyon, bitiş efekti…). */
+export interface LevelInfo { index: number; item: string | null; name: string; icon: string }
 export interface ContentTier { name: string; color: string; rank: number; icon?: string }
 export interface Callout { name: string; x: number; y: number }
 /* Minimap + bölge adları. Bölge koordinatı oyun birimidir; minimap oranına çevrilmiş halde tutulur. */
@@ -72,6 +74,10 @@ export interface Assets {
   skinMeta: Map<string, SkinMeta>; // yalnızca ana kaplama kimliği
   levelToSkin: Map<string, string>; // seviye ve chroma kimliği → ana kaplama kimliği
   contentTiers: Map<string, ContentTier>;
+  /** Kaplama seviyesi kimliği → seviye bilgisi. */
+  levels: Map<string, LevelInfo>;
+  /** Uğurluk seviyesi kimliği → seviye numarası. */
+  charmLevels: Map<string, number>;
 }
 
 const k = (s?: string | null) => (s ?? "").toLowerCase();
@@ -100,7 +106,7 @@ export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets>
   const a: Assets = {
     agents: new Map(), seasons: new Map(), weapons: [], skins: new Map(), chromas: new Map(), charms: new Map(),
     sprays: new Map(), flex: new Map(), cards: new Map(), titles: new Map(), tiers: new Map(), maps: new Map(), mapArt: new Map(), mapBanner: new Map(), mapList: [],
-    skinMeta: new Map(), levelToSkin: new Map(), contentTiers: new Map(),
+    skinMeta: new Map(), levelToSkin: new Map(), contentTiers: new Map(), levels: new Map(), charmLevels: new Map(),
   };
   const TIER_RANK: Record<string, number> = { Select: 1, Deluxe: 2, Premium: 3, Ultra: 4, Exclusive: 5 };
   for (const t of ctiers ?? []) a.contentTiers.set(k(t.uuid), { name: t.displayName, color: `#${String(t.highlightColor ?? "888888").slice(0, 6)}`, rank: TIER_RANK[t.devName] ?? 0, icon: t.displayIcon ?? undefined });
@@ -125,7 +131,10 @@ export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets>
     for (const s of w.skins ?? []) {
       const info: SkinInfo = { name: s.displayName, icon: s.displayIcon ?? s.chromas?.[0]?.fullRender ?? "" };
       a.skins.set(k(s.uuid), info);
-      a.skinMeta.set(k(s.uuid), { id: k(s.uuid), name: info.name, icon: info.icon, weapon: w.displayName, weaponId: k(w.uuid), tierId: k(s.contentTierUuid), levels: (s.levels ?? []).map((l: any) => k(l.uuid)) });
+      a.skinMeta.set(k(s.uuid), { id: k(s.uuid), name: info.name, icon: info.icon, weapon: w.displayName, weaponId: k(w.uuid), tierId: k(s.contentTierUuid), levels: (s.levels ?? []).map((l: any) => k(l.uuid)), chromas: (s.chromas ?? []).map((c: any) => k(c.uuid)) });
+      (s.levels ?? []).forEach((l: any, i: number) => a.levels.set(k(l.uuid), {
+        index: i, item: typeof l.levelItem === "string" ? l.levelItem.split("::").pop() ?? null : null, name: String(l.displayName ?? ""), icon: l.displayIcon ?? info.icon,
+      }));
       a.levelToSkin.set(k(s.uuid), k(s.uuid));
       for (const l of s.levels ?? []) { a.skins.set(k(l.uuid), { name: info.name, icon: l.displayIcon ?? info.icon }); a.levelToSkin.set(k(l.uuid), k(s.uuid)); }
       (s.chromas ?? []).forEach((c: any, i: number) => {
@@ -140,7 +149,7 @@ export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets>
 
   for (const b of buddies) {
     a.charms.set(k(b.uuid), { name: b.displayName, icon: b.displayIcon });
-    for (const l of b.levels ?? []) a.charms.set(k(l.uuid), { name: b.displayName, icon: l.displayIcon ?? b.displayIcon });
+    for (const l of b.levels ?? []) { a.charms.set(k(l.uuid), { name: b.displayName, icon: l.displayIcon ?? b.displayIcon }); if (typeof l.charmLevel === "number") a.charmLevels.set(k(l.uuid), l.charmLevel); }
   }
   for (const s of sprays) {
     const icon = s.fullTransparentIcon ?? s.displayIcon;
@@ -222,4 +231,59 @@ export function resolveSprays(a: Assets, l: Loadout): Img[] {
 }
 export function resolveFlex(a: Assets, l: Loadout): Img[] {
   return uniqueByName([...(l.expressionIds ?? []), ...(l.allIds ?? [])].map((i) => a.flex.get(k(i))).filter((x): x is Img => !!x));
+}
+
+/* ───────── Kaplama ayrıntısı (oyuncu paneli › Kaplamalar) ───────── */
+
+/** Seviyenin açtığı özellik (valorant-api "levelItem" değeri). */
+const LEVEL_ITEMS: Record<string, string> = {
+  VFX: "Görsel efekt", Animation: "Animasyon", Finisher: "Bitiş efekti", SoundEffects: "Ses efekti",
+  KillCounter: "Öldürme sayacı", KillBanner: "Öldürme afişi", InspectAndKill: "İnceleme ve öldürme efekti",
+  TopFrag: "Lider efekti", KillEffect: "Öldürme efekti", Transformation: "Dönüşüm", Randomizer: "Rastgele görünüm",
+  HeartbeatAndMapSensor: "Kalp atışı ve harita sensörü", AttackerDefenderSwap: "Saldırı/savunma görünümü", Voiceover: "Seslendirme",
+};
+export const levelItemName = (item: string | null) => (item ? LEVEL_ITEMS[item] ?? item.replace(/([a-z])([A-Z])/g, "$1 $2") : "Temel görünüm");
+
+/** "Prime Vandal\n(Varyasyon 2 Mavi)" → "Mavi". İlk renk kaplamanın kendisidir. */
+export function chromaLabel(name: string, index: number): string {
+  if (index === 0) return "Orijinal";
+  const m = /\(([^()]*)\)\s*$/.exec(name.replace(/\s+/g, " ").trim());
+  const t = (m?.[1] ?? "").replace(/^(varyasyon|variant|renk|varyant)\s*\d+\s*/i, "").trim();
+  return t || `Renk ${index}`;
+}
+
+export interface SkinChroma { id: string; label: string; swatch: string; render: string }
+export interface SkinLevel { id: string; n: number; label: string }
+export interface SkinDetail extends ResolvedSkin {
+  weapon: WeaponInfo;
+  /** Ana kaplama kimliği (varsayılan kaplamada yok). */
+  skinId?: string;
+  levels: SkinLevel[];
+  /** Takılı seviye (1'den başlar); bilinmiyorsa null. */
+  level: number | null;
+  chromas: SkinChroma[];
+  /** Takılı renk kimliği. */
+  chromaId: string | null;
+  charm?: { name: string; icon: string; level: number | null };
+}
+
+/** Bir silah yuvasının bütün ayrıntısı: kaplama, seviyeler, renkler ve uğurluk. Yalnızca Riot'un gönderdiği kimliklerden. */
+export function skinDetail(a: Assets, w: WeaponInfo, slot?: WeaponSlot): SkinDetail {
+  const base = resolveSkin(a, w, slot);
+  const ids = slotIds(slot);
+  const charmId = ids.find((i) => a.charms.has(i));
+  const charm = charmId ? { ...a.charms.get(charmId)!, level: (slot?.charmLevelId ? a.charmLevels.get(k(slot.charmLevelId)) : undefined) ?? ids.map((i) => a.charmLevels.get(i)).find((n) => n != null) ?? null } : undefined;
+  const mainId = base.isDefault ? undefined : ids.map((i) => a.levelToSkin.get(i)).find((x): x is string => !!x);
+  const meta = mainId ? a.skinMeta.get(mainId) : undefined;
+  if (!meta) return { ...base, weapon: w, levels: [], level: null, chromas: [], chromaId: null, charm };
+  const levels = meta.levels.map((id, i) => ({ id, n: i + 1, label: levelItemName(a.levels.get(id)?.item ?? null) }));
+  // Takılı seviye: önce seviye yuvası, yoksa yuvadaki kimliklerden bu kaplamaya ait en yüksek seviye.
+  const own = slot?.levelId && meta.levels.includes(k(slot.levelId)) ? k(slot.levelId) : [...meta.levels].reverse().find((id) => ids.includes(id));
+  const lv = own ? a.levels.get(own) : undefined;
+  const chromas = meta.chromas.map((id) => {
+    const c = a.chromas.get(id)!;
+    return { id, label: chromaLabel(c.name, c.index), swatch: c.swatch, render: c.render };
+  }).filter((c) => c.render);
+  const chromaId = ids.find((i) => meta.chromas.includes(i)) ?? (chromas[0]?.id ?? null);
+  return { ...base, weapon: w, skinId: meta.id, levels, level: lv ? lv.index + 1 : null, chromas, chromaId, charm };
 }

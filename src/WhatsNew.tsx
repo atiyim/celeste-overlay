@@ -8,6 +8,7 @@ const NOTES: Record<string, string[]> = {
     "Peak rank geri geldi: listede kendi sütununda, kartlarda ve Karşı karşıya'da rankın hemen altında.",
     "Oyundayken efektler durur: overlay arka plandayken hiçbir şey hareket etmez, öne gelince kaldığı yerden devam eder.",
     "Maç sırasında Riot Client çok daha seyrek sorgulanır.",
+    "Oyuncu paneli alttan açılır. Kaplamalar mağaza gibi kartlarda: tam adı, seviyesi, takılı rengi, bütün renkleri ve uğurluğu; kartına tıklayınca hepsi büyük görünür.",
   ],
 
   "0.8.0": [

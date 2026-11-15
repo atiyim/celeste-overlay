@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import type { Assets, WeaponInfo } from "./assets";
-import { charmIcon, lookup, resolveFlex, resolveSkin, resolveSprays } from "./assets";
+import type { Assets } from "./assets";
+import { lookup, resolveFlex, resolveSprays } from "./assets";
+import { SkinsTab } from "./SkinsTab";
 import { ago, stamp, analyze, formBadge, isComp, modeGroup, modeName, styleBadge, type ModeGroup, type WeaponStat } from "./playstyle";
 import { DEFAULT_TH, type Thresholds } from "./theme";
 import { TAGS, type Entry, type TagId } from "./seen";
@@ -11,42 +12,6 @@ import { CloseButton, NameLine } from "./ui";
 import { derankRisk, gunBadge, mapBadge, mapForm, mmrBadge, nextRank, rrStats } from "./insights";
 
 const inTauri = "__TAURI_INTERNALS__" in window;
-
-/* Oyun içi cephanelikle aynı düzen: yan silahlar | SMG + pompalı | tüfek + yakın dövüş | keskin nişancı + makineli. */
-const LAYOUT: [string, string][][] = [
-  [["Sidearm", "Yan silahlar"]],
-  [["SMG", "Hafif makineliler"], ["Shotgun", "Pompalılar"]],
-  [["Rifle", "Tüfekler"], ["Melee", "Yakın dövüş"]],
-  [["Sniper", "Keskin nişancılar"], ["Heavy", "Makineli tüfekler"]],
-];
-
-/* Silah sırası oyun içi cephanelikle aynıdır (fiyata göre, ucuzdan pahalıya). Listede olmayan silah sona eklenir. */
-const ORDER = [
-  "classic", "shorty", "frenzy", "ghost", "bandit", "sheriff",
-  "stinger", "spectre", "bucky", "judge",
-  "bulldog", "guardian", "warden", "phantom", "vandal",
-  "marshal", "outlaw", "operator", "ares", "odin",
-];
-const rank = (name: string) => { const i = ORDER.indexOf(name.toLowerCase()); return i < 0 ? 99 : i; };
-
-function Tile({ w, p, a }: { w: WeaponInfo; p: Player; a: Assets }) {
-  const slot = p.loadout.weapons.find((x) => lookup(x.weaponId) === w.id);
-  const skin = resolveSkin(a, w, slot);
-  const charm = charmIcon(a, slot);
-  return (
-    <div className={skin.isDefault ? "gt dim" : "gt"} title={`${w.name}: ${skin.name}${skin.chromaName ? ` (${skin.chromaName})` : ""}`}>
-      <img className="gi" src={skin.image} alt="" loading="lazy" />
-      <div className="gx">
-        <span className="gn">{skin.name}</span>
-        <span className="gw">
-          {w.name}
-          {skin.swatch && <img className="sw" src={skin.swatch} alt={skin.chromaName ?? "Renk"} />}
-        </span>
-      </div>
-      {charm && <img className="gc" src={charm.icon} alt={charm.name} title={charm.name} loading="lazy" />}
-    </div>
-  );
-}
 
 interface PanelProps {
   p: Player;
@@ -144,7 +109,6 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
     invoke("deepen_player", { puuid: p.puuid }).catch(() => deepened.current.delete(p.puuid));
   }, [tab, p.puuid]);
 
-  const by = (cat: string) => assets.weapons.filter((w) => w.category === cat).sort((a, b) => rank(a.name) - rank(b.name));
   const card = assets.cards.get(lookup(p.cardId));
   const title = assets.titles.get(lookup(p.titleId));
   const cur = assets.tiers.get(p.rank.current);
@@ -242,20 +206,7 @@ export function LoadoutPanel({ p, lobby, th = DEFAULT_TH, assets, mapId, entry, 
         ))}
       </div>
 
-      {tab === "guns" && (
-        <div className="gcols fade">
-          {LAYOUT.map((col, i) => (
-            <div className="gcol" key={i}>
-              {col.map(([cat, name]) => (
-                <section key={cat}>
-                  <h3 className="h2">{name}</h3>
-                  {by(cat).map((w) => <Tile key={w.id} w={w} p={p} a={assets} />)}
-                </section>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
+      {tab === "guns" && <SkinsTab p={p} assets={assets} />}
 
       {tab === "perf" && (
         <div className="perf fade">
