@@ -61,10 +61,8 @@ export function playerView(p: Player, { assets, entry, th, mapId, mapName, index
   // Önce maç içinde işe yarayanlar; satırda biri, fazlası "+N" ile.
   const badges: Badge[] = [poolBadge(p, agent?.name), gunBadge(p), mapBadge(p, mapId, mapName), mmrBadge(p, (t) => assets.tiers.get(t)?.name), formBadge(p), styleBadge(play, th), activityBadge(p)]
     .filter((b): b is Badge => !!b);
-  // Zirve, şimdikinden en az bir kademe yüksekse belirtilir.
-  const peakUp = peak && r.peak > r.current ? peak : undefined;
 
-  return { agent, cur, peak, peakUp, anonymous, label, tag, name, copyName, prevText, times, trackerUrl, w, g, scope, wrPct, vandal: thumbs[0], skinTip, noLoadout, pool, badges };
+  return { agent, cur, peak, anonymous, label, tag, name, copyName, prevText, times, trackerUrl, w, g, scope, wrPct, vandal: thumbs[0], skinTip, noLoadout, pool, badges };
 }
 
 /** Parti harfi → renk. Aynı partidekiler aynı renkte çizgiyle birleşir. */

@@ -1,5 +1,5 @@
 import type { KeyboardEvent, MouseEvent } from "react";
-import type { Assets } from "./assets";
+import type { Assets, Tier } from "./assets";
 import { lookup } from "./assets";
 import type { Entry } from "./seen";
 import type { ColId, Thresholds } from "./theme";
@@ -48,6 +48,18 @@ export function BadgePill({ b }: { b: Badge }) {
 }
 /** Rolü olmayan Celeste kullanıcısı: adın yanında küçük ay. */
 export const Moon = () => <span className="cmoon" title="Celeste Overlay kullanıyor" aria-label="Celeste Overlay kullanıyor"><Icon name="moon" size={11} stroke={2} /></span>;
+
+/** Peak rank: küçük simge ve rank adı. Üç lobi düzeninde de aynı görünür; rank bilinmiyorsa çizgi. */
+export function Peak({ tier, label }: { tier?: Tier; label?: boolean }) {
+  if (!tier) return <span className="pk none" title="Peak rank bilinmiyor">{label ? "Peak –" : "–"}</span>;
+  return (
+    <span className="pk" title={`Peak rank: ${tier.name}`}>
+      {label && <em>Peak</em>}
+      <img src={tier.icon} alt="" loading="lazy" />
+      <span style={{ color: tierColor(tier.color) }}>{tier.name}</span>
+    </span>
+  );
+}
 
 export function MoreBadges({ list }: { list: Badge[] }) {
   if (!list.length) return null;
@@ -104,11 +116,11 @@ export function PlayerRow({ p, index, assets, entry, cols, th, template, blur, o
             </span>
             <small>
               {v.cur ? `${p.rank.rr} RR` : "Rekabet verisi yok"}
-              {cols.peak && v.peakUp && <span className="pk" title={`Zirve: ${v.peakUp.name}`}> · <Icon name="collapse" size={10} /> <span style={{ color: tierColor(v.peakUp.color) }}>{v.peakUp.name}</span></span>}
             </small>
           </span>
         </div>
       )}
+      {cols.peak && <div className="pkc"><Peak tier={v.peak} /></div>}
       {cols.form && (
         <div className="lfm" title={v.g > 0 ? `${v.w} galibiyet, ${v.g} maç (${v.scope}, rekabet)` : "Rekabet verisi yok"}>
           <span className="fl">

@@ -2,15 +2,15 @@ import { DEFAULT_TILT, TILT_HOURS, TILT_LOSSES, TILT_RR, type TiltCfg } from "./
 
 /* Kullanıcı ayarları (görünüm, taraf bilgisi, otomatik gizleme, sütunlar). Yalnızca bu bilgisayarda saklanır. */
 export type ColId = "rank" | "peak" | "wr" | "form" | "skins" | "party" | "pool" | "badges" | "tracker";
-/** inline: kendi sütunu yok, başka bir hücrenin içinde gösterilir (peak rank hücresinde, parti avatarın yanındaki çizgide). */
+/** inline: kendi sütunu yok, başka bir hücrenin içinde gösterilir (kazanma oranı Form hücresinde, parti avatarın yanındaki çizgide). */
 export interface ColDef { id: ColId; label: string; px: number; inline?: boolean }
 
 // "Oyuncu" sütunu her zaman açıktır ve kalan genişliği alır.
 export const COLS: ColDef[] = [
-  { id: "rank", label: "Rank", px: 156 },
-  { id: "peak", label: "Peak rank", px: 0, inline: true },
+  { id: "rank", label: "Rank", px: 128 },
+  { id: "peak", label: "Peak rank", px: 116 },
   { id: "wr", label: "Kazanma oranı", px: 0, inline: true },
-  { id: "form", label: "Form", px: 150 },
+  { id: "form", label: "Form", px: 140 },
   { id: "skins", label: "Vandal", px: 168 },
   { id: "party", label: "Parti", px: 0, inline: true },
   { id: "pool", label: "Ajanlar", px: 84 },
@@ -152,10 +152,10 @@ export const gridTemplate = (cols: Record<ColId, boolean>) =>
   ["minmax(0, 1fr)", ...gridCols(cols).map((c) => `${c.px}px`)].join(" ");
 
 /* Açık sütunlara göre pencere genişliği (CSS px). */
-/* Sol menü 64, kenar boşlukları 44, takım kartı ve satır iç boşlukları 32, oyuncu sütunu en az 210. */
+/* Sol menü 56, kenar boşlukları 32, takım kartı ve satır iç boşlukları 28, oyuncu sütunu en az 190. */
 export function overlayWidth(cols: Record<ColId, boolean>, layout: Theme["layout"] = "list"): number {
-  if (layout === "versus") return 1240; // iki takım yan yana
-  if (layout === "cards") return 1100; // 5 kart × ~190 + menü ve boşluklar
+  if (layout === "versus") return 1180; // iki takım yan yana
+  if (layout === "cards") return 1000; // 5 kart × ~170 + menü ve boşluklar
   const on = gridCols(cols);
-  return Math.max(820, 64 + 44 + 32 + 210 + on.reduce((a, c) => a + c.px, 0) + 12 * on.length);
+  return Math.max(760, 56 + 32 + 28 + 190 + on.reduce((a, c) => a + c.px, 0) + 12 * on.length);
 }

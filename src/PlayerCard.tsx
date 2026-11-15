@@ -5,7 +5,7 @@ import { Roles } from "./RoleBadge";
 import { Icon } from "./icons";
 import { NameLine } from "./ui";
 import { partyColor, playerView } from "./playerView";
-import { BadgePill, FormDots, Moon, MoreBadges, type RowProps } from "./PlayerRow";
+import { BadgePill, FormDots, Moon, MoreBadges, Peak, type RowProps } from "./PlayerRow";
 
 /* Kart düzeni: ajan seçim ekranı gibi; her takım 5 dikey kart. Tıklayınca aynı ayrıntı paneli açılır. */
 export function PlayerCard({ p, index, assets, entry, cols, th, onOpen, onCopy, onTracker, mapId, mapName, lobby, roles, plate, top, hot, celeste }: Omit<RowProps, "template" | "blur">) {
@@ -46,17 +46,18 @@ export function PlayerCard({ p, index, assets, entry, cols, th, onOpen, onCopy, 
         ) : null}
         <div className="pcr">
           {v.cur ? <span className="tico" style={{ "--tc": v.cur.color, "--rr": `${Math.min(100, p.rank.rr)}%` } as React.CSSProperties}><img src={v.cur.icon} alt="" /></span> : <i className="tier0" />}
-          <span>
+          <span className="pcrt">
             <b style={v.cur ? { color: tierColor(v.cur.color) } : undefined}>{v.cur?.name ?? "Derecesiz"}</b>
             {top && <span className="ltop" title="Lobinin en yüksek rankı"><Icon name="crown" size={11} /></span>}
-            <small>{v.cur ? `${p.rank.rr} RR` : "Rekabet yok"}{cols.peak && v.peakUp ? ` · zirve ${v.peakUp.name}` : ""}</small>
+            <small>{v.cur ? `${p.rank.rr} RR` : "Rekabet yok"}</small>
           </span>
+          {cols.peak && <Peak tier={v.peak} label />}
         </div>
         <div className="pcs" title={v.g > 0 ? `${v.w} galibiyet, ${v.g} maç (${v.scope}, rekabet)` : "Rekabet verisi yok"}>
-          <span><small>Kazanma</small><b>{v.wrPct != null ? `%${v.wrPct}` : "–"}</b></span>
-          <span><small>K/D</small><b>{p.kd != null ? p.kd.toFixed(2) : "–"}</b></span>
+          <span title="Kazanma oranı"><b>{v.wrPct != null ? `%${v.wrPct}` : "–"}</b></span>
+          <span><b>{p.kd != null ? p.kd.toFixed(2) : "–"}</b><small>K/D</small></span>
+          <FormDots p={p} assets={assets} />
         </div>
-        <FormDots p={p} assets={assets} />
         <div className="pcbd">
           {v.badges[0] ? <BadgePill b={v.badges[0]} /> : <span className="d">–</span>}
           <MoreBadges list={v.badges.slice(1)} />

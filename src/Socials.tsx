@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isFrozen } from "./freeze";
 import { BRAND_PATHS } from "./brands";
 
 /* bneceleste'nin hesapları: alt şeritte iki saniyede bir sırayla görünür, tıklayınca profil açılır.
@@ -18,7 +19,7 @@ export function Socials({ onOpen }: { onOpen: (url: string) => void }) {
 
   useEffect(() => {
     if (hold) return;
-    const t = window.setInterval(() => { if (!document.hidden) setI((x) => (x + 1) % SOCIALS.length); }, EVERY);
+    const t = window.setInterval(() => { if (!document.hidden && !isFrozen()) setI((x) => (x + 1) % SOCIALS.length); }, EVERY);
     return () => window.clearInterval(t);
   }, [hold]);
 

@@ -372,6 +372,9 @@ button.tg:hover { opacity: 1; }
 /* FPS modu: sürekli çizim gerektiren her şey kapanır (animasyon, geçiş, gölge ve parlama filtreleri). */
 .fps *, .fps *::before, .fps *::after { animation: none !important; transition: none !important; }
 .fps .th.tr.t3, .fps .th.tr.t4, .fps .th.tr.t5 { filter: none; }
+/* Arka planda (oyun ya da başka pencere öndeyken): efektler silinmez, durur. Süre sıfırlanınca biten animasyon son
+   karesinde kalır, sonsuz döngüler çizim üretmez; overlay öne gelince hepsi kaldığı yerden sürer. */
+.frozen *, .frozen *::before, .frozen *::after { animation-duration: 0s !important; transition: none !important; }
 
 /* Yazı boyutu seçenekleri, kayıt gizleme ve nişangah listesi */
 .x.on, .zoom button.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
@@ -2338,3 +2341,115 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 .vsa { position: relative; }
 .vsro { position: absolute; right: -3px; bottom: -3px; width: 16px; height: 16px; padding: 2px; border-radius: 50%; background: var(--s1); border: 1px solid var(--line-2); object-fit: contain; }
 .vsc.foe .vsro { right: auto; left: -3px; }
+
+/* ───────── 0.8.1 · Kompakt lobi ─────────
+   Geri bildirim: pencere ekranı fazla kaplıyordu. Üç lobi düzeni de sıkılaştı; bilgi aynı, boşluk az.
+   Peak rank her düzende kendi yerinde: küçük simge + rank adı. */
+.ov { grid-template-columns: 56px minmax(0, 1fr); }
+.ov.mini, .ov:not(:has(> .rail)) { grid-template-columns: minmax(0, 1fr); }
+.ovm { gap: 8px; padding: 10px 16px 10px; }
+.rail { padding-top: 14px; gap: 4px; }
+.rlogo { width: 32px; height: 32px; margin-bottom: 8px; }
+.hd { padding-bottom: 4px; }
+.hd .t { font-size: 17px; }
+.hd .ib { width: 30px; height: 30px; border-radius: 9px; }
+.obody { gap: 8px; }
+.lobbyw { gap: 6px; }
+.lchips { gap: 6px; }
+.lchip { padding: 3px 10px; font-size: 12px; gap: 6px; }
+.g.c { padding: 0 14px; font-size: 11px; }
+
+/* Peak rank */
+.pk { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.pk img { flex: none; width: 20px; height: 20px; object-fit: contain; opacity: .9; }
+.pk > span { overflow: hidden; text-overflow: ellipsis; opacity: .82; }
+.pk em { font-style: normal; font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); }
+.pk.none { color: var(--fg-3); font-weight: 400; }
+.pkc { display: flex; align-items: center; min-width: 0; }
+
+/* Sade liste */
+.team { margin: 0; padding: 2px 4px 4px; border-radius: 14px; }
+.teamh { padding: 5px 10px 3px; }
+.teamn { font-size: 13px; }
+.team .rows { gap: 0; }
+.r { min-height: 40px; padding: 3px 10px; border-radius: 10px; }
+.who { gap: 9px; }
+.agw, .agw .agent, .agw .aifb { width: 30px; height: 30px; border-radius: 9px; }
+.agw .aifb { font-size: 13px; }
+.who .nl { font-size: 13.5px; line-height: 1.2; }
+.sub2 { margin-top: 1px; }
+.sub2 > small, .sub2 > .rep, .pchip { font-size: 11px; }
+.r .pbar { left: -6px; top: 0; bottom: 0; }
+.tier { gap: 8px; }
+.tico, html[data-vip] .tico { width: 26px; height: 30px; }
+.tico img { width: 24px !important; height: 24px !important; margin-bottom: 3px; }
+.tier0 { width: 24px; height: 24px; }
+.tier .n { font-size: 12.5px; line-height: 1.2; }
+.tier .n small { margin: 0; font-size: 10.5px; }
+.lfm { gap: 4px; }
+.fl { gap: 6px; }
+.fl b { font-size: 13px; }
+.fl small { font-size: 11px; }
+.fdots { gap: 4px; }
+.fdots i { width: 7px; height: 7px; }
+.bd { line-height: 19px; }
+.sb { margin-top: 0; padding-top: 4px; }
+
+/* Oyuncu kartları */
+.team.cards { padding: 2px 6px 8px; }
+.pcgrid { gap: 8px; }
+.pcd { border-radius: 14px; }
+.pcv { height: 76px; }
+.pcport { height: 330%; top: -18%; }
+.pcrole { left: 9px; top: 7px; }
+.pcparty { right: 7px; top: 6px; }
+.pchot, .pcagain { bottom: 6px; }
+.pcb { gap: 6px; padding: 4px 10px 9px; }
+.pcn .nl { font-size: 13.5px; }
+.pcr { gap: 7px; flex-wrap: wrap; row-gap: 5px; }
+.pcr > span:last-child { flex-direction: row; }
+.pcr .pcrt { flex: 1 1 0; display: flex; flex-direction: column; min-width: 0; }
+.pcr small { white-space: nowrap; line-height: 1.2; }
+.pcr .pk { flex: 1 0 100%; font-size: 11.5px; }
+.pcr .pk img { width: 18px; height: 18px; }
+.pcs { display: flex; align-items: baseline; gap: 10px; margin-top: auto; padding-top: 6px; }
+.pcs span { flex-direction: row; align-items: baseline; gap: 4px; }
+.pcs b { font-size: 13.5px; }
+.pcs small { font-size: 10.5px; }
+.pcs .fdots { margin-left: auto; align-self: center; flex: none; }
+.pcbd { min-height: 21px; }
+
+/* Karşı karşıya */
+.vs { gap: 8px; margin-top: 2px; }
+.vsh { gap: 10px; padding: 12px 14px; border-radius: 14px; }
+.vstr { width: 38px; height: 38px; }
+.vstt b { font-size: 15px; }
+.vsag img, .vsag i { width: 24px; height: 24px; }
+.vsvs b { font-size: 19px; }
+.vsk { gap: 8px; }
+.vsm { row-gap: 6px; padding: 7px 12px 8px; border-radius: 10px; }
+.vsm b { font-size: 15px; }
+.vsg { gap: 8px; }
+.vscol { gap: 4px; }
+.vsc { height: 46px; gap: 10px; padding: 0 12px; border-radius: 11px; }
+.vsa, .vsa .agent, .vsa .aifb { width: 32px; height: 32px; border-radius: 9px; }
+.vsa .aifb { font-size: 13px; }
+.vsro { width: 14px; height: 14px; }
+.vsn { gap: 1px; }
+.vss small { font-size: 11px; }
+.vsw { width: 42px; gap: 0; }
+.vsw b { font-size: 13.5px; }
+.vsr { gap: 7px; }
+.vsr > span { gap: 0; }
+.vsri { width: 26px; height: 26px; }
+.vsr { width: 156px; }
+.vsr > span { gap: 2px; }
+.vsr2 { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.vsr2 small { flex: none; }
+.vsr .pk { gap: 4px; font-size: 11px; }
+.vsr .pk img { width: 15px; height: 15px; }
+.vsc.foe .vsr2, .vsc.foe .vsr .pk { flex-direction: row-reverse; }
+@container vs (max-width: 1080px) { .vsb { display: inline-flex; } }
+@container vs (max-width: 1040px) { .vsb { display: none; } }
+.vsn { min-width: 96px; }
+.vsb { flex: 0 1 auto; min-width: 0; }

@@ -5,7 +5,7 @@ import { Icon, type IconName } from "./icons";
 import { lookup, type Assets, type Tier } from "./assets";
 import { AgentIcon, NameLine } from "./ui";
 import { partyColor, playerView } from "./playerView";
-import { BadgePill, Moon, type RowProps } from "./PlayerRow";
+import { BadgePill, Moon, Peak, type RowProps } from "./PlayerRow";
 import { isComp } from "./playstyle";
 import type { Player } from "./types";
 
@@ -71,8 +71,11 @@ function Cell({ p, index, assets, entry, cols, th, onOpen, mapId, mapName, roles
       <span className="vsr">
         {v.cur ? <img className="vsri" src={v.cur.icon} alt="" /> : <i className="tier0" />}
         <span>
-          <b style={v.cur ? { color: tierColor(v.cur.color) } : undefined}>{v.cur?.name ?? "Derecesiz"}{top && <Icon name="crown" size={11} />}</b>
-          <small>{v.cur ? `${p.rank.rr} RR` : "–"}</small>
+          <span className="vsr2">
+            <b style={v.cur ? { color: tierColor(v.cur.color) } : undefined}>{v.cur?.name ?? "Derecesiz"}{top && <Icon name="crown" size={11} />}</b>
+            {v.cur && <small>{p.rank.rr} RR</small>}
+          </span>
+          {cols.peak ? <Peak tier={v.peak} label /> : null}
         </span>
       </span>
     </div>

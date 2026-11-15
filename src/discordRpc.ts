@@ -23,6 +23,8 @@ const BUTTONS = [
 const MOMENT_MS = 10 * 60_000;
 /** Riot Client'ın durumu bu sıklıkla okunur: skor, sıra ve maç başlangıcı birkaç saniyede yansısın. Yerel istek, internete gitmez. */
 const PRESENCE_MS = 2_000;
+/** Maç sürerken seyrek okunur: skor round başına bir kez değişir, oyun sırasında Riot Client boşuna meşgul edilmez. */
+const PRESENCE_INGAME_MS = 12_000;
 
 /** Riot'un durum kaydı iki biçimde gelebiliyor (eski düz ve yeni gruplu); ikisinden de okunur. */
 function pres(p: any) {
@@ -210,9 +212,14 @@ export function useDiscordPresence(snapNow: Snapshot, assetsNow: Assets | null, 
       } else pr.current = null;
       push();
     };
-    tick();
-    const t = window.setInterval(tick, PRESENCE_MS);
-    return () => { live = false; window.clearInterval(t); };
+    // Maç sırasında seyrek sorulur: oyun oynanırken Riot Client'a ve işlemciye sürekli yük binmesin.
+    let t = 0;
+    const loop = async () => {
+      await tick();
+      if (live) t = window.setTimeout(loop, phaseOf() === "ingame" ? PRESENCE_INGAME_MS : PRESENCE_MS);
+    };
+    loop();
+    return () => { live = false; window.clearTimeout(t); };
   }, []);
   useEffect(() => () => { if (inTauri) invoke("discord_set", { activity: null }).catch(() => undefined); }, []);
 }

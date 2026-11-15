@@ -3,6 +3,13 @@ import { useState } from "react";
 /* Güncellemeden sonra bir kez görünen "neler yeni" kartı. Kapatınca bu sürüm için bir daha çıkmaz. */
 const KEY = "overlay-whatsnew";
 const NOTES: Record<string, string[]> = {
+  "0.8.1": [
+    "Lobi küçüldü: üç düzen de ekranda çok daha az yer kaplıyor, bilgiler aynı.",
+    "Peak rank geri geldi: listede kendi sütununda, kartlarda ve Karşı karşıya'da rankın hemen altında.",
+    "Oyundayken efektler durur: overlay arka plandayken hiçbir şey hareket etmez, öne gelince kaldığı yerden devam eder.",
+    "Maç sırasında Riot Client çok daha seyrek sorgulanır.",
+  ],
+
   "0.8.0": [
     "Yeni görünüm: yumuşak mor gece teması, yeni ay ikonu, sol menü ve hızlı ayarlar.",
     "Lobi üç düzende: sade liste, ajan seçimi gibi kartlar ya da takımını rakiple yan yana karşılaştıran Karşı karşıya (Ayarlar › Oyuncu tablosu).",
