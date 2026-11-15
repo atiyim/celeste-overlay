@@ -139,6 +139,9 @@ export function Settings({ zoom, onZoom, zooms, theme, onChange, onToast, onClos
               <section>
                 <h3 className="h2">Otomatik gizleme</h3>
                 <div className="box">
+                  <Row title="Köşede Celeste" desc="Sağ altta durur, arada bir bir şey söyler. Tıklayınca rehberi açar.">
+                    <Toggle on={theme.buddy} label="Köşede Celeste" onChange={(v) => set({ buddy: v })} />
+                  </Row>
                   <Row title="Maç başlayınca gizle" desc={theme.fps ? "FPS modu açıkken gizleme hep açık." : "Ajan seçiminde yeniden görünür. F2 ile açarsan o maç boyunca açık kalır; F2 ile gizlersen kendiliğinden dönmez."}>
                     <Toggle on={hide.on} disabled={theme.fps} label="Maç başlayınca gizle" onChange={(v) => set({ autoHide: v })} />
                   </Row>

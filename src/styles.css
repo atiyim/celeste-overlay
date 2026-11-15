@@ -2961,9 +2961,9 @@ html[data-skin="obsidyen"] .step { background: rgba(12, 12, 14, .82); }
 .mshx b, .mshx strong { text-shadow: 0 1px 6px rgba(0, 0, 0, .7); }
 
 /* ================= Celeste (piksel karakter) ================= */
-.gs-cap { position: relative; overflow: visible; padding-right: 176px; min-height: 66px; }
+.gs-cap { position: relative; overflow: visible; padding-right: 168px; min-height: 66px; }
 .gs-cap .gs-ic { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); }
-.mascot { position: absolute; right: 50px; bottom: 3px; z-index: 12; width: 115px; height: 139px; pointer-events: none; animation: mcbob 2.6s ease-in-out infinite; transform-origin: 50% 100%; }
+.mascot { position: absolute; right: 56px; bottom: 5px; z-index: 12; width: 96px; height: 116px; pointer-events: none; animation: mcbob 2.6s ease-in-out infinite; transform-origin: 50% 100%; }
 .mascot svg { display: block; filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .28)); }
 .mc-m { display: none; }
 .mascot[data-mouth="0"] .mc-m0, .mascot[data-mouth="1"] .mc-m1, .mascot[data-mouth="2"] .mc-m2 { display: block; }
@@ -2985,3 +2985,17 @@ html[data-skin="obsidyen"] .step { background: rgba(12, 12, 14, .82); }
 .gs-ring { fill: none; stroke: var(--accent); stroke-width: 2; animation: gsringp 1.3s ease-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes gsringp { 0% { opacity: .9; transform: scale(.6); } 100% { opacity: 0; transform: scale(2.2); } }
 @media (prefers-reduced-motion: reduce) { .mascot, .mc-eo, .mc-ec, .gs-trail, .gs-wstar, .gs-ring { animation: none; } }
+
+/* ================= Köşedeki Celeste ================= */
+.buddy-anchor { position: relative; height: 0; z-index: 30; }
+.buddy { position: absolute; right: 6px; bottom: -2px; display: flex; align-items: flex-end; gap: 6px; padding: 0; background: none; border: 0; cursor: pointer; }
+.buddy-win { display: block; width: 50px; height: 39px; overflow: hidden; transition: height .25s cubic-bezier(.3, 1.4, .5, 1); }
+.buddy:hover .buddy-win, .buddy.talk .buddy-win { height: 45px; }
+.buddy .mascot { position: static; width: 50px; height: 60px; animation: none; }
+.buddy .mascot svg { width: 50px; height: 60px; filter: none; }
+.buddy-bub { position: relative; margin-bottom: 14px; max-width: 230px; padding: 6px 11px; font-size: 12px; line-height: 1.35; text-align: left; color: var(--text, #eceaf2); background: #16151b; border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); border-radius: 12px 12px 3px 12px; box-shadow: 0 8px 22px rgba(0, 0, 0, .5); opacity: 0; transform: translateX(6px) scale(.96); transform-origin: 100% 100%; transition: opacity .22s, transform .22s; pointer-events: none; }
+.buddy.talk .buddy-bub, .buddy:hover .buddy-bub, .buddy:focus-visible .buddy-bub { opacity: 1; transform: none; }
+.buddy:focus-visible { outline: none; }
+.buddy:focus-visible .buddy-win { outline: 1px solid var(--accent); border-radius: 8px; }
+html.fps .buddy-anchor { display: none; }
+@media (prefers-reduced-motion: reduce) { .buddy-win, .buddy-bub { transition: none; } }

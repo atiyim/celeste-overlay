@@ -39,6 +39,8 @@ export interface Theme {
   tilt: TiltCfg;
   /** FPS modu: animasyonlar kapanır, maçta hemen gizlenir, gizliyken denetimler seyrekleşir. */
   fps: boolean;
+  /** Köşede Celeste görünsün mü */
+  buddy: boolean;
   /** OBS tarayıcı kaynağı (yalnızca bu bilgisayardan erişilir). */
   obs: boolean;
   /** Discord'da "Celeste Overlay oynuyor" kartı. */
@@ -77,6 +79,7 @@ export const DEFAULT_THEME: Theme = {
   th: DEFAULT_TH,
   tilt: DEFAULT_TILT,
   fps: false,
+  buddy: true,
   obs: false,
   discord: true,
   streamer: false,
@@ -128,6 +131,7 @@ export function loadTheme(): Theme {
         hours: TILT_HOURS.includes((t.tilt as Partial<TiltCfg> | undefined)?.hours as number) ? (t.tilt as TiltCfg).hours : DEFAULT_TILT.hours,
       },
       fps: t.fps === true,
+      buddy: t.buddy !== false,
       obs: t.obs === true,
       discord: t.discord !== false,
       streamer: t.streamer === true,
