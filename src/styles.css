@@ -2553,3 +2553,22 @@ html.fps .pvnm, html.fps .fwho.nfx .nm, html.fps .pvg::before { animation: none;
 .wlrec em { font-style: normal; }
 .wlrec .rw { color: var(--win); }
 .wlrec .rl { color: var(--loss); }
+
+/* 0.8.1 · Kompakt kaplama kartları: resim solda, bilgi sağda; panel dikeyde uzamaz */
+.ks-bcol { gap: 10px; }
+.ks-bcol section { gap: 5px; }
+.ks-bcol .ks-skd { display: grid; grid-template-columns: 62px minmax(0, 1fr); grid-template-areas: "im t" "im n" "im m"; column-gap: 8px; row-gap: 1px; align-items: center; padding: 6px 9px 7px 6px; border-radius: 10px; min-height: 52px; }
+.ks-bcol .ks-skd::after { left: 8px; right: 8px; }
+.ks-bcol .ks-skt1 { grid-area: t; min-height: 14px; gap: 4px; }
+.ks-bcol .ks-skt1 small { font-size: 9.5px; letter-spacing: .05em; }
+.ks-bcol .ks-skti { width: 12px; height: 12px; }
+.ks-bcol .ks-skch { width: 16px; height: 16px; }
+.ks-bcol .ks-skim { grid-area: im; width: 62px; height: 34px; margin: 0; align-self: center; }
+.ks-bcol .ks-skn { grid-area: n; font-size: 11.5px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ks-bcol .ks-skm { grid-area: m; min-height: 12px; gap: 4px; }
+.ks-bcol .ks-skm small { font-size: 9.5px; }
+.ks-bcol .ks-skd.std { min-height: 40px; }
+.ks-bcol .ks-skd.std .ks-skn { font-size: 11px; }
+.ks-bcol .ks-skd.std .ks-skim { height: 24px; }
+.ks-bh { margin-bottom: 0; }
+.ks-skt { gap: 8px; }
