@@ -205,7 +205,7 @@ export function Guide({ onDone }: Props) {
       <div className="gs-card hello">
         <img className="gs-moon" src="/celeste-moon.webp" alt="" draggable={false} />
         <h2>Celeste Overlay'e hoş geldin</h2>
-        <p>İki dakikalık sesli bir tur. Gerçek ekranı gösterip her şeyi tek tek anlatacağım.</p>
+        <p>İki dakikalık sesli bir tur. Her şeyi gerçek ekranda tek tek göstereceğim.</p>
         {!begun && (
           <div className="gs-start">
             <button type="button" className="x go big" onClick={() => begin(false)} autoFocus><Icon name="volume" size={16} />Sesli başlat</button>

@@ -2889,3 +2889,12 @@ html[data-skin="obsidyen"] .step { background: rgba(12, 12, 14, .82); }
 .gs-ctl { display: inline-flex; gap: 8px; }
 @media (prefers-reduced-motion: reduce) { .gs-moon, .x.big, .gs-star, .gs-win .lit, .gs-win .lit::before, .gs-hint, .gs-mo.on::after, .gs-win .gs-title.lit { animation: none; } }
 .gs-win .gs-row ~ .gs-row .lit::before { display: none; }
+
+/* Karşılama kartı alçak pencerede de sığsın: küçük ay, yan yana düğmeler */
+.gs-card.hello { gap: 8px; padding: 14px 22px; }
+.gs-card.hello .gs-moon { width: 92px; height: 92px; margin-bottom: -4px; }
+.gs-card.hello h2 { font-size: 21px; }
+.gs-card.hello p { font-size: 13px; line-height: 1.45; }
+.gs-start { flex-direction: row; gap: 14px; margin-top: 6px; }
+.gs-start .x.big { padding: 9px 20px; }
+.gs-start .lnk { padding: 8px 4px; font-size: 13px; }
