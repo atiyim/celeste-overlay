@@ -4,7 +4,9 @@ import { useState } from "react";
 const KEY = "overlay-whatsnew";
 const NOTES: Record<string, string[]> = {
   "0.8.1": [
-    "Yeni sesli rehber: gerçek ekranı ok ve ışıkla gösterip her şeyi sesli anlatıyor, altyazısı hep açık. Ayarlar'dan istediğin zaman baştan izleyebilirsin.",
+    "Celeste ile tanış: yeni sesli rehberi o anlatıyor, asasıyla ekranı gösteriyor. Sağ altta durur, maçına göre arada bir şey söyler; tıklarsan rehber yeniden açılır (Ayarlar'dan kapatılabilir).",
+    "Spike sayacı yenilendi: çizgiler ve renkler çözmeye yetişip yetişmediğini gösterir (son 7 sn: yalnızca yarım çözülmüşse, son 3,5 sn: çözülmez). Sayaç çalışırken oyunun üstünde küçük bir şerit çıkar.",
+    "Göster / gizle tuşu artık değiştirilebilir: Ayarlar > Overlay > Kısayol.",
     "Yeni ana tema: Obsidyen Altın. Siyah zemin, ince altın çizgiler, altın ay. Eski görünümü seviyorsan Ayarlar > Görünüm > Tema'dan Sade'ye dönebilirsin.",
     "Lobi küçüldü: üç düzen de ekranda çok daha az yer kaplıyor, bilgiler aynı.",
     "Peak rank geri geldi: listede kendi sütununda, kartlarda ve Karşı karşıya'da rankın hemen altında.",
