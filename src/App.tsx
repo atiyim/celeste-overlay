@@ -85,6 +85,8 @@ const PHASE_TEXT: Record<string, string> = {
   ingame: "Maç sürüyor",
 };
 
+/** Rehber sürümü: değişince rehber herkese bir kez yeniden gösterilir (0.8.1: sesli rehber). */
+const GUIDE_V = "2";
 const MAX_H = 700;
 /** Kart düzeninde iki takım tek ekrana sığsın diye biraz daha yüksek sınır. */
 const MAX_H_CARDS = 750; // pencere en çok bu kadar uzar; fazlası pencerenin içinde kaydırılır
@@ -103,8 +105,8 @@ export function App() {
   const [seen, setSeen] = useState<Seen>({});
   const [watchSound, setWatchSound] = useState(() => { try { return localStorage.getItem("overlay-watch-sound") !== "0"; } catch { return true; } });
   const alerted = useRef(new Set<string>());
-  const [guide, setGuide] = useState<boolean>(() => { try { return localStorage.getItem("overlay-guide") !== "1"; } catch { return false; } });
-  const closeGuide = () => { setGuide(false); try { localStorage.setItem("overlay-guide", "1"); } catch { /* depolama kapalı */ } };
+  const [guide, setGuide] = useState<boolean>(() => { try { return localStorage.getItem("overlay-guide") !== GUIDE_V; } catch { return false; } });
+  const closeGuide = () => { setGuide(false); try { localStorage.setItem("overlay-guide", GUIDE_V); } catch { /* depolama kapalı */ } };
   const [protect, setProtect] = useState<boolean>(() => localStorage.getItem("overlay-protect") === "1");
   const [zoom, setZoom] = useState<number>(() => Number(localStorage.getItem("overlay-zoom")) || 1);
   const [blur, setBlur] = useState<boolean>(() => { try { return localStorage.getItem("overlay-blur") === "1"; } catch { return false; } });

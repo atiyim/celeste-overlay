@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "./icons";
-import { sfx } from "./sfx";
+import { music, pop, sfx } from "./sfx";
 
 /* Sesli rehber: gerçek arayüzün küçük bir sahnesinde ok ve ışıkla gösterir, Celeste sesle anlatır, altyazı hep açıktır.
    Adımlar sesi bitince kendiliğinden ilerler; iki adımda kullanıcıdan küçük bir hareket beklenir. Ses dosyaları public/guide. */
@@ -22,28 +22,33 @@ interface Step {
   /** Beklenen hareket: satıra tıkla / F2 tuşuna bas */
   act?: "row" | "key";
   hint?: string;
+  /** Bölüm (üstteki şeritte) */
+  ch: number;
+  /** Yazılı ek ayrıntı: sesin söylemediği küçük bilgi */
+  tip?: string;
 }
+const CHAPTERS = ["Tanışma", "Güven", "Lobi", "Oyuncu", "Pencere", "Keşfet"];
 
 const STEPS: Step[] = [
-  { a: "01-giris", d: 4.3, scene: "hello", say: "Merhaba! Ben Celeste. Sana iki dakikada her şeyi göstereceğim." },
-  { a: "02-guven", d: 6.2, scene: "trust", t: ["trust0", "trust1"], say: "Önce içini rahat edeyim: Riot hesabına giriş yapmıyorum, oyuna dokunmuyorum. Sadece okuyorum." },
-  { a: "03-veriler", d: 3.6, scene: "trust", t: ["trust2"], say: "Notların ve etiketlerin sadece senin bilgisayarında kalır." },
-  { a: "04-durum", d: 6.2, scene: "stage", mode: "roster", t: ["status"], say: "Sol alttaki bu rozet yeşilse her şey yolunda demektir. Tıklarsan neyin çalıştığını görürsün." },
-  { a: "05-valorant", d: 4.3, scene: "stage", mode: "wait", t: ["wait"], say: "Şimdi Valorant'ı aç. Maça girince oyuncular kendiliğinden gelecek." },
-  { a: "06-satir", d: 3.1, scene: "stage", mode: "roster", t: ["row0"], say: "Bu bir oyuncu satırı. Hadi birlikte okuyalım." },
-  { a: "07-rank", d: 3.8, scene: "stage", mode: "roster", t: ["rank"], say: "Burada oyuncunun şimdiki ve gördüğü en yüksek rank var." },
-  { a: "08-form", d: 4.9, scene: "stage", mode: "roster", t: ["form"], say: "Bunlar son beş maç. Yeşil galibiyet, pembe mağlubiyet." },
-  { a: "09-parti", d: 4.6, scene: "stage", mode: "roster", t: ["party"], say: "Aynı renkli çizgi, aynı partide demek. Birlikte oynuyorlar." },
-  { a: "10-rozet", d: 4.6, scene: "stage", mode: "roster", t: ["badge"], say: "Bu rozet ölçülen verilerden çıkar. Üzerine gelirsen nedenini söyler." },
-  { a: "11-tikla", d: 4.6, scene: "stage", mode: "roster", t: ["row0"], act: "row", hint: "İlk satıra tıkla", say: "Şimdi bir oyuncuya tıkla. Kaplamaları ve maç geçmişi tek tıkla açılır." },
-  { a: "12-kaplama", d: 3.7, scene: "stage", mode: "drawer", t: ["drawer"], say: "İşte kaplamaları. Oyundaki alım menüsüyle aynı sırada." },
-  { a: "13-f2", d: 5.2, scene: "stage", mode: "roster", t: ["key"], act: "key", hint: "F2 tuşuna tıkla", say: "F2 ile overlay'i anında gizleyip geri getirebilirsin. Maçta çok işine yarar." },
-  { a: "14-tasi", d: 3.1, scene: "stage", mode: "roster", t: ["title"], say: "Başlıktan tutup istediğin yere sürükleyebilirsin." },
-  { a: "15-hizli", d: 6.0, scene: "stage", mode: "roster", t: ["quick"], say: "Sağ üstteki düğme hızlı ayarlar: kayıt modu, isim bulanıklığı, FPS modu hepsi burada." },
-  { a: "16-menu", d: 4.9, scene: "stage", mode: "roster", t: ["rail"], say: "Sol menüde profilin, maç raporun ve Akış var. Gezerek keşfet!" },
-  { a: "17-akis", d: 5.1, scene: "stage", mode: "roster", t: ["feed"], say: "Akış'ta maçını paylaşabilir, gelenlere GG verebilirsin. Güzel bir topluluk bizimki." },
-  { a: "18-tam-ekran", d: 6.0, scene: "note", t: ["note"], say: "Küçük bir not: Overlay görünmüyorsa Valorant'ta Pencereli Tam Ekran'ı seç. Bu kadar." },
-  { a: "19-bitis", d: 5.0, scene: "finish", say: "Hazırsın! İyi oyunlar, bol galibiyet. Celeste hep burada." },
+  { a: "01-giris", ch: 0, d: 4.3, scene: "hello", say: "Merhaba! Ben Celeste. Sana iki dakikada her şeyi göstereceğim." },
+  { a: "02-guven", ch: 1, tip: "Kanıtı içinde: S.S.S bölümü uygulamanın attığı her isteği canlı gösterir.", d: 6.2, scene: "trust", t: ["trust0", "trust1"], say: "Önce içini rahat edeyim: Riot hesabına giriş yapmıyorum, oyuna dokunmuyorum. Sadece okuyorum." },
+  { a: "03-veriler", ch: 1, tip: "İsmini gizleyen oyuncunun adı sende de gizli kalır.", d: 3.6, scene: "trust", t: ["trust2"], say: "Notların ve etiketlerin sadece senin bilgisayarında kalır." },
+  { a: "04-durum", ch: 2, tip: "Sarı ya da kırmızıysa tıkla: hangi bağlantının eksik olduğunu söyler.", d: 6.2, scene: "stage", mode: "roster", t: ["status"], say: "Sol alttaki bu rozet yeşilse her şey yolunda demektir. Tıklarsan neyin çalıştığını görürsün." },
+  { a: "05-valorant", ch: 2, tip: "Liste ajan seçiminde dolar. Rakip kaplamaları maç başlayınca gelir.", d: 4.3, scene: "stage", mode: "wait", t: ["wait"], say: "Şimdi Valorant'ı aç. Maça girince oyuncular kendiliğinden gelecek." },
+  { a: "06-satir", ch: 2, tip: "Liste, Kartlar ve Karşı karşıya: düzeni Ayarlar'dan değiştirebilirsin.", d: 3.1, scene: "stage", mode: "roster", t: ["row0"], say: "Bu bir oyuncu satırı. Hadi birlikte okuyalım." },
+  { a: "07-rank", ch: 2, tip: "Taç işareti lobinin en yüksek rankını gösterir.", d: 3.8, scene: "stage", mode: "roster", t: ["rank"], say: "Burada oyuncunun şimdiki ve gördüğü en yüksek rank var." },
+  { a: "08-form", ch: 2, tip: "Soluk kutular rekabet dışı maçlar. Üstüne gelince harita ve ajan görünür.", d: 4.9, scene: "stage", mode: "roster", t: ["form"], say: "Bunlar son beş maç. Yeşil galibiyet, pembe mağlubiyet." },
+  { a: "09-parti", ch: 2, tip: "Üstteki \"Rakipte 2 kişilik parti\" özeti de buradan gelir.", d: 4.6, scene: "stage", mode: "roster", t: ["party"], say: "Aynı renkli çizgi, aynı partide demek. Birlikte oynuyorlar." },
+  { a: "10-rozet", ch: 2, tip: "Formda, Main, Kafa avcısı, MMR… Eşikleri Ayarlar'dan sen belirlersin.", d: 4.6, scene: "stage", mode: "roster", t: ["badge"], say: "Bu rozet ölçülen verilerden çıkar. Üzerine gelirsen nedenini söyler." },
+  { a: "11-tikla", ch: 3, tip: "Panel alttan açılır; pencere büyümez, içinde kaydırırsın.", d: 4.6, scene: "stage", mode: "roster", t: ["row0"], act: "row", hint: "İlk satıra tıkla", say: "Şimdi bir oyuncuya tıkla. Kaplamaları ve maç geçmişi tek tıkla açılır." },
+  { a: "12-kaplama", ch: 3, tip: "Yanındaki sekmeler: Performans, Geçmiş ve Profil.", d: 3.7, scene: "stage", mode: "drawer", t: ["drawer"], say: "İşte kaplamaları. Oyundaki alım menüsüyle aynı sırada." },
+  { a: "13-f2", ch: 4, tip: "Maç başlayınca kendiliğinden de gizlenir; süresini Ayarlar'dan seçersin.", d: 5.2, scene: "stage", mode: "roster", t: ["key"], act: "key", hint: "F2 tuşuna tıkla", say: "F2 ile overlay'i anında gizleyip geri getirebilirsin. Maçta çok işine yarar." },
+  { a: "14-tasi", ch: 4, tip: "Sol menünün boş yerinden de tutabilirsin. Konumu hatırlar.", d: 3.1, scene: "stage", mode: "roster", t: ["title"], say: "Başlıktan tutup istediğin yere sürükleyebilirsin." },
+  { a: "15-hizli", ch: 4, tip: "Yayıncıysan: \"kayıtta gizle\" overlay'i OBS'ten saklar.", d: 6.0, scene: "stage", mode: "roster", t: ["quick"], say: "Sağ üstteki düğme hızlı ayarlar: kayıt modu, isim bulanıklığı, FPS modu hepsi burada." },
+  { a: "16-menu", ch: 5, tip: "Araçlar'da hızlı mesajlar ve nişangah kodları da var.", d: 4.9, scene: "stage", mode: "roster", t: ["rail"], say: "Sol menüde profilin, maç raporun ve Akış var. Gezerek keşfet!" },
+  { a: "17-akis", ch: 5, tip: "Görsel ve GIF de ekleyebilirsin. Küfür ve hakaret yazılamaz.", d: 5.1, scene: "stage", mode: "roster", t: ["feed"], say: "Akış'ta maçını paylaşabilir, gelenlere GG verebilirsin. Güzel bir topluluk bizimki." },
+  { a: "18-tam-ekran", ch: 4, tip: "Bunu bir kez ayarlaman yeter.", d: 6.0, scene: "note", t: ["note"], say: "Küçük bir not: Overlay görünmüyorsa Valorant'ta Pencereli Tam Ekran'ı seç. Bu kadar." },
+  { a: "19-bitis", ch: 5, d: 5.0, scene: "finish", say: "Hazırsın! İyi oyunlar, bol galibiyet. Celeste hep burada." },
 ];
 
 const RAIL: { icon: IconName; k?: string }[] = [
@@ -64,6 +69,9 @@ export function Guide({ onDone }: Props) {
   const [speaking, setSpeaking] = useState(false);
   const [done, setDone] = useState(false);
   const [gone, setGone] = useState(false);
+  const [bye, setBye] = useState(false);
+  const [burst, setBurst] = useState(0);
+  const [sayKey, setSayKey] = useState(0);
   const audio = useRef<HTMLAudioElement | null>(null);
   const timer = useRef<number | undefined>(undefined);
   const mutedRef = useRef(muted); mutedRef.current = muted;
@@ -73,6 +81,7 @@ export function Guide({ onDone }: Props) {
 
   const stop = () => {
     window.clearTimeout(timer.current);
+    music.duck(false);
     if (audio.current) { audio.current.onended = null; audio.current.onerror = null; audio.current.pause(); audio.current = null; }
     setSpeaking(false);
   };
@@ -83,8 +92,8 @@ export function Guide({ onDone }: Props) {
     if (mutedRef.current) { fallback(); return; }
     const a = new Audio(`/guide/${file}.mp3`);
     audio.current = a;
-    a.onplay = () => setSpeaking(true);
-    a.onended = () => { setSpeaking(false); then?.(); };
+    a.onplay = () => { setSpeaking(true); music.duck(true); };
+    a.onended = () => { setSpeaking(false); music.duck(false); then?.(); };
     a.onerror = fallback;
     a.play().catch(fallback);
   };
@@ -97,28 +106,32 @@ export function Guide({ onDone }: Props) {
     if (i > 0 && !mutedRef.current) sfx.whoosh();
     if (STEPS[i].scene === "finish" && !mutedRef.current) window.setTimeout(() => sfx.fanfare(), 250);
     const st = STEPS[i];
-    speak(st.a, st.d * 1000 + 1200, () => {
-      if (st.act || !autoRef.current || i >= STEPS.length - 1) return;
-      timer.current = window.setTimeout(next, 900);
+    setSayKey((k) => k + 1);
+    if (st.scene === "finish") window.setTimeout(() => confetti(), 350);
+    speak(st.a, st.d * 1000 + 400, () => {
+      // Son adım: anlatım bitince rehber kendiliğinden, yumuşakça kapanır.
+      if (i >= STEPS.length - 1) { timer.current = window.setTimeout(leave, 900); return; }
+      if (st.act || !autoRef.current) return;
+      timer.current = window.setTimeout(next, 260);
     });
     return stop;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i, begun]);
 
-  useEffect(() => () => stop(), []);
+  useEffect(() => () => { stop(); music.stop(0.3); }, []);
 
   const begin = (silent: boolean) => {
     if (silent) { setMuted(true); mutedRef.current = true; try { localStorage.setItem(MUTE_KEY, "1"); } catch { /* depolama kapalı */ } }
-    else sfx.tick();
+    else { sfx.tick(); music.start(); }
     setBegun(true);
   };
   const toggleMute = () => {
     const v = !muted;
     setMuted(v); mutedRef.current = v;
     try { localStorage.setItem(MUTE_KEY, v ? "1" : "0"); } catch { /* depolama kapalı */ }
-    if (v) stop(); else if (begun) speak(s.a, s.d * 1000 + 1200);
+    if (v) { stop(); music.stop(0.4); } else if (begun) { music.start(); setSayKey((k) => k + 1); speak(s.a, s.d * 1000 + 400); }
   };
-  const replay = () => { if (!begun) return; setMuted(false); mutedRef.current = false; speak(s.a, s.d * 1000 + 1200); };
+  const replay = () => { if (!begun) return; setMuted(false); mutedRef.current = false; music.start(); setSayKey((k) => k + 1); speak(s.a, s.d * 1000 + 400); };
   /** Elle ileri: hareket beklenen adımda yapmadan geçerse kısa onay sesi. */
   const go = (d: number) => {
     sfx.tick();
@@ -129,11 +142,14 @@ export function Guide({ onDone }: Props) {
   const hit = (kind: "row" | "key") => {
     if (s.act !== kind || done) return;
     setDone(true);
-    if (!mutedRef.current) sfx.chime();
+    confetti();
     if (kind === "key") { setGone(true); window.setTimeout(() => setGone(false), 1000); }
-    speak(kind === "row" ? "r1-super" : "r2-harika", 900, () => { timer.current = window.setTimeout(next, 500); });
+    speak(kind === "row" ? "r1-super" : "r2-harika", 900, () => { timer.current = window.setTimeout(next, 250); });
   };
-  const finish = () => { stop(); onDone(); };
+  const finish = () => { stop(); music.stop(0.4); onDone(); };
+  /** Yumuşak çıkış: müzik ve ekran birlikte söner. */
+  const leave = () => { stop(); music.stop(1); setBye(true); window.setTimeout(onDone, 750); };
+  const confetti = () => { setBurst((b) => b + 1); if (!mutedRef.current) { pop(); sfx.chime(); } };
 
   const L = (k: string) => (s.t?.includes(k) ? " lit" : "");
   const stage = (
@@ -251,16 +267,24 @@ export function Guide({ onDone }: Props) {
   };
 
   return (
-    <div className="panel guide gsx" role="dialog" aria-label="Başlangıç rehberi">
+    <div className={`panel guide gsx${bye ? " bye" : ""}`} role="dialog" aria-label="Başlangıç rehberi">
+      {burst > 0 && <Confetti key={burst} />}
       <div className="gbar" aria-hidden="true"><i style={{ width: `${((i + (begun ? 1 : 0)) / STEPS.length) * 100}%` }} /></div>
       <div className="ph">
-        <p className="m">Sesli rehber{begun && <> · {i + 1} / {STEPS.length}</>}</p>
+        <ol className="gs-ch" aria-label="Bölümler">
+          {CHAPTERS.map((c, k) => <li key={c} className={!begun ? "" : k === s.ch ? "on" : k < s.ch ? "done" : ""}>{k < s.ch && begun ? <Icon name="check" size={11} stroke={2.8} /> : <i>{k + 1}</i>}{c}</li>)}
+        </ol>
         <button className="lnk gs-skip" type="button" onClick={finish}>Atla</button>
       </div>
       <div className="gs-stage" key={s.scene === "stage" ? "stage" : `${s.scene}${i}`}>{scenes[s.scene]}</div>
       <div className="gs-cap" aria-live="polite">
-        <span className={`gs-mo${speaking ? " on" : ""}`}><img src="/celeste-mark.png" alt="" draggable={false} /></span>
-        <p key={i}>{begun ? s.say : "Başlamak için \"Sesli başlat\"a bas. Sesi istersen sonradan da kapatabilirsin."}</p>
+        <span className={`gs-mo${speaking ? " on" : ""}`}><img src="/celeste-mark.png" alt="" draggable={false} /><span className="gs-eq" aria-hidden="true"><i /><i /><i /><i /></span></span>
+        <div className="gs-txt">
+          {begun
+            ? <p key={sayKey} className="gs-say">{s.say.split(" ").map((w, k, all) => <span key={k} style={{ animationDelay: `${((k / all.length) * s.d * 0.9).toFixed(2)}s` }}>{w} </span>)}</p>
+            : <p>Başlamak için "Sesli başlat"a bas. Sesi istersen sonradan da kapatabilirsin.</p>}
+          {begun && s.tip && <small key={`t${i}`} className="gs-tip" style={{ animationDelay: `${(s.d * 0.55).toFixed(1)}s` }}><Icon name="spark" size={12} />{s.tip}</small>}
+        </div>
         <button className="gs-ic" type="button" onClick={replay} disabled={!begun} title="Bu adımı tekrar dinle" aria-label="Bu adımı tekrar dinle"><Icon name="repeat" size={15} /></button>
       </div>
       <div className="gnav">
@@ -269,8 +293,22 @@ export function Guide({ onDone }: Props) {
           <button className="gs-ic" type="button" onClick={() => { const v = !auto; setAuto(v); if (v && begun && !speaking && !s.act && !last) timer.current = window.setTimeout(next, 500); else if (!v) window.clearTimeout(timer.current); }} disabled={!begun} title={auto ? "Otomatik ilerlemeyi durdur" : "Otomatik ilerle"} aria-label={auto ? "Otomatik ilerlemeyi durdur" : "Otomatik ilerle"} aria-pressed={!auto}><Icon name={auto ? "pause" : "play"} size={15} /></button>
           <button className="gs-ic" type="button" onClick={toggleMute} title={muted ? "Sesi aç" : "Sesi kapat"} aria-label={muted ? "Sesi aç" : "Sesi kapat"} aria-pressed={muted}><Icon name={muted ? "mute" : "volume"} size={15} /></button>
         </span>
-        <button className="x go" type="button" onClick={() => (last ? finish() : go(1))} disabled={!begun}>{last ? "Başla" : "İleri"}</button>
+        <button className="x go" type="button" onClick={() => (last ? leave() : go(1))} disabled={!begun || bye}>{last ? "Bitir" : "İleri"}</button>
       </div>
+    </div>
+  );
+}
+
+/** Konfeti: tek seferlik patlama (her tetiklemede yeniden kurulur). */
+const CONF = ["var(--accent)", "#4ade80", "#f0a6ca", "#8b9cff", "#fbbf24", "#2dd4bf"];
+function Confetti() {
+  const bits = useRef(Array.from({ length: 46 }, (_, k) => ({
+    x: (Math.random() - 0.5) * 620, y: -(120 + Math.random() * 240), r: Math.random() * 720 - 360,
+    c: CONF[k % CONF.length], d: Math.random() * 0.12, w: 5 + Math.random() * 5, round: k % 3 === 0,
+  }))).current;
+  return (
+    <div className="gs-conf" aria-hidden="true">
+      {bits.map((b, k) => <i key={k} style={{ "--x": `${b.x}px`, "--y": `${b.y}px`, "--r": `${b.r}deg`, background: b.c, width: b.w, height: b.round ? b.w : b.w * 1.7, borderRadius: b.round ? "50%" : 2, animationDelay: `${b.d}s` } as React.CSSProperties} />)}
     </div>
   );
 }
