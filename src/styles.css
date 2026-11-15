@@ -3018,9 +3018,10 @@ html.fps .buddy-anchor { display: none; }
 .spg-bar i.cur { box-shadow: 0 0 8px currentColor; animation: spgcur .5s ease-in-out infinite alternate; }
 @keyframes spgcur { to { opacity: .45; } }
 .spg.ph-dead .spg-n { animation: spgcur .25s ease-in-out infinite alternate; }
-.spg-marks { position: relative; height: 15px; font-size: 10.5px; color: var(--fg-3); white-space: nowrap; }
-.spg-marks span { position: absolute; top: 0; transform: translateX(-100%); padding-right: 6px; border-right: 1px solid #ff9a3d; color: #ff9a3d; }
-.spg-marks span.r { transform: none; padding: 0 0 0 6px; border-right: 0; border-left: 1px solid #ff4d5e; color: #ff4d5e; }
+.spg-marks { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 4px 16px; font-size: 10.5px; color: var(--fg-3); }
+.spg-marks span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.spg-marks i { width: 3px; height: 11px; border-radius: 2px; background: #ff9a3d; }
+.spg-marks .z-dead i { background: #ff4d5e; }
 .tpill.ph-hurry { color: #f5c451; border-color: color-mix(in srgb, #f5c451 50%, transparent); }
 .tpill.ph-half { color: #ff9a3d; border-color: color-mix(in srgb, #ff9a3d 55%, transparent); }
 .tpill.ph-dead { color: #ff4d5e; border-color: #ff4d5e; background: color-mix(in srgb, #ff4d5e 14%, transparent); }

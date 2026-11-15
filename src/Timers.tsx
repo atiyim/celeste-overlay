@@ -11,7 +11,6 @@ function SpikeGauge({ t }: { t: Timer }) {
   useEffect(() => { if (t.done) return; const id = window.setInterval(() => setNow(Date.now()), 100); return () => clearInterval(id); }, [t.done, t.endsAt]);
   const left = t.done ? 0 : Math.max(0, t.endsAt - now) / 1000;
   const ph = spikePhase(left * 1000);
-  const mark = (sec: number) => ({ left: `${(100 * (SPIKE_SECONDS - sec)) / SPIKE_SECONDS}%` });
   return (
     <div className={`spg ph-${t.done ? "boom" : ph.id}`} role="timer" aria-label={`Spike: ${Math.ceil(left)} saniye, ${ph.label}`}>
       <div className="spg-top">
@@ -26,8 +25,8 @@ function SpikeGauge({ t }: { t: Timer }) {
         })}
       </div>
       <div className="spg-marks">
-        <span style={mark(DEFUSE_FULL)}>7 sn · tam çözme biter</span>
-        <span style={mark(DEFUSE_HALF)} className="r">3,5 sn · yarım da biter</span>
+        <span className="z-half"><i />Son {DEFUSE_FULL} sn: yalnızca yarım çözülmüşse</span>
+        <span className="z-dead"><i />Son {String(DEFUSE_HALF).replace(".", ",")} sn: çözülmez</span>
       </div>
     </div>
   );

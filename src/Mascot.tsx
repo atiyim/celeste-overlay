@@ -70,7 +70,9 @@ const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 /** Asa ve sihirli iz: el → (ışıkla gösterilen parça). Hedef yoksa asa havada bekler. */
 export function Wand({ root, hand, aim }: { root: RefObject<HTMLElement>; hand: RefObject<HTMLElement>; aim: boolean }) {
   const [p, setP] = useState({ hx: 0, hy: 0, tx: 0, ty: 0, on: false });
-  const cur = useRef({ tx: 0, ty: 0, hx: 0, hy: 0, init: false });
+  const cur = useRef({ tx: 0, ty: 0, init: false });
+  /** Ekrana en son basılan değerler: yalnızca gerçekten değişince yeniden çizilir */
+  const shown = useRef({ hx: 0, hy: 0, tx: 0, ty: 0, on: false });
   const aimRef = useRef(aim); aimRef.current = aim;
   useEffect(() => {
     let raf = 0;
@@ -92,9 +94,10 @@ export function Wand({ root, hand, aim }: { root: RefObject<HTMLElement>; hand: 
         const c = cur.current;
         if (!c.init) { c.tx = gx; c.ty = gy; c.init = true; }
         c.tx += (gx - c.tx) * 0.2; c.ty += (gy - c.ty) * 0.2;
-        if (Math.abs(c.tx - p.tx) > 0.4 || Math.abs(c.ty - p.ty) > 0.4 || Math.abs(hx - c.hx) > 0.4 || Math.abs(hy - c.hy) > 0.4 || on !== p.on) {
-          c.hx = hx; c.hy = hy;
-          setP({ hx, hy, tx: c.tx, ty: c.ty, on });
+        const sh = shown.current;
+        if (Math.abs(c.tx - sh.tx) > 0.4 || Math.abs(c.ty - sh.ty) > 0.4 || Math.abs(hx - sh.hx) > 0.4 || Math.abs(hy - sh.hy) > 0.4 || on !== sh.on) {
+          shown.current = { hx, hy, tx: c.tx, ty: c.ty, on };
+          setP(shown.current);
         }
       }
       raf = requestAnimationFrame(tick);

@@ -109,6 +109,12 @@ export function Guide({ onDone }: Props) {
     a.onerror = fallback;
     a.play().catch(fallback);
   };
+  /** Anlatım bitince ne olacağı: son adımda yumuşak kapanış, diğerlerinde (hareket beklenmiyorsa) sıradaki adım. */
+  const after = (k: number) => () => {
+    if (k >= STEPS.length - 1) { timer.current = window.setTimeout(leave, 900); return; }
+    if (STEPS[k].act || !autoRef.current) return;
+    timer.current = window.setTimeout(next, 260);
+  };
   const next = () => setI((x) => Math.min(STEPS.length - 1, x + 1));
 
   // Her adımda: geçiş sesi, anlatım, bitince (hareket beklemiyorsa) kendiliğinden ilerle.
@@ -120,12 +126,7 @@ export function Guide({ onDone }: Props) {
     const st = STEPS[i];
     setSayKey((k) => k + 1);
     if (st.scene === "finish") window.setTimeout(() => confetti(), 350);
-    speak(st.a, st.d * 1000 + 400, () => {
-      // Son adım: anlatım bitince rehber kendiliğinden, yumuşakça kapanır.
-      if (i >= STEPS.length - 1) { timer.current = window.setTimeout(leave, 900); return; }
-      if (st.act || !autoRef.current) return;
-      timer.current = window.setTimeout(next, 260);
-    });
+    speak(st.a, st.d * 1000 + 400, after(i));
     return stop;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i, begun]);
@@ -164,9 +165,9 @@ export function Guide({ onDone }: Props) {
     const v = !muted;
     setMuted(v); mutedRef.current = v;
     try { localStorage.setItem(MUTE_KEY, v ? "1" : "0"); } catch { /* depolama kapalı */ }
-    if (v) { stop(); music.stop(0.4); } else if (begun) { music.start(); setSayKey((k) => k + 1); speak(s.a, s.d * 1000 + 400); }
+    if (v) { stop(); music.stop(0.4); } else if (begun) { music.start(); setSayKey((k) => k + 1); speak(s.a, s.d * 1000 + 400, after(i)); }
   };
-  const replay = () => { if (!begun) return; setMuted(false); mutedRef.current = false; music.start(); setSayKey((k) => k + 1); speak(s.a, s.d * 1000 + 400); };
+  const replay = () => { if (!begun) return; setMuted(false); mutedRef.current = false; music.start(); setSayKey((k) => k + 1); speak(s.a, s.d * 1000 + 400, after(i)); };
   /** Elle ileri: hareket beklenen adımda yapmadan geçerse kısa onay sesi. */
   const go = (d: number) => {
     sfx.tick();

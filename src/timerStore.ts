@@ -38,7 +38,7 @@ function run() {
   tick = window.setInterval(() => {
     const now = Date.now();
     for (const t of list) {
-      if (!t.done && t.endsAt <= now) { t.done = true; beep(t.name === SPIKE_NAME ? [330, 247, 196] : undefined); alertFn?.(t); }
+      if (!t.done && t.endsAt <= now) { t.done = true; beep(t.name === SPIKE_NAME ? [330, 247, 196] : undefined); alertFn?.(t); if (t.name === SPIKE_NAME) { const id = t.id; window.setTimeout(() => { if (list.some((x) => x.id === id && x.done)) stopSpike(); }, SPIKE_CLEAR_MS); } }
       else if (!t.done && t.name === SPIKE_NAME) {
         // Aşama değişince kısa uyarı: 7 sn (tam çözme biter) ve 3,5 sn (yarım çözme de biter)
         const ph = spikePhase(t.endsAt - now).id;
@@ -67,6 +67,8 @@ const SPIKE_KEY = "overlay-spike-key";
 let spikeKey = (() => { try { return localStorage.getItem(SPIKE_KEY) ?? ""; } catch { return ""; } })();
 const keySubs = new Set<() => void>();
 /** Çözme süreleri: tam 7 sn, yarıdan devam 3,5 sn. */
+/** Patladıktan sonra gösterge bu kadar kalır, sonra kendiliğinden kalkar. */
+const SPIKE_CLEAR_MS = 6000;
 export const DEFUSE_FULL = 7, DEFUSE_HALF = 3.5, SPIKE_HURRY = 12;
 export type SpikePhaseId = "safe" | "hurry" | "half" | "dead";
 export interface SpikePhase { id: SpikePhaseId; label: string; hint: string }
