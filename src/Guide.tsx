@@ -7,7 +7,7 @@ import { Mascot, Wand } from "./Mascot";
    Adımlar sesi bitince kendiliğinden ilerler; iki adımda kullanıcıdan küçük bir hareket beklenir. Ses dosyaları public/guide. */
 interface Props { onDone: () => void }
 
-type Scene = "hello" | "trust" | "stage" | "note" | "finish";
+type Scene = "hello" | "trust" | "stage" | "tools" | "note" | "finish";
 type Mode = "roster" | "wait" | "drawer";
 interface Step {
   /** Ses dosyası (public/guide/<a>.mp3) */
@@ -46,14 +46,28 @@ const STEPS: Step[] = [
   { a: "13-f2", ch: 4, tip: "Maç başlayınca kendiliğinden de gizlenir; süresini Ayarlar'dan seçersin.", d: 5.2, scene: "stage", mode: "roster", t: ["key"], act: "key", hint: "F2 tuşuna tıkla", say: "F2 ile overlay'i anında gizleyip geri getirebilirsin. Maçta çok işine yarar." },
   { a: "14-tasi", ch: 4, tip: "Sol menünün boş yerinden de tutabilirsin. Konumu hatırlar.", d: 3.1, scene: "stage", mode: "roster", t: ["title"], say: "Başlıktan tutup istediğin yere sürükleyebilirsin." },
   { a: "15-hizli", ch: 4, tip: "Yayıncıysan: \"kayıtta gizle\" overlay'i OBS'ten saklar.", d: 6.0, scene: "stage", mode: "roster", t: ["quick"], say: "Sağ üstteki düğme hızlı ayarlar: kayıt modu, isim bulanıklığı, performans modu hepsi burada." },
-  { a: "16-menu", ch: 5, tip: "Araçlar'da hızlı mesajlar ve nişangah kodları da var.", d: 4.9, scene: "stage", mode: "roster", t: ["rail"], say: "Sol menüde profilin, maç raporun ve Akış var. Hadi gezerek keşfet!" },
+  { a: "16-menu", ch: 5, tip: "Soldaki soru işareti S.S.S, dişli de Ayarlar.", d: 4.9, scene: "stage", mode: "roster", t: ["rail"], say: "Sol menüde profilin, maç raporun ve Akış var. Hadi gezerek keşfet!" },
   { a: "17-akis", ch: 5, tip: "Görsel ve GIF de ekleyebilirsin. Küfür ve hakaret yazılamaz.", d: 5.1, scene: "stage", mode: "roster", t: ["feed"], say: "Akış'ta maçını paylaşabilir, espriler yapabilir ve gelenlere tepkiler verebilirsin." },
+  { a: "20-araclar", ch: 5, tip: "Hepsi overlay'in içinde çalışır; oyuna dokunmaz.", d: 5.4, scene: "tools", t: ["tl-head"], say: "Bir de Araçlar var. Sol menüdeki yıldız simgesinden açılır, içinde yedi küçük yardımcı var." },
+  { a: "21-spike", ch: 5, tip: "Tuşu Araçlar > Sayaçlar'dan atarsın. Oyunun üstünde küçük bir şerit çıkar.", d: 5.6, scene: "tools", t: ["tl-timers"], say: "Spike sayacı: spike kurulunca tek tuşa bas. Çözmeye yetişir mi, rengiyle söylerim." },
+  { a: "22-araclar2", ch: 5, tip: "İzleme listesindeki oyuncu lobine girince sesli uyarı da alabilirsin.", d: 4.8, scene: "tools", t: ["tl-cross", "tl-chat", "tl-watch"], say: "Hazır nişangahlar, hızlı mesajlar ve izleme listesi de burada." },
+  { a: "23-araclar3", ch: 5, tip: "Meta, son yamaya göre haritalarda öne çıkan ajanları gösterir.", d: 4.6, scene: "tools", t: ["tl-search", "tl-device", "tl-meta"], say: "Oyuncu arama, DPI hesabı ve Meta. Hepsini bir dene, seversin." },
   { a: "18-tam-ekran", ch: 4, tip: "Bunu bir kez ayarlaman yeter.", d: 6.0, scene: "note", t: ["note"], say: "Küçük bir not: Overlay görünmüyorsa Valorant'ta Pencereli Tam Ekran'ı seç. Bu kadar." },
   { a: "19-bitis", ch: 5, d: 5.0, scene: "finish", say: "Artık hazırsın şapşik. İyi oyunlar. Celeste hep yanında." },
 ];
 
 const RAIL: { icon: IconName; k?: string }[] = [
   { icon: "users" }, { icon: "clock" }, { icon: "user" }, { icon: "msg", k: "feed" }, { icon: "spark" }, { icon: "crown" },
+];
+/** Araçlar sahnesindeki kutular (uygulamadaki Araçlar sekmeleriyle aynı). */
+const TOOLBOX: { k: string; icon: IconName; n: string; d: string }[] = [
+  { k: "timers", icon: "timer", n: "Spike sayacı", d: "Çözmeye yetişir mi?" },
+  { k: "cross", icon: "target", n: "Nişangah", d: "Hazır kodlar, tek tıkla kopyala" },
+  { k: "chat", icon: "chat", n: "Hızlı mesajlar", d: "Kaydet, tıkla, yapıştır" },
+  { k: "watch", icon: "eye", n: "İzleme listesi", d: "Etiketlediğin gelince uyarır" },
+  { k: "search", icon: "search", n: "Oyuncu arama", d: "Karşılaştıklarını bul" },
+  { k: "device", icon: "mouse", n: "DPI / eDPI", d: "Duyarlılığını hesapla" },
+  { k: "meta", icon: "layers", n: "Meta", d: "Haritada öne çıkan ajanlar" },
 ];
 const ROWS = [
   { n: "Sen", a: "Jett · Sv. 60", tier: "PLATIN 2", rr: "41 RR", c: "#8b9cff", f: "wwlwl", party: true, badge: "Formda +72 RR", tone: "pos" },
@@ -281,6 +295,20 @@ export function Guide({ onDone }: Props) {
       </div>
     ),
     stage,
+    tools: (
+      <div className="gs-card tools">
+        <div className={`gs-tlh${L("tl-head")}`}><span className="gs-tli"><Icon name="spark" size={16} /></span><b>Araçlar</b><small>Sol menüdeki yıldız simgesi</small></div>
+        <div className="gs-tlg">
+          {TOOLBOX.map((t, k) => (
+            <div key={t.k} className={`gs-tl${L(`tl-${t.k}`)}`} style={{ animationDelay: `${k * 60}ms` }}>
+              <span className="gs-tli"><Icon name={t.icon} size={16} /></span>
+              <span><b>{t.n}</b><small>{t.d}</small></span>
+              {t.k === "timers" && <span className="gs-tlbar" aria-hidden="true">{Array.from({ length: 15 }, (_, n) => <i key={n} className={n > 12 ? "d" : n > 10 ? "h" : n > 8 ? "y" : ""} />)}</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
     note: (
       <div className="gs-card note">
         <small className="gs-path">Valorant → Ayarlar → Video → Ekran Modu</small>
@@ -312,7 +340,7 @@ export function Guide({ onDone }: Props) {
         </ol>
         <button className="lnk gs-skip" type="button" onClick={finish}>Atla</button>
       </div>
-      <div className="gs-stage" key={s.scene === "stage" ? "stage" : `${s.scene}${i}`}>{scenes[s.scene]}</div>
+      <div className="gs-stage" key={s.scene === "stage" || s.scene === "tools" ? s.scene : `${s.scene}${i}`}>{scenes[s.scene]}</div>
       <div className="gs-cap" aria-live="polite">
         <Mascot ref={mascotRef} cheer={cheer} mood={cheer ? "happy" : s.scene === "finish" ? "wink" : s.act && !done ? "surprised" : undefined} />
         <div className="gs-txt">

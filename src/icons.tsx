@@ -20,6 +20,7 @@ const P: Record<string, ReactNode> = {
   repeat: <><path d="M4 12a8 8 0 0 1 14-5.3L20 9" /><path d="M20 4v5h-5" /><path d="M20 12a8 8 0 0 1-14 5.3L4 15" /><path d="M4 20v-5h5" /></>,
   shield: <><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" /><path d="M9 12l2 2 4-4" /></>,
   moon: <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />,
+  eye: <><path d="M2.5 12s3.6-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.6 6.5-9.5 6.5S2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="2.8" /></>,
   eyeoff: <><path d="M3 3l18 18" /><path d="M10.6 6.1A9.7 9.7 0 0 1 12 6c5 0 9 6 9 6a16 16 0 0 1-3 3.4" /><path d="M6.6 6.6A16 16 0 0 0 3 12s4 6 9 6a9 9 0 0 0 4.4-1.1" /></>,
   blur: <><circle cx="12" cy="12" r="2" /><circle cx="6" cy="6" r="1" /><circle cx="18" cy="6" r="1" /><circle cx="6" cy="18" r="1" /><circle cx="18" cy="18" r="1" /><circle cx="12" cy="5" r="1.3" /><circle cx="12" cy="19" r="1.3" /><circle cx="5" cy="12" r="1.3" /><circle cx="19" cy="12" r="1.3" /></>,
   text: <><path d="M4 7V5h12v2" /><path d="M10 5v14" /><path d="M7 19h6" /><path d="M15 13v-1h6v1" /><path d="M18 12v7" /></>,
