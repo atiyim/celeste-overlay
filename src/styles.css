@@ -3078,3 +3078,25 @@ html.spikewin, html.spikewin body, html.spikewin #root { width: 100%; height: 10
 .gs-tl.lit, .gs-tlh.lit { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 24px color-mix(in srgb, var(--accent) 26%, transparent); }
 .gs-tl.lit { transform: scale(1.02); }
 @container (max-width: 760px) { .gs-tlg { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ================= Karşı karşıya: taşma düzeltmeleri =================
+   İsim her zaman önceliklidir. Rozet yalnızca tamamı sığıyorsa görünür (sığmazsa alt satıra düşer ve gizlenir);
+   yarım yamalak "M…" ya da form kutularının üstüne binen rozet olmaz. */
+.vsn { overflow: hidden; }
+.vsl { flex-wrap: wrap; align-content: flex-start; width: 100%; height: 22px; row-gap: 14px; overflow: hidden; }
+.vsl > * { max-height: 22px; }
+.vsl .nl { flex: 0 1 auto; min-width: 0; max-width: 100%; height: 22px; }
+.vsl .vsb { flex: none; max-width: none; overflow: visible; }
+.vsl .vsb .bd { max-width: none; }
+.vsl .vshot { flex: none; }
+/* Rank sütunu: peak satırı sütunun dışına çıkmaz; dar pencerede "PEAK" yazısı düşer, ikon ve rank kalır. */
+.vsr > span { min-width: 0; overflow: hidden; }
+.vsr .pk { max-width: 100%; }
+.vsr .pk > span { min-width: 0; }
+@container vs (max-width: 1240px) { .vsr .pk em { display: none; } }
+
+/* Köşedeki Celeste artık durum çubuğunun içinde durur: oyuncu satırlarının üstüne binmez. */
+.buddy-anchor + .sb { padding-right: 58px; }
+.buddy { right: 2px; bottom: -40px; }
+.buddy-bub { margin-bottom: 4px; border-radius: 12px 12px 3px 12px; }
+.buddy .buddy-win, .buddy:hover .buddy-win, .buddy.talk .buddy-win { height: 39px; }
