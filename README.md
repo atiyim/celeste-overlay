@@ -117,6 +117,14 @@ Hızlı mesajlar: sık yazdığın mesajları ekle, listeden birine tıklayınca
 
 8 hazır nişangah, görselleriyle. Karta tıklayınca kod kopyalanır; oyunda Ayarlar → Nişangah → İçe aktar ile yapıştırırsın.
 
+### Celeste ve rehber
+
+Sağ alttaki Celeste (ay perisi) arada bir kısa bir şey söyler: maçına göre parti uyarısı, galibiyet serisi ya da mola hatırlatması. Tıklarsan rehber yeniden açılır. Ayarlar › Overlay › Köşede Celeste'den kapatabilirsin. Rehber sesli anlatılır; altyazısı hep açıktır ve Ayarlar › Hakkında'dan baştan izlenebilir.
+
+### Sayaçlar ve spike
+
+**Araçlar › Sayaçlar** sekmesinde süre girip özel sayaç kurabilir ya da hazır sürelerden (30 sn, 45 sn, 1 dk, 2 dk) birini seçebilirsin. Spike sayacı tek tuşla başlar; 45 saniyelik geri sayım çizgilerle gösterilir. Son 7 saniyede yalnızca yarım çözülmüşse yetişir, son 3,5 saniyede çözülmez. Sayaç çalışırken oyunun üstünde küçük bir şerit çıkar; tıklamalar oyuna geçer. Oyundan veri okunmaz: sayaç senin bastığın tuşla başlar.
+
 ### S.S.S & Panel
 
 Panelin üst yarısı sık sorulan soruları kısaca cevaplar: neden güvenmeli, ban riski, şifre, oyuna dokunma, hile, gizli isimler, veri, Windows uyarısı. Alt yarısı bunları doğrulayan **canlı kayıttır**:
@@ -153,7 +161,7 @@ Seans, aralarında 100 dakikadan uzun ara olmayan maçlardır. Oyuncular sekmesi
 
 ### Genel
 
-- **F2:** Overlay'i gösterir veya gizler.
+- **Göster / gizle tuşu:** Varsayılan F2. Overlay'i gösterir veya gizler. Ayarlar › Overlay › Kısayol'dan değiştirebilirsin; başka bir program tutan tuşları kabul etmez.
 - **Bulanıklaştır:** Oyuncu isimleri bulanık görünür. Video çekerken başkalarının kimliğini göstermemek için. Kopyalama çalışır ama bildirimde isim yazmaz.
 - **Kayıtta gizle:** Overlay ekran kaydında ve yayında görünmez, sen oyunda görmeye devam edersin (Windows).
 - **Fare otomatik:** İmleç overlay'in üstündeyken tıklamalar overlay'e, dışındayken oyuna gider.
@@ -198,7 +206,12 @@ Made by Claude & [bneceleste](https://www.instagram.com/bneceleste)
 
 ## Lisans
 
-Celeste Overlay Atıf Lisansı (0.8.1 ve sonrası; öncesi MIT). Kodu kullanabilir, değiştirebilir ve dağıtabilirsin; ancak
-"Celeste Overlay · Res (bneceleste)" atfı kalmalı, **Celeste / Celeste Overlay / bneceleste adı ve logosu kullanılamaz**,
-projeyi kendi eserin gibi tanıtamazsın ve Celeste'nin sunucuları (Akış, roller, hesap bağlama) yalnızca resmi sürümlere açıktır.
-Ayrıntı: [LICENSE](LICENSE).
+Celeste Overlay Atıf Lisansı v1.0 (0.8.1 ve sonrası; öncesi MIT). Kodu kullanabilir, değiştirebilir, derleyip dağıtabilirsin. Kendin için kullanmak ücretsizdir; bir kopyayı dağıtacaksan şu kurallar geçerlidir:
+
+- **Atıf zorunlu.** Her türevde uygulama içinde (Hakkında) ve README'nin başında **"Based on Celeste Overlay by Res (bneceleste)"** yazısı, depoya bağlantıyla birlikte bulunmalı. Hakkında'daki ve bu README'deki atıf satırları silinemez ya da gizlenemez.
+- **Ad ve marka kullanılmaz.** "Celeste", "Celeste Overlay", "bneceleste" adı ve logosu/ikonları türevde kullanılamaz; türevin kendi adı ve ikonu olmalı.
+- **Resmi gibi sunulmaz.** Türev "resmi olmayan, değiştirilmiş sürüm" olarak tanıtılmalı; kendi özgün eserin gibi anlatılamaz.
+- **Celeste sunucuları yalnızca resmi sürüme açıktır.** Akış, roller ve hesap bağlama servisleri yalnızca [Releases](https://github.com/atiyim/celeste-overlay/releases) sayfasındaki resmi derlemelere hizmet verir. Türevler bu servislere bağlanamaz, resmi derleme imzasını kopyalayamaz; kendi servislerini kurmalıdır.
+- **İhlalde** haklar kendiliğinden sona erer; 30 gün içinde düzeltilirse geri gelir.
+
+Kısacası: kodu al, kullan, değiştir; ama adı ve atfı bırak, Celeste'nin servislerini kendi sürümünde kullanma. Tam metin: [LICENSE](LICENSE).
