@@ -1,21 +1,47 @@
-MIT License
+Celeste Overlay Attribution License (Celeste Overlay Atıf Lisansı) v1.0
 
-Copyright (c) 2026 Res
+Copyright (c) 2026 Res (bneceleste). All rights reserved except as granted below.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Applies to Celeste Overlay version 0.8.1 and later. Versions released before 0.8.1 stay available under the MIT License
+under which they were published.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. PERMISSION
+   You may use, copy, modify, build, and distribute this software, in source or binary form, free of charge, including
+   in modified versions ("Derivative Works", e.g. forks), provided that you comply with every condition below.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. ATTRIBUTION (must stay)
+   a) Keep this license and the copyright notice with all copies and distributions.
+   b) Every Derivative Work must show, in a place users can see inside the application (for example the About section)
+      and at the top of its README / download page, the credit
+      "Based on Celeste Overlay by Res (bneceleste)" with a link to https://github.com/atiyim/celeste-overlay.
+   c) Credit lines already present in the software (About section, README) must not be removed, hidden, shrunk or
+      altered to hide the origin of the work.
+
+3. NAME AND BRANDING (must not be used)
+   a) The names "Celeste", "Celeste Overlay", "bneceleste", and the logos, icons and artwork of the project are not
+      licensed. A Derivative Work must use a clearly different name and its own icon.
+   b) A Derivative Work must be described as unofficial and modified. You must not present the software or its design
+      as your own original work, claim to be its author, or suggest that the project's author endorses or operates it.
+   c) Advertising or promoting a Derivative Work as "made by you" without the credit in section 2 is a violation.
+
+4. CELESTE SERVICES
+   The servers and services run for Celeste Overlay (community feed, roles and badges, account linking, update and
+   statistics endpoints) are provided only to official builds published at https://github.com/atiyim/celeste-overlay/releases.
+   Derivative Works must not connect to them, and must not copy or imitate the build signature used to identify
+   official builds. You must run your own services for your own versions.
+
+5. TERMINATION
+   If you violate these terms, your rights under this license end automatically. They are reinstated if you fully
+   correct the violation within 30 days of notice. The author may request removal of non-compliant copies from hosting
+   platforms (for example through a DMCA notice).
+
+6. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+   ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE SOFTWARE OR ITS USE.
+
+--------------------------------------------------------------------------------
+ÖZET (Türkçe): Kodu kullanabilir, değiştirebilir ve dağıtabilirsin. Ama (1) lisans ve "Celeste Overlay · Res (bneceleste)
+temel alınmıştır" atfı uygulamada ve README'de görünür kalmalı, (2) "Celeste", "Celeste Overlay", "bneceleste" adlarını
+ve logoyu kullanamazsın, kendi adınla ve "resmi olmayan türev sürüm" olarak yayınlamalısın, (3) projeyi kendi eserin
+gibi tanıtamazsın, (4) Celeste'nin sunucularına (Akış, roller, hesap bağlama) yalnızca resmi sürümler bağlanır.

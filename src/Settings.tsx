@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import type { useUpdater } from "./updater";
 import { ACCENTS, COLS, DEFAULT_THEME, DEFAULT_TH, FPS_HIDE_AFTER, HIDE_AFTER_OPTIONS, hideOf, type Theme, type Thresholds } from "./theme";
 import { copyDiagnostics } from "./StatusBar";
@@ -337,6 +338,8 @@ export function Settings({ onGuide, onOpen, updater, zoom, onZoom, zooms, theme,
                 <h3 className="h2">Hakkında</h3>
                 <div className="box">
                   <p className="snote">Celeste Overlay, Riot Games ile bağlantılı değildir. Oyuna dokunmaz, yalnızca açık Riot Client oturumunu okur. Etiketler ve notlar yalnızca bu bilgisayarda saklanır.</p>
+                  {/* Atıf: LICENSE gereği türev sürümlerde de bu satır (özgün proje bağlantısıyla) kalmak zorundadır. */}
+                  <p className="snote">Celeste Overlay — Res (<a href="https://www.instagram.com/bneceleste" onClick={(e) => { e.preventDefault(); openUrl("https://www.instagram.com/bneceleste").catch(() => undefined); }}>bneceleste</a>) tarafından geliştirildi. Kaynak kodu <a href="https://github.com/atiyim/celeste-overlay" onClick={(e) => { e.preventDefault(); openUrl("https://github.com/atiyim/celeste-overlay").catch(() => undefined); }}>github.com/atiyim/celeste-overlay</a> adresinde, Celeste Overlay Atıf Lisansı ile yayınlanır.</p>
                   <Row title="Sorun giderme">
                     <span className="btns">
                       <button className="x" type="button" onClick={onGuide}>Rehberi yeniden göster</button>

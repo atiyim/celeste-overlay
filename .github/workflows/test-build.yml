@@ -30,6 +30,7 @@ jobs:
         env:
           # Uygulamadaki "Bu kurulumu doğrula" bu derlemeyi yayınlanmış sürümden ayırt etsin.
           CELESTE_CHANNEL: deneme
+          VITE_CELESTE_BUILD_KEY: ${{ secrets.CELESTE_BUILD_KEY }}
         run: |
           echo '{"bundle":{"createUpdaterArtifacts":false}}' > "$RUNNER_TEMP/test.json"
           pnpm tauri build --bundles nsis --config "$RUNNER_TEMP/test.json"

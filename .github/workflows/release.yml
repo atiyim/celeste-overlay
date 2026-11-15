@@ -38,6 +38,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          # Resmi derleme imzası (Worker bunu doğrular); çatallarda bu gizli anahtar olmadığı için Celeste servislerine bağlanamazlar.
+          VITE_CELESTE_BUILD_KEY: ${{ secrets.CELESTE_BUILD_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tauriScript: pnpm tauri

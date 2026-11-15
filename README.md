@@ -195,3 +195,10 @@ Sürüm çıkarmak için `package.json`, `src-tauri/Cargo.toml` ve `src-tauri/ta
 ---
 
 Made by Claude & [bneceleste](https://www.instagram.com/bneceleste)
+
+## Lisans
+
+Celeste Overlay Atıf Lisansı (0.8.1 ve sonrası; öncesi MIT). Kodu kullanabilir, değiştirebilir ve dağıtabilirsin; ancak
+"Celeste Overlay · Res (bneceleste)" atfı kalmalı, **Celeste / Celeste Overlay / bneceleste adı ve logosu kullanılamaz**,
+projeyi kendi eserin gibi tanıtamazsın ve Celeste'nin sunucuları (Akış, roller, hesap bağlama) yalnızca resmi sürümlere açıktır.
+Ayrıntı: [LICENSE](LICENSE).
