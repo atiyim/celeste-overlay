@@ -2670,3 +2670,43 @@ html[data-skin="obsidyen"] img[src$="celeste-mark.png"] { content: url("/celeste
 html[data-skin="obsidyen"] img[src$="celeste-moon.webp"] { content: url("/celeste-moon-gold.webp"); }
 html[data-skin="obsidyen"] .rlogo, html[data-skin="obsidyen"] .mark { filter: drop-shadow(0 0 6px rgba(230, 194, 122, .28)); animation: none; }
 html[data-skin="obsidyen"] .cmoon { color: #ecd49a; background: rgba(230, 194, 122, .12); box-shadow: inset 0 0 0 1px rgba(230, 194, 122, .34); }
+
+/* ================= Profilim · yatay ve kompakt =================
+   Normal pencere genişliğinde de üç sütun: ajan | yan ajanlar + derece | son maçlar. Tek ekrana sığar, yalnızca son maçlar kendi içinde kayar. */
+@container (min-width: 600px) and (max-width: 1040px) {
+  .dash { gap: 10px; padding-top: 6px; grid-template-columns: minmax(0, 1fr) 134px 232px; grid-template-areas: "hero side last" "ov rank last"; grid-template-rows: 168px auto; }
+  .dash .dc { padding: 12px 14px; border-radius: 14px; }
+  .dash .dh { margin-bottom: 8px; }
+  .dash .dk { font-size: 10px; }
+  .dhero { min-height: 0; }
+  .hport { height: calc(100% + 14px); max-width: 44%; right: 2px; }
+  .hx { max-width: 60%; }
+  .hname { margin: 4px 0 1px; font-size: 26px; }
+  .hsub { font-size: 11px; }
+  .hx hr { margin: 8px 0 8px; }
+  .hstats { gap: 16px; } .hstats > div { gap: 1px; }
+  .hstats small { font-size: 10.5px; } .hstats b { font-size: 15px; }
+  .hstats.sm { margin-top: 7px; } .hstats.sm b { font-size: 12px; }
+  .dside { gap: 10px; }
+  .dmini { min-height: 0; padding: 10px 12px !important; }
+  .dmx { max-width: 70%; gap: 0; }
+  .dmx h4 { margin-bottom: 3px; font-size: 13px; }
+  .dmx small { font-size: 10px; } .dmx b { font-size: 13px; } .dmx .dmn { margin-top: 1px; white-space: nowrap; }
+  .ovtop { gap: 12px; margin-bottom: 8px; }
+  .ov2 .ring { width: 62px !important; height: 62px !important; }
+  .ring b { font-size: 15px; } .ring small { display: none; }
+  .dash .dh h3 { font-size: 12px; }
+  .wl { gap: 8px; } .wl > span { padding: 6px 10px; font-size: 10px; } .wl b { font-size: 16px; }
+  .tiles { gap: 6px; } .tiles > div { padding: 5px 9px; gap: 1px; } .tiles small { font-size: 10px; } .tiles b { font-size: 13px; }
+  .rankc { gap: 4px; } .rankc .dk { margin-bottom: 0; }
+  .rankc img { width: 50px; height: 50px; } .tier0.dbig { width: 44px; height: 44px; }
+  .rankc > b { font-size: 12px; } .rankc > small { font-size: 10.5px; } .rrbar { max-width: 96px; height: 4px; }
+  .last { min-height: 0; padding-bottom: 12px; }
+  .last > .lgs { left: 12px; right: 8px; top: 40px; bottom: 10px; gap: 10px; }
+  .lg { gap: 5px; padding-left: 9px; } .lday { margin-left: -9px; font-size: 10px; }
+  .lm { grid-template-columns: 26px minmax(0, 1fr) auto; gap: 8px; padding: 6px 8px; border-radius: 9px; }
+  .lai, .lm .aifb { width: 26px; height: 26px; border-radius: 7px; }
+  .lmap b { font-size: 10.5px; } .lmap em { font-size: 11.5px; }
+  .lkda { display: none; }
+  .lend { flex-direction: row; gap: 4px; } .lend img { width: 20px; height: 20px; } .lend small { font-size: 10.5px; }
+}

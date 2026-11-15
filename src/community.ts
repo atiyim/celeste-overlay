@@ -11,7 +11,7 @@ export const SITE = "https://celeste-feed.celestimbenim.workers.dev";
 export const DISCORD_URL = "https://discord.gg/celestevlr";
 /** Geliştirici: Discord profili. Kimlik girilince "Discord profilim" düğmesi doğrudan profile gider; boşsa topluluk sunucusuna. */
 export const OWNER_NAME = "respectwar";
-export const OWNER_DISCORD_ID = "";
+export const OWNER_DISCORD_ID = "460870161155489793";
 export const OWNER_DISCORD_URL = /^\d{17,20}$/.test(OWNER_DISCORD_ID) ? `https://discord.com/users/${OWNER_DISCORD_ID}` : DISCORD_URL;
 export const REPO_URL = "https://github.com/atiyim/celeste-overlay";
 export const INSTAGRAM_URL = "https://www.instagram.com/bneceleste";
