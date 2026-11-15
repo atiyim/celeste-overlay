@@ -2739,3 +2739,37 @@ html[data-skin="obsidyen"] .step { background: rgba(12, 12, 14, .82); }
 .dmx h4, .dmx b { text-shadow: 0 1px 6px rgba(0, 0, 0, .8); }
 .hx { max-width: 56%; } .dmx { max-width: 62%; }
 .fps .hic, .fps .mic { display: none; }
+
+/* ================= Tek ekrana sığan kart düzeni =================
+   İki takım da kaydırmadan görünsün: portre şeridi kısalır, ad tek satır, boşluklar sıkılaşır. Yazı boyutları aynı kalır. */
+.pcv { height: 46px; }
+.pcv::after { height: 26px; }
+.pcport { height: 250px; top: -14px; }
+.pcb { gap: 4px; padding: 2px 10px 8px; }
+.pcn .nl { flex-direction: row; align-items: baseline; gap: 5px; white-space: nowrap; }
+.pcn .nl .nm { flex: 0 1 auto; min-width: 0; }
+.pcn .nl .ntag { flex: 0 10 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pcm { margin-top: -2px; }
+.pcr { row-gap: 3px; }
+.pcs { padding-top: 5px; row-gap: 4px; }
+.pcd .gun3 { margin: 1px 0 2px; }
+.pcd .gun3 .th { height: 20px; }
+.pcbd { min-height: 21px; }
+
+/* ================= Kaplamalar: tek ekran =================
+   Kart iki satır: üstte silah adı + seviye ve renkler, altta kaplama adı (tek satır). */
+.ks-bcol { gap: 8px; }
+.ks-bcol section { gap: 4px; }
+.ks-bcol .ks-skd { grid-template-columns: 54px minmax(0, 1fr) auto; grid-template-areas: "im t lv" "im n m"; row-gap: 2px; column-gap: 7px; padding: 5px 8px 6px 6px; min-height: 42px; }
+.ks-bcol .ks-skd.std { min-height: 34px; grid-template-areas: "im t t" "im n n"; }
+.ks-bcol .ks-skim { width: 54px; height: 28px; }
+.ks-bcol .ks-skd.std .ks-skim { height: 22px; }
+.ks-bcol .ks-skn { display: block; white-space: nowrap; text-overflow: ellipsis; }
+.ks-bcol .ks-skm { justify-self: end; flex-wrap: nowrap; }
+.ks-bcol .ks-skm .ks-swl { flex-wrap: nowrap; }
+.ks-bcol .ks-skn { min-width: 0; overflow: hidden; }
+.ks-bcol .ks-skm { gap: 5px; align-items: center; }
+.ks-bcol .ks-skm { display: contents; }
+.ks-bcol .ks-skm > small { grid-area: lv; justify-self: end; white-space: nowrap; }
+.ks-bcol .ks-skm > .ks-swl { grid-area: m; justify-self: end; flex-wrap: nowrap; }
+.ks-bcol .ks-skt1 { min-width: 0; }

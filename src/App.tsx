@@ -85,8 +85,10 @@ const PHASE_TEXT: Record<string, string> = {
   ingame: "Maç sürüyor",
 };
 
-const MAX_H = 700; // pencere en çok bu kadar uzar; fazlası pencerenin içinde kaydırılır
-const DRAWER_MAX = 470; // oyuncu paneli bu kadar yer açar; fazlası panelin içinde kaydırılır
+const MAX_H = 700;
+/** Kart düzeninde iki takım tek ekrana sığsın diye biraz daha yüksek sınır. */
+const MAX_H_CARDS = 750; // pencere en çok bu kadar uzar; fazlası pencerenin içinde kaydırılır
+const DRAWER_MAX = 520; // oyuncu paneli bu kadar yer açar; fazlası panelin içinde kaydırılır
 
 export function App() {
   const [assets, setAssets] = useState<Assets | null>(null);
@@ -805,7 +807,7 @@ export function App() {
   const phaseTone = snap.phase === "pregame" ? "go" : snap.phase === "ingame" ? "live" : snap.phase === "menu" ? "wait" : "off";
 
   return (
-    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}${collapsed ? " mini" : ""}${full ? " fullw" : ""}`} ref={rootRef} style={full ? { width, height: fullH, maxHeight: fullH, borderRadius: 0 } : { width, maxHeight: Math.max(360, Math.floor(Math.min((window.screen?.availHeight ?? 1000) - 24, MAX_H) / zoom)) }}>
+    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}${collapsed ? " mini" : ""}${full ? " fullw" : ""}`} ref={rootRef} style={full ? { width, height: fullH, maxHeight: fullH, borderRadius: 0 } : { width, maxHeight: Math.max(360, Math.floor(Math.min((window.screen?.availHeight ?? 1000) - 24, theme.layout === "cards" && view === "roster" ? MAX_H_CARDS : MAX_H) / zoom)) }}>
       {!collapsed && !guide && <Rail active={group} onPick={pickGroup} feedCount={feedCount} feedNote={feedNotes > 0} onDrag={startDrag} />}
       <div className="ovm">
         <header className="hd drag" onMouseDown={startDrag} title="Sürükleyerek taşı">

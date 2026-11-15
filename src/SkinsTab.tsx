@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { lookup, skinDetail, type Assets, type SkinDetail } from "./assets";
 import type { Player } from "./types";
+import { shortSkin } from "./playerView";
 
 
 /* Oyuncu paneli › Kaplamalar: VALORANT mağazası gibi kartlar; seçilen kaplamanın bütün ayrıntısı üstte vitrinde.
@@ -70,7 +71,7 @@ export function SkinsTab({ p, assets }: { p: Player; assets: Assets }) {
                       {d.tier?.icon && <img className="ks-skti" src={d.tier.icon} alt="" />}
                     </span>
                     <img className="ks-skim" src={d.image} alt="" loading="lazy" />
-                    <span className="ks-skn">{d.isDefault ? "Standart" : d.name}</span>
+                    <span className="ks-skn">{d.isDefault ? "Standart" : shortSkin(d.name, d.weapon.name)}</span>
                     {!d.isDefault && (
                       <span className="ks-skm">
                         {d.levels.length > 1 ? <small>Sv. {d.level ?? "?"}/{d.levels.length}</small> : <small />}
