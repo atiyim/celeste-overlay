@@ -53,18 +53,18 @@ mod win {
                 let _ = app.emit("mouse-btn", n);
             }
         }
-        CallNextHookEx(0, code, w, l)
+        CallNextHookEx(std::ptr::null_mut(), code, w, l)
     }
 
     pub fn start(app: AppHandle) {
         let _ = APP.set(app);
         std::thread::spawn(|| unsafe {
-            if SetWindowsHookExW(WH_MOUSE_LL, Some(proc), 0, 0) == 0 {
+            if SetWindowsHookExW(WH_MOUSE_LL, Some(proc), std::ptr::null_mut(), 0).is_null() {
                 return;
             }
             // Düşük seviyeli kanca, kurulduğu iş parçacığında ileti döngüsü ister.
             let mut msg: MSG = std::mem::zeroed();
-            while GetMessageW(&mut msg, 0, 0, 0) > 0 {}
+            while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {}
         });
     }
 }
