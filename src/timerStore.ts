@@ -87,6 +87,35 @@ export function startSpike() {
   list = list.filter((t) => t.name !== SPIKE_NAME);
   addTimer(SPIKE_NAME, SPIKE_SECONDS);
 }
+/** Aynı tuş: çalışırken durdurur, durmuşsa (ya da patlamışsa) başlatır. */
+export function toggleSpike() {
+  const t = currentSpike();
+  if (t && !t.done) stopSpike(); else startSpike();
+}
+/* Fare tuşu: "x1" (Geri), "x2" (İleri), "middle" (orta). Yalnızca Windows'ta çalışır. */
+export type MouseBtn = "" | "x1" | "x2" | "middle";
+export const MOUSE_LABEL: Record<MouseBtn, string> = { "": "Atanmadı", x1: "Fare Geri (yan tuş 1)", x2: "Fare İleri (yan tuş 2)", middle: "Fare orta tuş" };
+const SPIKE_MOUSE = "overlay-spike-mouse";
+let spikeMouse: MouseBtn = (() => { try { const v = localStorage.getItem(SPIKE_MOUSE); return v === "x1" || v === "x2" || v === "middle" ? v : ""; } catch { return ""; } })();
+let mouseCapture = false;
+const mouseSubs = new Set<() => void>();
+const mouseEmit = () => mouseSubs.forEach((f) => f());
+export function setSpikeMouse(b: MouseBtn) {
+  spikeMouse = b;
+  try { localStorage.setItem(SPIKE_MOUSE, b); } catch { /* depolama kapalı */ }
+  mouseEmit();
+}
+export function setMouseCapture(on: boolean) { mouseCapture = on; mouseEmit(); }
+/** Rust'tan gelen fare tuşu: atama sırasındaysa tuşu atar, değilse atanmış tuşla eşleşirse sayacı açar/kapatır. */
+export function onMouseBtn(b: MouseBtn) {
+  if (mouseCapture) { setSpikeMouse(b); setMouseCapture(false); return; }
+  if (spikeMouse && b === spikeMouse) toggleSpike();
+}
+export function useSpikeMouse(): { btn: MouseBtn; capture: boolean } {
+  const btn = useSyncExternalStore((f) => { mouseSubs.add(f); return () => { mouseSubs.delete(f); }; }, () => spikeMouse);
+  const capture = useSyncExternalStore((f) => { mouseSubs.add(f); return () => { mouseSubs.delete(f); }; }, () => mouseCapture);
+  return { btn, capture };
+}
 export function setSpikeKey(k: string) {
   spikeKey = k;
   try { localStorage.setItem(SPIKE_KEY, k); } catch { /* depolama kapalı */ }

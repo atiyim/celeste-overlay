@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { PanelHead } from "./ui";
 import { setStripOn, stripOn } from "./spikeWindow";
 import { hotkey, hotkeyLabel } from "./hotkey";
-import { accelFromEvent, addTimer, clock, DEFUSE_FULL, DEFUSE_HALF, parseDuration, removeTimer, restartTimer, setSound, setSpikeKey, SPIKE_NAME, SPIKE_SECONDS, soundOn, spikePhase, spikePhaseOf, startSpike, stopSpike, useSpikeKey, useTimers, type Timer } from "./timerStore";
+import { accelFromEvent, addTimer, clock, DEFUSE_FULL, DEFUSE_HALF, parseDuration, removeTimer, restartTimer, setSound, setMouseCapture, setSpikeKey, setSpikeMouse, MOUSE_LABEL, useSpikeMouse, SPIKE_NAME, SPIKE_SECONDS, soundOn, spikePhase, spikePhaseOf, startSpike, stopSpike, useSpikeKey, useTimers, type Timer } from "./timerStore";
 
 const PRESETS = [["30 sn", 30], ["45 sn", 45], ["1 dk", 60], ["2 dk", 120]] as const;
 
@@ -42,6 +42,8 @@ export function Timers({ onClose }: { onClose: () => void }) {
   const [sound, setSnd] = useState(soundOn);
   const spikeKey = useSpikeKey();
   const [capture, setCapture] = useState(false);
+  const mouse = useSpikeMouse();
+  useEffect(() => () => setMouseCapture(false), []);
   const [clash, setClash] = useState(false);
   const secs = parseDuration(dur);
 
@@ -76,7 +78,7 @@ export function Timers({ onClose }: { onClose: () => void }) {
 
       <div className={spike ? "spk live" : "spk"}>
         <div className="spk-row">
-        <span className="spi"><b>Spike patlama sayacı</b><small>{SPIKE_SECONDS} saniye. Spike kurulunca tuşa bas ya da Başlat'a tıkla; oyundan otomatik okunmaz. Çizgiler çözmenin hâlâ yetişip yetişmediğini gösterir.</small></span>
+        <span className="spi"><b>Spike patlama sayacı</b><small>{SPIKE_SECONDS} saniye. Spike kurulunca tuşa bas; aynı tuşa tekrar basınca durur. Oyundan otomatik okunmaz. Çizgiler çözmenin hâlâ yetişip yetişmediğini gösterir.</small></span>
         <button className="x go" type="button" onClick={startSpike}>{spike ? "Yeniden" : "Başlat"}</button>
         {spike && <button className="x" type="button" onClick={stopSpike}>Durdur</button>}
         <button className={strip ? "x on" : "x"} type="button" aria-pressed={strip} title="Sayaç çalışırken ekranın üst ortasında küçük bir şerit gösterir. Tıklamalar oyuna geçer." onClick={() => { setStripOn(!strip); setStrip(!strip); }}>Oyun üstü şerit {strip ? "açık" : "kapalı"}</button>
@@ -85,6 +87,13 @@ export function Timers({ onClose }: { onClose: () => void }) {
           <button className={capture ? "x on" : "x"} type="button" onClick={() => { setClash(false); setCapture((c) => !c); }}>{capture ? "Vazgeç" : "Tuş ata"}</button>
           {spikeKey && !capture && <button className="x" type="button" onClick={() => setSpikeKey("")}>Kaldır</button>}
         </span>
+        {"__TAURI_INTERNALS__" in window && (
+          <span className="spkey">
+            <kbd>{mouse.capture ? "Fare tuşuna bas…" : MOUSE_LABEL[mouse.btn]}</kbd>
+            <button className={mouse.capture ? "x on" : "x"} type="button" title="Fare yan tuşlarını (Geri / İleri) ya da orta tuşu atayabilirsin. Tık oyuna da geçer; oyunda başka işe atanmamış bir tuş seç." onClick={() => setMouseCapture(!mouse.capture)}>{mouse.capture ? "Vazgeç" : "Fare tuşu ata"}</button>
+            {mouse.btn && !mouse.capture && <button className="x" type="button" onClick={() => setSpikeMouse("")}>Kaldır</button>}
+          </span>
+        )}
         </div>
         {spike && <SpikeGauge t={spike} />}
       </div>

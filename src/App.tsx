@@ -30,7 +30,7 @@ import { Timers } from "./Timers";
 import { Search } from "./Search";
 import { Meta } from "./Meta";
 import { TimerPill } from "./TimerPill";
-import { onTimerDone, startSpike, useSpikeKey } from "./timerStore";
+import { onMouseBtn, onTimerDone, toggleSpike, useSpikeKey, useSpikeMouse, type MouseBtn } from "./timerStore";
 import { initSpikeWindow } from "./spikeWindow";
 import { register, unregister } from "@tauri-apps/plugin-global-shortcut";
 import { AccountPanel } from "./AccountPanel";
@@ -552,9 +552,20 @@ export function App() {
   const spikeKey = useSpikeKey();
   useEffect(() => {
     if (!inTauri || !spikeKey) return;
-    register(spikeKey, (e) => { if (e.state === "Pressed") startSpike(); }).catch(() => showToast("Spike tuşu kaydedilemedi, başka bir program kullanıyor olabilir"));
+    register(spikeKey, (e) => { if (e.state === "Pressed") toggleSpike(); }).catch(() => showToast("Spike tuşu kaydedilemedi, başka bir program kullanıyor olabilir"));
     return () => { unregister(spikeKey).catch(() => undefined); };
   }, [spikeKey]);
+  // Fare yan tuşu: Rust yalnızca tuş atanmışken (ya da atama sırasında) dinler.
+  const sm = useSpikeMouse();
+  useEffect(() => {
+    if (!inTauri) return;
+    invoke("mouse_listen", { on: sm.btn !== "" || sm.capture }).catch(() => undefined);
+  }, [sm.btn, sm.capture]);
+  useEffect(() => {
+    if (!inTauri) return;
+    const un = listen<MouseBtn>("mouse-btn", (e) => onMouseBtn(e.payload));
+    return () => { un.then((f) => f()).catch(() => undefined); };
+  }, []);
   useEffect(() => { if (inTauri) restoreHotkey(); }, []);
   const hk = hotkeyLabel(useHotkey());
   // Oyun üstü spike şeridi: sayaç başlayınca küçük pencereye bildirilir.

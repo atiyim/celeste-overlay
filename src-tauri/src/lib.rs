@@ -1,4 +1,5 @@
 mod discord;
+mod mouse;
 mod obs;
 mod official;
 use riot_core::netlog::{self, NetReport};
@@ -283,7 +284,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState { engine: Arc::new(Engine::new()) })
-        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note, hotkey_ok, set_hotkey, hotkey_capture, official::build_official, official::sign_request, get_riot_id, get_my_puuid, get_id_token, verify_install, obs_set, obs_push, card_copy, card_save, discord_set, discord_status, get_presence])
+        .invoke_handler(tauri::generate_handler![get_snapshot, get_store, get_account, get_health, get_diagnostics, get_my_stats, get_match_report, get_premier, deepen_player, get_net_report, net_note, hotkey_ok, set_hotkey, hotkey_capture, mouse::mouse_listen, official::build_official, official::sign_request, get_riot_id, get_my_puuid, get_id_token, verify_install, obs_set, obs_push, card_copy, card_save, discord_set, discord_status, get_presence])
         .setup(move |app| {
             // F2 başka bir uygulamada kayıtlıysa uygulama yine açılır, tepsi simgesi çalışmaya devam eder.
             if let Err(e) = app.global_shortcut().register(f2) {
