@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { PanelHead } from "./ui";
 import { setStripOn, stripOn } from "./spikeWindow";
 import { hotkey, hotkeyLabel } from "./hotkey";
-import { accelFromEvent, addTimer, clock, DEFUSE_FULL, DEFUSE_HALF, parseDuration, removeTimer, restartTimer, setSound, setMouseCapture, setSpikeKey, setSpikeMouse, MOUSE_LABEL, useSpikeMouse, SPIKE_NAME, SPIKE_SECONDS, soundOn, spikePhase, spikePhaseOf, startSpike, stopSpike, useSpikeKey, useTimers, type Timer } from "./timerStore";
+import { accelFromEvent, addTimer, clock, DEFUSE_FULL, DEFUSE_HALF, LAST_FULL, LAST_HALF, markAt, nextLastMark, parseDuration, removeTimer, restartTimer, setSound, setMouseCapture, setSpikeKey, setSpikeMouse, MOUSE_LABEL, useSpikeMouse, SPIKE_NAME, SPIKE_SECONDS, soundOn, spikePhase, spikePhaseOf, startSpike, stopSpike, useSpikeKey, useTimers, type Timer } from "./timerStore";
 
 const PRESETS = [["30 sn", 30], ["45 sn", 45], ["1 dk", 60], ["2 dk", 120]] as const;
 
@@ -17,18 +17,20 @@ function SpikeGauge({ t }: { t: Timer }) {
     <div className={`spg ph-${t.done ? "boom" : ph.id}`} role="timer" aria-label={`Spike: ${Math.ceil(left)} saniye, ${ph.label}`}>
       <div className="spg-top">
         <b className="spg-n">{t.done ? "0.0" : left.toFixed(1)}<small>sn</small></b>
-        <span className="spg-st"><b>{t.done ? "Patladı" : ph.label}</b><small>{t.done ? "Yeni raunt için tuşa yeniden bas." : ph.hint}</small></span>
+        <span className="spg-st"><b>{t.done ? "Patladı" : ph.label}</b><small>{t.done ? "Yeni raunt için tuşa yeniden bas." : ph.hint}{!t.done && (() => { const n = nextLastMark(left); return n ? ` ${n.kind === "full" ? "Tek oturuş" : "Yarım"} için son an ${n.in.toFixed(1)} sn sonra.` : ""; })()}</small></span>
       </div>
       <div className="spg-bar">
         {Array.from({ length: SPIKE_SECONDS }, (_, k) => {
           const sec = SPIKE_SECONDS - k; // bu çizginin temsil ettiği kalan saniye
           const gone = left <= sec - 1, cur = !gone && left < sec;
-          return <i key={k} className={`z-${spikePhaseOf(sec - 0.01)}${gone ? " gone" : ""}${cur ? " cur" : ""}`} />;
+          const m = markAt(sec);
+          return <i key={k} className={`z-${spikePhaseOf(sec - 0.01)}${gone ? " gone" : ""}${cur ? " cur" : ""}${m ? " mk" : ""}`} style={m ? ({ "--at": `${m.at}%` } as React.CSSProperties) : undefined} />;
         })}
       </div>
       <div className="spg-marks">
         <span className="z-half"><i />Son {DEFUSE_FULL} sn: yalnızca yarım çözülmüşse</span>
         <span className="z-dead"><i />Son {String(DEFUSE_HALF).replace(".", ",")} sn: çözülmez</span>
+        <span className="z-last"><i />Mavi çizgi: son an. Çizgide oturursan 0,01 sn kala çözülür (tek oturuş {String(LAST_FULL).replace(".", ",")}, yarım {String(LAST_HALF).replace(".", ",")} sn)</span>
       </div>
     </div>
   );

@@ -3022,6 +3022,11 @@ html.fps .buddy-anchor { display: none; }
 .spg-marks span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .spg-marks i { width: 3px; height: 11px; border-radius: 2px; background: #ff9a3d; }
 .spg-marks .z-dead i { background: #ff4d5e; }
+.spg-marks .z-last i { background: #38bdf8; }
+/* Son an çizgisi: bu noktada oturulursa spike 0,01 sn kala çözülür. */
+.spg-bar i.mk, .sps-bar i.mk { position: relative; overflow: visible; }
+.spg-bar i.mk::after, .sps-bar i.mk::after { content: ""; position: absolute; left: var(--at); top: -4px; bottom: -4px; width: 2px; margin-left: -1px; border-radius: 1px; background: #38bdf8; box-shadow: 0 0 6px #38bdf8; }
+.sps-bar i.mk::after { top: -2px; bottom: -2px; width: 1.5px; }
 .tpill.ph-hurry { color: #f5c451; border-color: color-mix(in srgb, #f5c451 50%, transparent); }
 .tpill.ph-half { color: #ff9a3d; border-color: color-mix(in srgb, #ff9a3d 55%, transparent); }
 .tpill.ph-dead { color: #ff4d5e; border-color: #ff4d5e; background: color-mix(in srgb, #ff4d5e 14%, transparent); }

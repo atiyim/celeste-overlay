@@ -1,7 +1,8 @@
+import type React from "react";
 import { useEffect, useState } from "react";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { SPIKE_SECONDS, spikePhase, spikePhaseOf } from "./timerStore";
+import { markAt, nextLastMark, SPIKE_SECONDS, spikePhase, spikePhaseOf } from "./timerStore";
 import type { SpikeState } from "./spikeWindow";
 
 /* Oyunun üstündeki spike şeridi. Sayaç yokken tamamen boş ve saydamdır; fare tıklamaları hep oyuna geçer. */
@@ -34,11 +35,12 @@ export function SpikeStrip() {
     <div className={`sps ph-${boom ? "boom" : ph.id}`}>
       <b className="sps-n">{boom ? "0.0" : left.toFixed(1)}</b>
       <div className="sps-r">
-        <span className="sps-l">{boom ? "Patladı" : ph.label}</span>
+        <span className="sps-l">{boom ? "Patladı" : (() => { const n = nextLastMark(left); return n && n.in <= 4 ? `Son an ${n.kind === "full" ? "(tek)" : "(yarım)"}: ${n.in.toFixed(1)} sn` : ph.label; })()}</span>
         <div className="sps-bar">
           {Array.from({ length: SPIKE_SECONDS }, (_, k) => {
             const sec = SPIKE_SECONDS - k;
-            return <i key={k} className={`z-${spikePhaseOf(sec - 0.01)}${left <= sec - 1 ? " gone" : ""}`} />;
+            const m = markAt(sec);
+            return <i key={k} className={`z-${spikePhaseOf(sec - 0.01)}${left <= sec - 1 ? " gone" : ""}${m ? " mk" : ""}`} style={m ? ({ "--at": `${m.at}%` } as React.CSSProperties) : undefined} />;
           })}
         </div>
       </div>

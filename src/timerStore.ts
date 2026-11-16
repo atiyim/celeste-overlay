@@ -70,6 +70,22 @@ const keySubs = new Set<() => void>();
 /** Patladıktan sonra gösterge bu kadar kalır, sonra kendiliğinden kalkar. */
 const SPIKE_CLEAR_MS = 6000;
 export const DEFUSE_FULL = 7, DEFUSE_HALF = 3.5, SPIKE_HURRY = 12;
+/** Son an çözme çizgileri: bu kalan süreyle çözmeye başlarsan spike 0,01 sn kala çözülür.
+ *  Tek oturuş: 7 + 0,01. Yarısı çözülmüşse (3,5 sn'lik ara nokta): 3,5 + 0,01. */
+export const LAST_FULL = DEFUSE_FULL + 0.01, LAST_HALF = DEFUSE_HALF + 0.01;
+/** Bir sonraki son an çizgisine kalan süre ve türü; ikisi de geçtiyse null. */
+export function nextLastMark(leftSec: number): { kind: "full" | "half"; in: number } | null {
+  if (leftSec > LAST_FULL) return { kind: "full", in: leftSec - LAST_FULL };
+  if (leftSec > LAST_HALF) return { kind: "half", in: leftSec - LAST_HALF };
+  return null;
+}
+/** Çubukta (her çizgi bir saniye) son an noktasının, o saniyelik çizgi içindeki yeri (soldan %). Yoksa null. */
+export function markAt(sec: number): { at: number; kind: "full" | "half" } | null {
+  const f = Math.ceil(LAST_FULL), h = Math.ceil(LAST_HALF);
+  if (sec === f) return { at: Math.round((sec - LAST_FULL) * 100), kind: "full" };
+  if (sec === h) return { at: Math.round((sec - LAST_HALF) * 100), kind: "half" };
+  return null;
+}
 export type SpikePhaseId = "safe" | "hurry" | "half" | "dead";
 export interface SpikePhase { id: SpikePhaseId; label: string; hint: string }
 const PHASES: Record<SpikePhaseId, SpikePhase> = {
