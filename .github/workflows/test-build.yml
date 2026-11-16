@@ -25,6 +25,13 @@ jobs:
           workspaces: "src-tauri -> target"
       - run: pnpm install --no-frozen-lockfile
       # Güncelleme imzası gerekmez: deneme kurulumu güncelleme dosyası üretmez.
+      - name: Resmi derleme anahtarı durumu
+        shell: bash
+        env:
+          CELESTE_BUILD_MASTER: ${{ secrets.CELESTE_BUILD_MASTER }}
+        run: |
+          # Anahtar yoksa bu deneme derlemesi "resmi olmayan" çıkar: lisans ekranı gösterir, Celeste servislerine bağlanamaz.
+          if [ -n "$CELESTE_BUILD_MASTER" ]; then echo "::notice::Resmi derleme anahtarı VAR: bu derleme resmi sayılır."; else echo "::warning::Resmi derleme anahtarı YOK: bu derleme resmi olmayan derleme olarak çıkar."; fi
       - name: Derle
         shell: bash
         env:
