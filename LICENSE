@@ -1,9 +1,10 @@
-Celeste Overlay Attribution License (Celeste Overlay Atıf Lisansı) v1.0
+Celeste Overlay Attribution License (Celeste Overlay Atıf Lisansı) v1.1
 
 Copyright (c) 2026 Res (bneceleste). All rights reserved except as granted below.
 
-Applies to Celeste Overlay version 0.8.1 and later. Versions released before 0.8.1 stay available under the MIT License
-under which they were published.
+Applies to Celeste Overlay version 0.8.2 and later. Version 0.8.1 stays available under v1.0 of this license (the same
+terms without section 2(d)). Versions released before 0.8.1 stay available under the MIT License under which they were
+published.
 
 1. PERMISSION
    You may use, copy, modify, build, and distribute this software, in source or binary form, free of charge, including
@@ -16,6 +17,9 @@ under which they were published.
       "Based on Celeste Overlay by Res (bneceleste)" with a link to https://github.com/atiyim/celeste-overlay.
    c) Credit lines already present in the software (About section, README) must not be removed, hidden, shrunk or
       altered to hide the origin of the work.
+   d) Builds that are not official builds show a license notice that must be accepted before the application opens,
+      and a permanent "unofficial build" mark with the credit above. Derivative Works must keep both; they must not be
+      removed, disabled, hidden or bypassed.
 
 3. NAME AND BRANDING (must not be used)
    a) The names "Celeste", "Celeste Overlay", "bneceleste", and the logos, icons and artwork of the project are not
@@ -27,8 +31,8 @@ under which they were published.
 4. CELESTE SERVICES
    The servers and services run for Celeste Overlay (community feed, roles and badges, account linking, update and
    statistics endpoints) are provided only to official builds published at https://github.com/atiyim/celeste-overlay/releases.
-   Derivative Works must not connect to them, and must not copy or imitate the build signature used to identify
-   official builds. You must run your own services for your own versions.
+   Derivative Works must not connect to them, and must not copy, extract or imitate the build signature or the keys used
+   to identify official builds. You must run your own services for your own versions.
 
 5. TERMINATION
    If you violate these terms, your rights under this license end automatically. They are reinstated if you fully

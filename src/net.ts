@@ -25,26 +25,49 @@ const versionP: Promise<string> = inApp
   : Promise.resolve("");
 export const OUTDATED_EVENT = "celeste-outdated";
 
-/* Resmi derleme imzası: yalnızca GitHub Actions'taki resmi derleme gizli anahtarı bilir. Kodu çatallayıp kendi adıyla
-   yayınlayan kopyalarda anahtar yoktur; sunucu bunları Celeste servislerine almaz (LICENSE: "Resmi Celeste sürümü"). */
-const BUILD_KEY = (import.meta.env.VITE_CELESTE_BUILD_KEY as string | undefined) ?? "";
-async function buildSig(v: string): Promise<string> {
-  if (!BUILD_KEY || !v || !globalThis.crypto?.subtle) return "";
-  try {
-    const ts = Math.floor(Date.now() / 1000);
-    const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(BUILD_KEY), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-    const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${ts}|${v}`));
-    return `${ts}.${[...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
-  } catch { return ""; }
+/* Resmi derleme imzası: Celeste sunucusuna giden her istek imzalanır. Anahtar yalnızca resmi derlemede, uygulamanın
+   Rust tarafında bulunur (ayrıntı: riot-core/src/official.rs). Kaynak koddan derlenen kopyalarda anahtar yoktur;
+   sunucu bu kopyaları Celeste servislerine almaz (LICENSE, madde 4). */
+export const CELESTE_HOST = "celeste-feed.celestimbenim.workers.dev";
+
+/** Bu derleme resmi mi? Tarayıcı önizlemesinde resmi sayılır (lisans ekranını denemek için: localStorage "dev-unofficial" = "1"). */
+export const officialP: Promise<boolean> = inApp
+  ? invoke<boolean>("build_official").catch(() => false)
+  : Promise.resolve((() => { try { return localStorage.getItem("dev-unofficial") !== "1"; } catch { return true; } })());
+
+const hexOf = (buf: ArrayBuffer) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+async function bodyHash(body: RequestInit["body"]): Promise<string | null> {
+  if (!globalThis.crypto?.subtle) return null;
+  let bytes: BufferSource;
+  if (body == null) bytes = new Uint8Array(0);
+  else if (typeof body === "string") bytes = new TextEncoder().encode(body);
+  else if (body instanceof ArrayBuffer) bytes = body;
+  else if (body instanceof Blob) bytes = await body.arrayBuffer();
+  else return null; // imzalanamayan gövde türü (kullanılmıyor)
+  return hexOf(await crypto.subtle.digest("SHA-256", bytes));
 }
 
+/** Celeste sunucusuna giden adrese sürümü ve imzayı ekler; başka adreslere dokunmaz. */
+async function celesteUrl(url: string, init?: RequestInit): Promise<string> {
+  let u: URL;
+  try { u = new URL(url); } catch { return url; }
+  if (u.host !== CELESTE_HOST || u.pathname.startsWith("/api/feed/img/")) return url;
+  const v = await versionP;
+  if (v && !u.searchParams.has("v")) u.searchParams.set("v", v);
+  const pathQuery = u.pathname + u.search;
+  if (!inApp) return u.origin + pathQuery;
+  const hash = await bodyHash(init?.body);
+  const b = hash ? await invoke<string | null>("sign_request", { method: (init?.method ?? "GET").toUpperCase(), pathQuery, bodyHash: hash }).catch(() => null) : null;
+  return b ? `${u.origin}${pathQuery}${u.search ? "&" : "?"}b=${b}` : u.origin + pathQuery;
+}
+
+const UNOFFICIAL_BODY = JSON.stringify({ error: "Bu, Celeste Overlay'in resmi sürümü değil; Celeste servislerine bağlanamaz.", unofficial: true });
+const isCeleste = (url: string) => { try { return new URL(url).host === CELESTE_HOST; } catch { return false; } };
+
 export async function tfetch(url: string, init?: RequestInit): Promise<Response> {
-  if (url.includes("/api/feed")) {
-    const v = await versionP;
-    if (v) url += `${url.includes("?") ? "&" : "?"}v=${encodeURIComponent(v)}`;
-    const b = await buildSig(v);
-    if (b) url += `&b=${b}`;
-  }
+  // Resmi olmayan derleme Celeste sunucusuna hiç istek atmaz (LICENSE, madde 4).
+  if (isCeleste(url) && !(await officialP)) return new Response(UNOFFICIAL_BODY, { status: 403, headers: { "content-type": "application/json" } });
+  url = await celesteUrl(url, init);
   const t0 = performance.now();
   const method = init?.method ?? "GET";
   try {

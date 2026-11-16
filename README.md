@@ -206,12 +206,13 @@ Made by Claude & [bneceleste](https://www.instagram.com/bneceleste)
 
 ## Lisans
 
-Celeste Overlay Atıf Lisansı v1.0 (0.8.1 ve sonrası; öncesi MIT). Kodu kullanabilir, değiştirebilir, derleyip dağıtabilirsin. Kendin için kullanmak ücretsizdir; bir kopyayı dağıtacaksan şu kurallar geçerlidir:
+Celeste Overlay Atıf Lisansı v1.1 (0.8.2 ve sonrası; 0.8.1 için v1.0, öncesi MIT). Kodu kullanabilir, değiştirebilir, derleyip dağıtabilirsin. Kendin için kullanmak ücretsizdir; bir kopyayı dağıtacaksan şu kurallar geçerlidir:
 
 - **Atıf zorunlu.** Her türevde uygulama içinde (Hakkında) ve README'nin başında **"Based on Celeste Overlay by Res (bneceleste)"** yazısı, depoya bağlantıyla birlikte bulunmalı. Hakkında'daki ve bu README'deki atıf satırları silinemez ya da gizlenemez.
 - **Ad ve marka kullanılmaz.** "Celeste", "Celeste Overlay", "bneceleste" adı ve logosu/ikonları türevde kullanılamaz; türevin kendi adı ve ikonu olmalı.
 - **Resmi gibi sunulmaz.** Türev "resmi olmayan, değiştirilmiş sürüm" olarak tanıtılmalı; kendi özgün eserin gibi anlatılamaz.
 - **Celeste sunucuları yalnızca resmi sürüme açıktır.** Akış, roller ve hesap bağlama servisleri yalnızca [Releases](https://github.com/atiyim/celeste-overlay/releases) sayfasındaki resmi derlemelere hizmet verir. Türevler bu servislere bağlanamaz, resmi derleme imzasını kopyalayamaz; kendi servislerini kurmalıdır.
+- **Lisans ekranı kalır.** Resmi olmayan derlemeler açılışta lisans şartlarını gösterir ve kabul edilmeden açılmaz; altta "Resmi olmayan derleme" şeridi durur. Türevlerde ikisi de kaldırılamaz.
 - **İhlalde** haklar kendiliğinden sona erer; 30 gün içinde düzeltilirse geri gelir.
 
 Kısacası: kodu al, kullan, değiştir; ama adı ve atfı bırak, Celeste'nin servislerini kendi sürümünde kullanma. Tam metin: [LICENSE](LICENSE).

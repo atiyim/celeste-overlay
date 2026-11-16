@@ -27,6 +27,16 @@ jobs:
         with:
           workspaces: "src-tauri -> target"
       - run: pnpm install --no-frozen-lockfile
+      - name: Resmi derleme anahtarı tanımlı mı
+        shell: bash
+        env:
+          CELESTE_BUILD_MASTER: ${{ secrets.CELESTE_BUILD_MASTER }}
+        run: |
+          # Anahtar yoksa derleme "resmi olmayan" çıkar: lisans ekranı gösterir ve Celeste servislerine bağlanamaz.
+          if [ -z "$CELESTE_BUILD_MASTER" ]; then
+            echo "::error::CELESTE_BUILD_MASTER gizlisi tanımlı değil. Settings > Secrets and variables > Actions altından ekle."
+            exit 1
+          fi
       - name: Release oluştur
         shell: bash
         env:
@@ -39,7 +49,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           # Resmi derleme imzası (Worker bunu doğrular); çatallarda bu gizli anahtar olmadığı için Celeste servislerine bağlanamazlar.
-          VITE_CELESTE_BUILD_KEY: ${{ secrets.CELESTE_BUILD_KEY }}
+          CELESTE_BUILD_MASTER: ${{ secrets.CELESTE_BUILD_MASTER }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tauriScript: pnpm tauri

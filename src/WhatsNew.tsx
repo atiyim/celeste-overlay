@@ -3,6 +3,10 @@ import { useState } from "react";
 /* Güncellemeden sonra bir kez görünen "neler yeni" kartı. Kapatınca bu sürüm için bir daha çıkmaz. */
 const KEY = "overlay-whatsnew";
 const NOTES: Record<string, string[]> = {
+  "0.8.2": [
+    "Güvenlik: Akış, roller, Premium ve diğer Celeste servisleri artık yalnızca resmi sürümle çalışır. Her istek imzalanır; değiştirilmiş kopyalar bağlanamaz.",
+    "Kaynak koddan derlenen kopyalar açılışta lisans şartlarını gösterir ve \"Resmi olmayan derleme\" olarak işaretlenir. Resmi sürümde bir değişiklik yok.",
+  ],
   "0.8.1": [
     "Celeste ile tanış: yeni sesli rehberi o anlatıyor, asasıyla ekranı gösteriyor. Sağ altta durur, maçına göre arada bir şey söyler; tıklarsan rehber yeniden açılır (Ayarlar'dan kapatılabilir).",
     "Spike sayacı yenilendi: çizgiler ve renkler çözmeye yetişip yetişmediğini gösterir (son 7 sn: yalnızca yarım çözülmüşse, son 3,5 sn: çözülmez). Sayaç çalışırken oyunun üstünde küçük bir şerit çıkar.",

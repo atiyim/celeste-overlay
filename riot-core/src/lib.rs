@@ -3,6 +3,7 @@
 mod engine;
 mod model;
 pub mod netlog;
+pub mod official;
 mod session;
 pub mod verify;
 

@@ -3100,3 +3100,27 @@ html.spikewin, html.spikewin body, html.spikewin #root { width: 100%; height: 10
 .buddy { right: 2px; bottom: -40px; }
 .buddy-bub { margin-bottom: 4px; border-radius: 12px 12px 3px 12px; }
 .buddy .buddy-win, .buddy:hover .buddy-win, .buddy.talk .buddy-win { height: 39px; }
+
+/* ================= Lisans ekranı (yalnızca resmi olmayan derleme) ================= */
+.lic { display: flex; flex-direction: column; gap: 12px; max-width: 760px; width: 100%; margin: 0 auto; padding: 18px 22px 16px; box-sizing: border-box; }
+.lic-h { display: flex; flex-direction: column; gap: 6px; }
+.lic-tag { align-self: flex-start; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #ff9a3d; background: color-mix(in srgb, #ff9a3d 13%, transparent); border: 1px solid color-mix(in srgb, #ff9a3d 40%, transparent); }
+.lic-h h2 { margin: 0; font-size: 20px; font-weight: 700; color: var(--fg); }
+.lic-h p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--fg-2); }
+.lic-h p b { color: var(--fg); }
+.lic-box { max-height: 250px; overflow-y: auto; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--box); }
+.lic-box:focus-visible { outline: 1px solid var(--accent); }
+.lic-box ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; line-height: 1.55; color: var(--fg-2); }
+.lic-box li b { color: var(--fg); }
+.lic-box li::marker { color: var(--accent); font-weight: 700; }
+.lic-warn { margin-top: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; border-radius: 10px; font-size: 12.5px; line-height: 1.5; color: var(--fg-2); background: color-mix(in srgb, #ff4d5e 9%, transparent); border: 1px solid color-mix(in srgb, #ff4d5e 35%, transparent); }
+.lic-warn b { color: #ff7482; font-size: 12px; letter-spacing: .03em; text-transform: uppercase; }
+.lic-note { margin: 12px 0 0; font-size: 12px; line-height: 1.5; color: var(--fg-3); }
+.lic-ck { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--fg); cursor: pointer; }
+.lic-ck input { width: 16px; height: 16px; accent-color: var(--accent); }
+.lic-f { display: flex; align-items: center; gap: 10px; }
+.lic-f small { flex: 1; min-width: 0; font-size: 12px; color: var(--fg-3); }
+.lic-f .x { height: 34px; padding: 0 16px; }
+.lic-f .x:disabled { opacity: .45; cursor: not-allowed; }
+.unoff { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 5px 12px; border: 0; border-top: 1px solid color-mix(in srgb, #ff9a3d 35%, transparent); background: color-mix(in srgb, #ff9a3d 9%, transparent); font-size: 11.5px; color: var(--fg-2); cursor: pointer; }
+.unoff b { color: #ff9a3d; font-weight: 600; }

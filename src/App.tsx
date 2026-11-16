@@ -20,6 +20,7 @@ import { LoadoutPanel } from "./LoadoutPanel";
 import { QuickChat } from "./QuickChat";
 import { Guide } from "./Guide";
 import { Buddy } from "./Buddy";
+import { LicenseGate, UnofficialStrip, useLicenseGate } from "./LicenseGate";
 import { restoreHotkey, useHotkey, hotkeyLabel } from "./hotkey";
 import { Crosshairs } from "./CrosshairPanel";
 import { Settings } from "./Settings";
@@ -123,6 +124,8 @@ export function App() {
   const updater = useUpdater();
   useUsagePing(updater.version);
   const outdated = useOutdated(updater.version);
+  // Resmi olmayan derleme: lisans kabul edilmeden uygulama açılmaz.
+  const license = useLicenseGate(updater.version);
   const [notices, clearNotices] = useNotices();
   const [lastMatch, setLastMatch] = useState<string | null>(() => {
     try { return localStorage.getItem("overlay-last-match"); } catch { return null; }
@@ -896,12 +899,14 @@ export function App() {
         )}
 
         <div className="obody">
-        {!collapsed && !guide && notices.length > 0 && <NoticeCard list={notices} onClose={clearNotices} />}
-        {!collapsed && !guide && view === "roster" && !active && <WhatsNew version={updater.version} />}
-        {!collapsed && guide && <Guide onDone={closeGuide} />}
-        {!collapsed && !guide && (outdated ? <ForceUpdate info={outdated} updater={updater} onOpen={openTracker} /> : content)}
+        {!collapsed && license.gate && <LicenseGate onAccept={license.accept} onQuit={() => { if (inTauri) exit(0).catch(() => undefined); }} onOpen={openTracker} />}
+        {!collapsed && !license.gate && !guide && notices.length > 0 && <NoticeCard list={notices} onClose={clearNotices} />}
+        {!collapsed && !license.gate && !guide && view === "roster" && !active && <WhatsNew version={updater.version} />}
+        {!collapsed && !license.gate && guide && <Guide onDone={closeGuide} />}
+        {!collapsed && !license.gate && !guide && (outdated ? <ForceUpdate info={outdated} updater={updater} onOpen={openTracker} /> : content)}
         </div>
-        {!collapsed && !guide && theme.buddy && <Buddy snap={snap} onGuide={() => { setGuide(true); setView("roster"); }} />}
+        {!collapsed && license.unofficial && <UnofficialStrip onOpen={openTracker} />}
+        {!collapsed && !license.gate && !guide && theme.buddy && <Buddy snap={snap} onGuide={() => { setGuide(true); setView("roster"); }} />}
         {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} onFeedback={() => { setGuide(false); setCollapsed(false); go("feedback"); }} onTrust={() => go("trust")} />}
       </div>
       <PreviewBar onOpen={openTracker} />
