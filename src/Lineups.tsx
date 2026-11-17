@@ -8,6 +8,7 @@ import { Editor } from "./lineups/Editor";
 import { LineupView, patchState } from "./lineups/LineupView";
 import { abilityOf, MapBoard } from "./lineups/MapBoard";
 import { Narrator } from "./lineups/Narrator";
+import { preloadClips } from "./lineups/clipPlayer";
 import { Practice } from "./lineups/Practice";
 import { addFavs, getMe, mastered, patchMe, readCode, shareCode, streak, useMe } from "./lineups/store";
 import "./lineups/lineups.css";
@@ -35,6 +36,8 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
   const { list, loading, error } = useLineups();
   const me = useMe();
   const feedMe = useFeedMe();
+  // Sesli anlatım açıksa kayıtlar önceden indirilir; ses gecikmeden başlar.
+  useEffect(() => { if (me.voice) void preloadClips(); }, [me.voice]);
   const maps = useMemo(() => (assets?.mapList ?? []).filter((m) => m.uuid), [assets]);
   const [tab, setTab] = useState<Tab>("lib");
   const [mapId, setMapId] = useState<string>(() => mapByUrl(maps, currentMapUrl)?.uuid ?? "");
@@ -151,6 +154,14 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
         />
       ) : tab === "lib" ? (
         <div className="lu-lib">
+          {me.mode === "celeste" && !(error && !list.length) && (
+            <div className="lu-celeste">
+              <Narrator
+                text={loading && !list.length ? "Kütüphaneyi getiriyorum, bir saniye." : !map ? "Bir harita seç, lineup'ları göstereyim." : onMap.length ? `${map.name} için ${onMap.length} lineup var. Bir simgeye tıkla, adım adım anlatayım.` : `${map.name} için henüz lineup yok.`}
+                mood="happy" speak={false} playing={false} small
+              />
+            </div>
+          )}
           <div className="lu-maps" role="listbox" aria-label="Harita" ref={mapsRef}>
             {maps.map((m) => {
               const n = list.filter((l) => l.map === m.uuid).length;

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Assets } from "../assets";
 import { Mascot, type Mood } from "../Mascot";
 import { throwName, type Lineup } from "./api";
-import { clipText, clipUrl, type ClipId } from "./voice";
+import { playClips } from "./clipPlayer";
+import { clipText, type ClipId } from "./voice";
 
 /* Celeste anlatıcı: konuşma balonu yazarak dolar, ağzı yazıyla birlikte oynar.
    "Sesli anlat" açıksa ve bilgisayarda Türkçe ses varsa metni okur (Windows: Ayarlar › Saat ve dil › Konuşma). */
@@ -74,19 +75,7 @@ export function Narrator({ text: textProp, clip, mood, speak, playing, onDone, s
   useEffect(() => {
     setSpoken(false);
     if (!clipKey || !speak || !playing) return;
-    const ids = clipKey.split("+") as ClipId[];
-    let k = 0, dead = false;
-    let a: HTMLAudioElement | null = null;
-    const next = () => {
-      if (dead) return;
-      if (k >= ids.length) { setSpoken(true); return; }
-      a = new Audio(clipUrl(ids[k++]!));
-      a.onended = next;
-      a.onerror = () => { if (!dead) setSpoken(true); };
-      a.play().catch(() => { if (!dead) setSpoken(true); });
-    };
-    next();
-    return () => { dead = true; if (a) { a.onended = null; a.pause(); } };
+    return playClips(clipKey.split("+") as ClipId[], () => setSpoken(true));
   }, [clipKey, speak, playing]);
 
   // Bilgisayar sesi (kaydı olmayan metinler için): yalnızca oynatılırken.
