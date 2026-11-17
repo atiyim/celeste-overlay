@@ -78,14 +78,15 @@ export function streak(m: Me = me): number {
   return n;
 }
 
-/** XP → seviye: her seviye bir öncekinden biraz daha uzun. */
+/** XP → seviye: her seviye bir öncekinden %18 uzun (Discord'daki Lineup Avı ile aynı ölçü). */
 export function level(xp: number): { lv: number; into: number; need: number } {
-  let lv = 1, need = 100, left = xp;
-  while (left >= need) { left -= need; lv++; need = Math.round(need * 1.25); }
+  let lv = 1, need = 120, left = xp;
+  while (left >= need) { left -= need; lv++; need = Math.round(need * 1.18); }
   return { lv, into: left, need };
 }
-export const RANKS = ["Çaylak", "Çırak", "Atıcı", "Usta", "Taktisyen", "Profesör", "Efsane"];
-export const rankOf = (lv: number) => RANKS[Math.min(RANKS.length - 1, Math.floor((lv - 1) / 3))]!;
+/** Rütbe: Demir 1 … Radyant (25. seviye). */
+export const RANKS = ["Demir", "Bronz", "Gümüş", "Altın", "Platin", "Elmas", "Yücelik", "Ölümsüzlük", "Radyant"];
+export const rankOf = (lv: number) => { const t = Math.min(24, lv - 1); return t >= 24 ? "Radyant" : `${RANKS[Math.floor(t / 3)]} ${(t % 3) + 1}`; };
 
 /**
  * Günün 3 lineup'ı: önce sevdiğin ajanlar ve Setim, sonra öğrenmediklerin; aynı gün hep aynı üçlü.

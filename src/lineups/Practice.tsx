@@ -5,6 +5,7 @@ import type { Mood } from "../Mascot";
 import { imgUrl, kindName, siteName, type Lineup, type Pt } from "./api";
 import { abilityOf, MapBoard } from "./MapBoard";
 import { Narrator } from "./Narrator";
+import { valUpper } from "./upper";
 import { dailyThree, dueCards, keepDaily, getMe, grade, level, markTried, mastered, rankOf, streak, useMe } from "./store";
 
 /* Öğren: günün üç lineup'ı, kart kart tekrar (aralıklı), "Nereye düşer?" sınavı, özel oyun planı ve ustalık.
@@ -68,7 +69,7 @@ export function Practice({ list, assets, maps, mapId, agentId, onOpen, onToast }
             return (
               <button key={id} type="button" className={`lp-dc${ok ? " ok" : ""}`} onClick={() => onOpen(id)} style={{ animationDelay: `${i * 70}ms`, ...(map?.banner ? { "--bg": `url(${map.banner})` } : {}) } as CSSProperties}>
                 <span className="lp-dc-ab">{ab?.icon && <img src={ab.icon} alt="" />}</span>
-                <span className="lp-dc-t"><b>{l.title}</b><small>{map?.name} · {assets?.agents.get(l.agent)?.name} · {kindName(l.kind)}</small></span>
+                <span className="lp-dc-t"><b>{valUpper(l.title)}</b><small>{map?.name} · {assets?.agents.get(l.agent)?.name} · {kindName(l.kind)}</small></span>
                 <span className="lp-dc-ok">{ok ? <Icon name="check" size={16} /> : <Icon name="play" size={14} />}</span>
               </button>
             );
@@ -264,7 +265,7 @@ function Plan({ pool, assets, maps, onBack, onOpen }: { pool: Lineup[]; assets: 
             <div key={l.id} className={`lp-pi${ok ? " ok" : ""}`} style={{ animationDelay: `${i * 60}ms` }}>
               <button type="button" className="lp-chk" onClick={() => { markTried(l.id); if (!ok) grade(l.id, true); }} aria-pressed={ok} aria-label="Denedim">{ok && <Icon name="check" size={14} />}</button>
               {ab?.icon && <img src={ab.icon} alt="" />}
-              <span><b>{l.title}</b><small>{siteName(l.site)} · {kindName(l.kind)} · {l.diff === 1 ? "Kolay" : l.diff === 2 ? "Orta" : "Zor"}</small></span>
+              <span><b>{valUpper(l.title)}</b><small>{siteName(l.site)} · {kindName(l.kind)} · {l.diff === 1 ? "Kolay" : l.diff === 2 ? "Orta" : "Zor"}</small></span>
               <button type="button" className="x" onClick={() => onOpen(l.id)}>Aç</button>
             </div>
           );

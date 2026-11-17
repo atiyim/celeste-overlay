@@ -11,6 +11,7 @@ import { hasTurkishVoice, Narrator } from "./lineups/Narrator";
 import { Practice } from "./lineups/Practice";
 import { addFavs, mastered, patchMe, readCode, shareCode, streak, useMe } from "./lineups/store";
 import "./lineups/lineups.css";
+import { nameUpper, valUpper } from "./lineups/upper";
 
 /* Lineup: Celeste'nin ve topluluğun lineup kütüphanesi.
    Keşfet: harita + liste, filtreler. Öğren: günün üçü, tekrar kartları, sınav, özel oyun planı. Setim: kendi listen ve
@@ -157,7 +158,7 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
               const n = list.filter((l) => l.map === m.uuid).length;
               return (
                 <button key={m.uuid} type="button" role="option" aria-selected={mapId === m.uuid} className={`lu-map${mapId === m.uuid ? " on" : ""}${n ? "" : " empty"}`} onClick={() => { setMapId(m.uuid); setAgentId(""); setHover(null); }} style={m.banner ? ({ "--bg": `url(${m.banner})` } as CSSProperties) : undefined}>
-                  <b>{m.name}</b>{n > 0 && <small>{n}</small>}
+                  <b>{nameUpper(m.name)}</b>{n > 0 && <small>{n}</small>}
                 </button>
               );
             })}
@@ -249,7 +250,7 @@ function LineupCard({ l, assets, i, hover, fav, learned, onHover, onOpen }: { l:
       onMouseEnter={() => onHover(l.id)} onMouseLeave={() => onHover(null)} onFocus={() => onHover(l.id)} onClick={onOpen}>
       <span className="lu-card-ab">{ab?.icon ? <img src={ab.icon} alt="" /> : null}<kbd>{SLOT_KEY[l.slot]}</kbd></span>
       <span className="lu-card-b">
-        <b>{l.title}</b>
+        <b>{valUpper(l.title)}</b>
         <small>
           {agent && <img src={agent.icon} alt="" />}
           {agent?.name} · {l.site ? `${siteName(l.site)} · ` : ""}{kindName(l.kind)}

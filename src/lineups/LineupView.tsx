@@ -6,6 +6,7 @@ import { Icon } from "../icons";
 import { DIFFS, imgUrl, kindName, patchLineup, siteName, SLOT_KEY, throwName, voteLineup, type Lineup } from "./api";
 import { abilityOf, MapBoard } from "./MapBoard";
 import { narration, Narrator } from "./Narrator";
+import { nameUpper, valUpper } from "./upper";
 import { dailyDone, getMe, grade, markTried, seen, shareCode, toggleFav, useMe } from "./store";
 
 /* Lineup ayrıntısı: hikâye gibi adım adım. 1) haritada nerede dur, nereye düşer 2) ekran görüntülerinde nişan noktası
@@ -119,10 +120,10 @@ export function LineupView({ l, assets, map, votes, onVotes, canEdit, pos, onPre
           <kbd>{SLOT_KEY[l.slot]}</kbd>
         </span>
         <div className="lv-ttl">
-          <h3>{l.title}</h3>
+          <h3>{valUpper(l.title)}</h3>
           <div className="lv-chips">
-            {agent && <span className="lc ag"><img src={agent.icon} alt="" />{agent.name}</span>}
-            <span className="lc">{ab?.name ?? l.slot}</span>
+            {agent && <span className="lc ag"><img src={agent.icon} alt="" />{nameUpper(agent.name)}</span>}
+            <span className="lc">{valUpper(ab?.name ?? l.slot)}</span>
             <span className={`lc side ${l.side}`}>{l.side === "atk" ? "Saldırı" : "Savunma"}</span>
             {l.site && <span className="lc">{siteName(l.site)}</span>}
             <span className="lc">{kindName(l.kind)}</span>

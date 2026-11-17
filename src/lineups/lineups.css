@@ -527,3 +527,100 @@
   .lu *, .lu *::before, .lu *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .lb-arc-line { stroke-dashoffset: 0; }
 }
+
+/* ================================================================
+   Valorant teması: Lineup bölümü kendi kimliğini taşır
+   Mürekkep lacivert, sinyal kırmızısı, kemik beyazı; dar büyük harfli başlıklar (Anton, Barlow Condensed — OFL),
+   düz ve eğik kesik köşeler, köşe parantezleri. Discord'daki lineup kartlarıyla aynı dil.
+   ================================================================ */
+@font-face { font-family: "Val Display"; src: url("./fonts/Anton-Regular.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "Val Cond"; src: url("./fonts/BarlowCondensed-SemiBold.ttf") format("truetype"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Val Cond"; src: url("./fonts/BarlowCondensed-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+
+.lu {
+  --accent: #ff4655;
+  --on-accent: #fff;
+  --val-ink: #0f1923;
+  --val-bone: #ece8e1;
+  --val-cut: 10px;
+  --lu-r: 4px;
+  --atk: #ff4655;
+  --def: #45d6c4;
+  background:
+    radial-gradient(60% 50% at 100% 0%, rgba(255, 70, 85, .10), transparent 70%),
+    linear-gradient(rgba(236, 232, 225, .025) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, rgba(236, 232, 225, .025) 1px, transparent 1px) 0 0 / 48px 48px;
+}
+.lu .val, .lu-title h2, .lv-ttl h3, .led-top h3, .lp-head b, .lu-map b, .lp-badge b, .lp-st b, .lp-lv strong {
+  /* metin JS'te Türkçe/İngilizce kurala göre büyütülür (upper.ts); CSS yalnızca kalanları büyütür */
+  font-family: "Val Display", "Geist Variable", sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: .02em;
+}
+.lu-title h2 { font-size: 24px; line-height: 1; }
+.lv-ttl h3 { font-size: 30px; line-height: 1.02; }
+.led-top h3 { font-size: 24px; }
+.lp-head b { font-size: 20px; }
+.lu-title small, .lu-tabs button, .lc, .la, .lu-tags em, .lv-bars button span, .lu-board-foot, .led-sec h4, .lp-daily h4, .lp-mastery h4, .lu-com h4,
+.lu-setmap h4 b, .st, .lu-sel, .lu-ag.all, .lu-mode button, .led-kind b, .led-pk, .lp-mode b, .lp-st small, .lp-badge small, .lu-fire, .x, .lv-back {
+  font-family: "Val Cond", "Geist Variable", sans-serif; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+}
+.lu-tabs button, .lc, .la, .x, .lv-back { font-size: 13px; }
+.lu-card-b b, .lp-dc-t b, .lu-mi > span b, .lp-pi > span b, .lu-modrow > span b { font-family: "Val Cond", sans-serif; font-weight: 700; font-size: 16px; letter-spacing: .02em; text-transform: uppercase; }
+.lu-map b { font-size: 15px; }
+
+/* eğik kesik köşeler */
+.lu-card, .lu-map, .lu-ag, .lv-ab, .lu-card-ab, .lc, .la, .lu-tabs, .lu-tabs button, .lp-mode, .lp-dc, .lp-lv, .lp-st, .lp-m, .led-sec, .led-ab, .led-kind, .led-pk, .led-step,
+.lu-code, .lu-cta, .lu-intro, .lu-mi, .lu-lb li, .lu-modrow, .lv-plain, .lp-badge, .lu-logo, .lu .x, .lu .seg, .lp-pi, .lv-num, .led-map, .lu-none {
+  border-radius: 2px;
+  clip-path: polygon(var(--val-cut) 0, 100% 0, 100% calc(100% - var(--val-cut)), calc(100% - var(--val-cut)) 100%, 0 100%, 0 var(--val-cut));
+}
+.lc, .la, .lu-tabs button, .lu .x, .lu-ag, .led-ab, .lv-num { --val-cut: 6px; }
+.lu-logo { color: #fff; background: #ff4655; box-shadow: none; }
+.lu-tabs { background: rgba(15, 25, 35, .8); border-color: rgba(236, 232, 225, .12); }
+.lu-tabs button.on { background: #ff4655; color: #fff; box-shadow: none; }
+.lu-tabs button.on svg { color: #fff; }
+.lu .x.go { background: #ff4655; border-color: #ff4655; color: #fff; }
+.lu .x.go:hover { background: #ff5a68; }
+
+/* kartlar: sol kırmızı/turkuaz şerit + sağ alt köşede ince kesik çizgi */
+.lu-card { background: linear-gradient(90deg, color-mix(in srgb, var(--side) 12%, transparent), transparent 50%), rgba(26, 36, 46, .92); }
+.lu-card::before { width: 4px; border-radius: 0; top: 0; bottom: 0; opacity: .9; }
+.lu-card:hover, .lu-card.hv { transform: translateX(4px); }
+.lu-card-ab { background: rgba(15, 25, 35, .9); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--side) 60%, transparent); }
+.lu-card-ab kbd, .lv-ab kbd { border-radius: 2px; background: var(--val-bone); color: var(--val-ink); box-shadow: 0 0 0 2px var(--val-ink); font-family: "Val Display", sans-serif; font-weight: 400; }
+
+/* ayrıntı başlığı ve görseller: köşe parantezleri */
+.lv-ab { background: rgba(15, 25, 35, .9); box-shadow: inset 0 0 0 2px var(--side, #ff4655); }
+.lc.side { color: #fff; }
+.lc.side.def { color: var(--val-ink); }
+.lv-shot, .lv-clipthumb, .lv-clip, .lp-qshot .lv-zw, .lb { border-radius: 2px; }
+.lv-slide::before, .lv-slide::after { content: ""; position: absolute; z-index: 3; width: 34px; height: 34px; pointer-events: none; border: 3px solid var(--side, #ff4655); }
+.lv-slide::before { left: -10px; top: -10px; border-right: 0; border-bottom: 0; }
+.lv-slide::after { right: -10px; bottom: -10px; border-left: 0; border-top: 0; }
+.lv-bars button i { border-radius: 0; height: 5px; transform: skewX(-20deg); }
+.lv-num { border-radius: 2px; font-family: "Val Display", sans-serif; font-weight: 400; color: #fff; }
+.def .lv-num { color: var(--val-ink); }
+.lv-aim b { border-radius: 2px; font-family: "Val Cond", sans-serif; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; background: var(--side, #ff4655); color: #fff; }
+.lb { box-shadow: inset 0 0 0 1px rgba(236, 232, 225, .14); }
+.lb::before, .lb::after { content: ""; position: absolute; z-index: 7; width: 26px; height: 26px; pointer-events: none; border: 2px solid rgba(236, 232, 225, .55); }
+.lb::before { left: 8px; top: 8px; border-right: 0; border-bottom: 0; }
+.lb::after { right: 8px; bottom: 8px; border-left: 0; border-top: 0; }
+.lb-stand em, .lb-hint, .lb-reset { border-radius: 2px; font-family: "Val Cond", sans-serif; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+
+/* harita kartları */
+.lu-map { height: 52px; }
+.lu-map small { border-radius: 2px; background: #ff4655; color: #fff; font-family: "Val Display", sans-serif; font-weight: 400; }
+.lu-map.on { box-shadow: inset 0 0 0 2px #ff4655, 0 8px 22px -12px #ff4655; }
+
+/* öğren: rozet ve sayaçlar */
+.lp-badge { background: #ff4655; color: #fff; box-shadow: none; }
+.lp-xp, .lp-mbar, .lp-prog > span { border-radius: 0; transform: skewX(-20deg); }
+.lp-xp i { background: #ff4655; }
+.lp-st b { font-size: 26px; }
+.lu-fire { border-radius: 2px; background: #ff4655; color: #fff; }
+
+/* Celeste balonu Valorant çizgisinde */
+.lnar-bub { border-radius: 2px; background: rgba(26, 36, 46, .95); box-shadow: inset 0 0 0 1px rgba(236, 232, 225, .16), inset 4px 0 0 #ff4655; }
+.lnar-bub::before { background: rgba(26, 36, 46, .95); }
+
+/* başlık ve adlar JS'te büyütüldü: tarayıcının "MAİN" büyütmesi devre dışı */
+.lv-ttl h3, .lu-map b, .lu-card-b b, .lp-dc-t b, .lp-pi > span b, .lc.ag, .lc:nth-child(2) { text-transform: none; }
