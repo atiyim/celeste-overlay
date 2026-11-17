@@ -36,44 +36,64 @@ function voice(): SpeechSynthesisVoice | null {
 }
 export const hasTurkishVoice = () => Boolean(voice());
 
-interface Props { text: string; mood: Mood; speak: boolean; playing: boolean; onDone?: () => void; small?: boolean }
+interface Props {
+  text: string;
+  mood: Mood;
+  /** Sesli oku (Türkçe ses varsa). Yalnızca playing açıkken konuşur. */
+  speak: boolean;
+  /** Anlatım akıyor mu: kapalıyken ses susar ve sonraki adıma geçilmez. */
+  playing: boolean;
+  onDone?: () => void;
+  small?: boolean;
+}
 
 export function Narrator({ text, mood, speak, playing, onDone, small }: Props) {
   const [n, setN] = useState(0);
+  const [spoken, setSpoken] = useState(false);
   const head = useRef<HTMLDivElement>(null);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
+  const typed = n >= text.length;
 
+  // Yazma efekti yalnızca metin değişince baştan başlar; duraklatıp devam etmek metni yeniden yazdırmaz.
   useEffect(() => {
     setN(0);
     let i = 0;
-    let spoken = false;
-    let finished = false;
-    const finish = () => { if (finished) return; finished = true; if (playing) window.setTimeout(() => doneRef.current?.(), 1400); };
-    const v = speak ? voice() : null;
-    if (v && typeof speechSynthesis !== "undefined") {
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.voice = v; u.lang = v.lang; u.rate = 1.04; u.pitch = 1.25;
-      u.onend = () => { spoken = true; finish(); };
-      speechSynthesis.speak(u);
-    }
     const id = window.setInterval(() => {
       i = Math.min(text.length, i + 2);
       setN(i);
-      const el = head.current?.querySelector(".mascot");
-      if (el) el.setAttribute("data-mouth", i >= text.length ? "0" : String((i >> 1) % 3));
-      if (i >= text.length) { window.clearInterval(id); if (!v || spoken) window.setTimeout(finish, Math.min(2600, 600 + text.length * 18)); }
+      head.current?.querySelector(".mascot")?.setAttribute("data-mouth", i >= text.length ? "0" : String((i >> 1) % 3));
+      if (i >= text.length) window.clearInterval(id);
     }, 34);
-    return () => { window.clearInterval(id); if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel(); };
-  }, [text, speak, playing]);
+    return () => window.clearInterval(id);
+  }, [text]);
+
+  // Ses: yalnızca oynatılırken. Duraklatınca hemen susar, devam edince cümleyi baştan okur.
+  const v = speak ? voice() : null;
+  useEffect(() => {
+    setSpoken(false);
+    if (!v || !playing || typeof speechSynthesis === "undefined") return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.voice = v; u.lang = v.lang; u.rate = 1.04; u.pitch = 1.25;
+    u.onend = () => setSpoken(true);
+    speechSynthesis.speak(u);
+    return () => speechSynthesis.cancel();
+  }, [text, v, playing]);
+
+  // Sonraki adıma geçiş: oynatılıyorsa, yazı bittiyse ve (ses varsa) okuma bittiyse kısa bir nefesten sonra.
+  useEffect(() => {
+    if (!playing || !typed || (v && !spoken)) return;
+    const id = window.setTimeout(() => doneRef.current?.(), v ? 900 : Math.min(2600, 600 + text.length * 18));
+    return () => window.clearTimeout(id);
+  }, [playing, typed, spoken, v, text]);
 
   return (
     <div className={`lnar${small ? " small" : ""}`} aria-live="polite">
       <div className="lnar-head" ref={head}><Mascot mood={mood} /></div>
       <div className="lnar-bub" key={text}>
         <span className="lnar-name" aria-hidden="true"><i />Celeste</span>
-        <span className="lnar-txt">{text.slice(0, n)}<i className={n < text.length ? "lnar-caret" : "lnar-caret off"} /></span>
+        <span className="lnar-txt">{text.slice(0, n)}<i className={typed ? "lnar-caret off" : "lnar-caret"} /></span>
         <span className="lnar-ghost" aria-hidden="true">{text}</span>
         <svg className="lnar-tail" viewBox="0 0 12 18" aria-hidden="true"><path className="f" d="M7 0 Q6 13 0 18 L12 18 L12 0 Z" /><path className="s" d="M7 0 Q6 13 0 18 L12 18" /></svg>
         <span className="lnar-tw a" aria-hidden="true" /><span className="lnar-tw b" aria-hidden="true" />

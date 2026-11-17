@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import type { Assets, MapInfo } from "../assets";
 import { Icon } from "../icons";
 import type { Mood } from "../Mascot";
 import { imgUrl, kindName, siteName, type Lineup, type Pt } from "./api";
 import { abilityOf, MapBoard } from "./MapBoard";
 import { Narrator } from "./Narrator";
-import { valUpper } from "./upper";
-import { dailyThree, dueCards, keepDaily, getMe, grade, level, markTried, mastered, rankOf, streak, useMe } from "./store";
+import { dailyThree, dueCards, keepDaily, getMe, grade, level, markTried, mastered, patchMe, rankOf, streak, today, useMe } from "./store";
 
 /* Öğren: günün üç lineup'ı, kart kart tekrar (aralıklı), "Nereye düşer?" sınavı, özel oyun planı ve ustalık.
    Her şey bu bilgisayarda tutulur. */
@@ -23,11 +22,28 @@ interface Props {
   maps: MapInfo[];
   mapId: string;
   agentId: string;
+  onMap: (id: string) => void;
+  onAgent: (id: string) => void;
   onOpen: (id: string) => void;
   onToast: (t: string) => void;
 }
 
-export function Practice({ list, assets, maps, mapId, agentId, onOpen, onToast }: Props) {
+const DAYS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+
+function Ring({ v, size = 64, stroke = 6, children }: { v: number; size?: number; stroke?: number; children?: ReactNode }) {
+  const r = (size - stroke) / 2, c = 2 * Math.PI * r;
+  return (
+    <span className="lrn-ring" style={{ width: size, height: size }}>
+      <svg viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+        <circle cx={size / 2} cy={size / 2} r={r} strokeWidth={stroke} className="bg" />
+        <circle cx={size / 2} cy={size / 2} r={r} strokeWidth={stroke} className="fg" strokeDasharray={c} strokeDashoffset={c * (1 - Math.max(0, Math.min(1, v)))} />
+      </svg>
+      <span>{children}</span>
+    </span>
+  );
+}
+
+export function Practice({ list, assets, maps, mapId, agentId, onMap, onAgent, onOpen, onToast }: Props) {
   const me = useMe();
   const [mode, setMode] = useState<Mode>("home");
   const pool = useMemo(() => list.filter((l) => (!mapId || l.map === mapId) && (!agentId || l.agent === agentId)), [list, mapId, agentId]);
@@ -37,40 +53,61 @@ export function Practice({ list, assets, maps, mapId, agentId, onOpen, onToast }
   const st = streak(me);
   const doneCount = list.filter((l) => mastered(l.id)).length;
   const dueN = dueCards(pool).length;
+  const quizN = pool.filter((l) => l.steps.some((s) => s.img)).length;
+
+  // Bu haftanın günleri (Pazartesi başlar) ve pratik yapılanlar.
+  const week = useMemo(() => {
+    const now = Date.now();
+    const dow = (new Date(now + 3 * 3_600_000).getUTCDay() + 6) % 7;
+    return DAYS.map((n, i) => { const d = today(now + (i - dow) * 86_400_000); return { n, on: me.days.includes(d), now: i === dow, future: i > dow }; });
+  }, [me.days]);
 
   if (mode === "cards") return <Flash pool={pool} assets={assets} maps={maps} onBack={() => setMode("home")} onToast={onToast} />;
   if (mode === "quiz") return <Quiz pool={pool} assets={assets} maps={maps} onBack={() => setMode("home")} onToast={onToast} />;
   if (mode === "plan") return <Plan pool={pool} assets={assets} maps={maps} onBack={() => setMode("home")} onOpen={onOpen} />;
 
+  const agentIds = [...new Set(list.map((l) => l.agent))];
   return (
-    <div className="lp">
-      <div className="lp-hero">
-        <div className="lp-lv">
-          <span className="lp-badge"><b>{lv.lv}</b><small>Seviye</small></span>
+    <div className="lrn">
+      <section className="lrn-hero">
+        <div className="lrn-lv">
+          <Ring v={lv.into / lv.need} size={72} stroke={6}><b>{lv.lv}</b><small>Seviye</small></Ring>
           <div>
             <strong>{rankOf(lv.lv)}</strong>
-            <div className="lp-xp"><i style={{ width: `${(lv.into / lv.need) * 100}%` }} /></div>
-            <small>{lv.into} / {lv.need} XP · toplam {me.xp}</small>
+            <small>{lv.need - lv.into} XP sonra seviye {lv.lv + 1}</small>
+            <small className="dim">Toplam {me.xp} XP</small>
           </div>
         </div>
-        <div className={`lp-st${st ? " on" : ""}`}><Icon name="bolt" size={18} /><b>{st}</b><small>günlük seri</small></div>
-        <div className="lp-st"><Icon name="check" size={18} /><b>{doneCount}</b><small>öğrendiğin</small></div>
-      </div>
+        <div className="lrn-week">
+          <div className="lrn-week-h"><Icon name="flame" size={15} /><b>{st}</b><small>{st ? "günlük seri" : "Bugün başla, seri başlasın"}</small></div>
+          <ol>{week.map((d) => <li key={d.n} className={`${d.on ? "on" : ""}${d.now ? " now" : ""}${d.future ? " fut" : ""}`}><i>{d.on && <Icon name="check" size={11} />}</i><small>{d.n}</small></li>)}</ol>
+        </div>
+        <div className="lrn-done">
+          <Ring v={doneCount / Math.max(1, list.length)} size={56} stroke={5}><b>{doneCount}</b></Ring>
+          <span><b>Öğrendiğin</b><small>{list.length} lineup'tan</small></span>
+        </div>
+      </section>
 
-      <section className="lp-daily">
-        <h4><Icon name="spark" size={15} />Günün 3 lineup'ı <small>{daily.done.length}/{daily.ids.length} · hepsini bitir, +25 XP</small></h4>
-        <div className="lp-dgrid">
+      <section className="lrn-sec">
+        <header>
+          <h4>Günün üçü</h4>
+          <span className="lrn-pill">{daily.done.length}/{daily.ids.length || 3}<i style={{ width: `${(daily.done.length / Math.max(1, daily.ids.length)) * 100}%` }} /></span>
+          <small>Hepsini bitir, +25 XP</small>
+        </header>
+        <div className="lrn-daily">
           {daily.ids.map((id, i) => {
             const l = list.find((x) => x.id === id);
             if (!l) return null;
             const ab = abilityOf(assets, l);
             const ok = daily.done.includes(id);
             const map = maps.find((m) => m.uuid === l.map);
+            const ag = assets?.agents.get(l.agent);
             return (
-              <button key={id} type="button" className={`lp-dc${ok ? " ok" : ""}`} onClick={() => onOpen(id)} style={{ animationDelay: `${i * 70}ms`, ...(map?.banner ? { "--bg": `url(${map.banner})` } : {}) } as CSSProperties}>
-                <span className="lp-dc-ab">{ab?.icon && <img src={ab.icon} alt="" />}</span>
-                <span className="lp-dc-t"><b>{valUpper(l.title)}</b><small>{map?.name} · {assets?.agents.get(l.agent)?.name} · {kindName(l.kind)}</small></span>
-                <span className="lp-dc-ok">{ok ? <Icon name="check" size={16} /> : <Icon name="play" size={14} />}</span>
+              <button key={id} type="button" className={`lrn-dc ${l.side}${ok ? " ok" : ""}`} onClick={() => onOpen(id)} style={{ animationDelay: `${i * 70}ms`, ...(map?.splash || map?.banner ? { "--bg": `url("${map.splash ?? map.banner}")` } : {}) } as CSSProperties}>
+                <span className="lrn-dc-top"><em>{i + 1}</em><span className="lrn-dc-st">{ok ? <><Icon name="check" size={12} />Tamam</> : "Başla"}</span></span>
+                <span className="lrn-dc-ab">{ab?.icon && <img src={ab.icon} alt="" />}</span>
+                <b>{l.title}</b>
+                <small>{ag?.icon && <img src={ag.icon} alt="" />}{ag?.name} · {map?.name}</small>
               </button>
             );
           })}
@@ -78,36 +115,61 @@ export function Practice({ list, assets, maps, mapId, agentId, onOpen, onToast }
         </div>
       </section>
 
-      <div className="lp-modes">
-        <button type="button" className="lp-mode m1" onClick={() => setMode("cards")} disabled={!pool.length}>
-          <span className="lp-mi"><Icon name="layers" size={22} /></span>
-          <b>Kart kart tekrar</b>
-          <small>Duracağın yeri görürsün, nişan noktasını hatırlarsın. Bildiklerin seyrekleşir, bilemediklerin sık gelir.</small>
-          {dueN > 0 && <em>{dueN} kart tekrar bekliyor</em>}
-        </button>
-        <button type="button" className="lp-mode m2" onClick={() => setMode("quiz")} disabled={!pool.some((l) => l.steps.some((s) => s.img))}>
-          <span className="lp-mi"><Icon name="target" size={22} /></span>
-          <b>Nereye düşer?</b>
-          <small>Nişan görselini görürsün, haritada nereye düşeceğine tıklarsın. Ne kadar yakınsa o kadar XP.</small>
-        </button>
-        <button type="button" className="lp-mode m3" onClick={() => setMode("plan")} disabled={!pool.length}>
-          <span className="lp-mi"><Icon name="play" size={22} /></span>
-          <b>Özel oyun planı</b>
-          <small>Özel oyunda sırayla deneyeceğin lineup listesi. Denediklerini işaretle.</small>
-        </button>
-      </div>
+      <section className="lrn-sec">
+        <header>
+          <h4>Çalış</h4>
+          <span className="lrn-filter">
+            <select className="lu-sel" value={mapId} onChange={(e) => onMap(e.target.value)} aria-label="Harita"><option value="">Bütün haritalar</option>{maps.filter((m) => list.some((l) => l.map === m.uuid)).map((m) => <option key={m.uuid} value={m.uuid}>{m.name}</option>)}</select>
+            <select className="lu-sel" value={agentId} onChange={(e) => onAgent(e.target.value)} aria-label="Ajan"><option value="">Bütün ajanlar</option>{agentIds.map((id) => <option key={id} value={id}>{assets?.agents.get(id)?.name ?? id}</option>)}</select>
+          </span>
+        </header>
+        <div className="lrn-modes">
+          <button type="button" className="lrn-mode m1" onClick={() => setMode("cards")} disabled={!pool.length}>
+            <span className="lrn-mi"><Icon name="layers" size={20} /></span>
+            <b>Kart kart tekrar</b>
+            <small>Duracağın yeri gör, nişan noktasını hatırla.</small>
+            <em>{dueN ? `${dueN} kart bekliyor` : `${Math.min(12, pool.length)} kart`}<Icon name="chevron" size={12} /></em>
+          </button>
+          <button type="button" className="lrn-mode m2" onClick={() => setMode("quiz")} disabled={!quizN}>
+            <span className="lrn-mi"><Icon name="target" size={20} /></span>
+            <b>Nereye düşer?</b>
+            <small>Nişan görseline bak, haritada düşeceği yere tıkla.</small>
+            <em>{Math.min(8, quizN)} soru<Icon name="chevron" size={12} /></em>
+          </button>
+          <button type="button" className="lrn-mode m3" onClick={() => setMode("plan")} disabled={!pool.length}>
+            <span className="lrn-mi"><Icon name="play" size={20} /></span>
+            <b>Özel oyun planı</b>
+            <small>Özel oyunda sırayla dene, olanları işaretle.</small>
+            <em>{Math.min(6, pool.length)} lineup<Icon name="chevron" size={12} /></em>
+          </button>
+        </div>
+      </section>
 
-      <section className="lp-mastery">
-        <h4><Icon name="chart" size={15} />Ustalık</h4>
-        <div className="lp-mgrid">
+      <section className="lrn-sec">
+        <header>
+          <h4>Ajanlarım</h4>
+          <small>Günün üçü önce bu ajanlardan seçilir</small>
+        </header>
+        <div className="lrn-mains">
+          {agentIds.map((id) => {
+            const a = assets?.agents.get(id);
+            const on = me.mains.includes(id);
+            return <button key={id} type="button" className={on ? "on" : ""} onClick={() => patchMe({ mains: on ? me.mains.filter((x) => x !== id) : [...me.mains, id] })} aria-pressed={on}><img src={a?.icon} alt="" /><span>{a?.name}</span></button>;
+          })}
+        </div>
+      </section>
+
+      <section className="lrn-sec">
+        <header><h4>Harita ustalığı</h4></header>
+        <div className="lrn-maps">
           {maps.filter((m) => list.some((l) => l.map === m.uuid)).map((m) => {
             const all = list.filter((l) => l.map === m.uuid);
             const n = all.filter((l) => mastered(l.id)).length;
             return (
-              <div key={m.uuid} className="lp-m" style={m.banner ? ({ "--bg": `url(${m.banner})` } as CSSProperties) : undefined}>
-                <b>{m.name}</b><small>{n}/{all.length}</small>
-                <span className="lp-mbar"><i style={{ width: `${(n / Math.max(1, all.length)) * 100}%` }} /></span>
-              </div>
+              <button key={m.uuid} type="button" className="lrn-m" onClick={() => onMap(m.uuid)} style={m.banner ? ({ "--bg": `url("${m.banner}")` } as CSSProperties) : undefined}>
+                <span><b>{m.name}</b><small>{n} / {all.length} öğrenildi</small></span>
+                <Ring v={n / Math.max(1, all.length)} size={38} stroke={4}><small>{Math.round((n / Math.max(1, all.length)) * 100)}</small></Ring>
+              </button>
             );
           })}
         </div>
@@ -265,7 +327,7 @@ function Plan({ pool, assets, maps, onBack, onOpen }: { pool: Lineup[]; assets: 
             <div key={l.id} className={`lp-pi${ok ? " ok" : ""}`} style={{ animationDelay: `${i * 60}ms` }}>
               <button type="button" className="lp-chk" onClick={() => { markTried(l.id); if (!ok) grade(l.id, true); }} aria-pressed={ok} aria-label="Denedim">{ok && <Icon name="check" size={14} />}</button>
               {ab?.icon && <img src={ab.icon} alt="" />}
-              <span><b>{valUpper(l.title)}</b><small>{siteName(l.site)} · {kindName(l.kind)} · {l.diff === 1 ? "Kolay" : l.diff === 2 ? "Orta" : "Zor"}</small></span>
+              <span><b>{l.title}</b><small>{siteName(l.site)} · {kindName(l.kind)} · {l.diff === 1 ? "Kolay" : l.diff === 2 ? "Orta" : "Zor"}</small></span>
               <button type="button" className="x" onClick={() => onOpen(l.id)}>Aç</button>
             </div>
           );

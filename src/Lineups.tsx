@@ -3,7 +3,7 @@ import type { Assets, MapInfo } from "./assets";
 import { Icon, type IconName } from "./icons";
 import { useMe as useFeedMe } from "./vip";
 import { CloseButton, Empty } from "./ui";
-import { adminLineups, DIFFS, kindName, KINDS, myLineups, refreshLineups, SIDES, siteName, SITES, SLOT_KEY, useLineups, type Lineup, type LineupDraft, type Side } from "./lineups/api";
+import { adminLineups, DIFFS, kindName, KINDS, myLineups, refreshLineups, SIDES, siteName, sitesFor, SLOT_KEY, useLineups, type Lineup, type LineupDraft, type Side } from "./lineups/api";
 import { Editor } from "./lineups/Editor";
 import { LineupView, patchState } from "./lineups/LineupView";
 import { abilityOf, MapBoard } from "./lineups/MapBoard";
@@ -11,7 +11,6 @@ import { hasTurkishVoice, Narrator } from "./lineups/Narrator";
 import { Practice } from "./lineups/Practice";
 import { addFavs, mastered, patchMe, readCode, shareCode, streak, useMe } from "./lineups/store";
 import "./lineups/lineups.css";
-import { nameUpper, valUpper } from "./lineups/upper";
 
 /* Lineup: Celeste'nin ve topluluğun lineup kütüphanesi.
    Keşfet: harita + liste, filtreler. Öğren: günün üçü, tekrar kartları, sınav, özel oyun planı. Setim: kendi listen ve
@@ -106,7 +105,7 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
     <div className="lu-head">
       <div className="lu-title">
         <span className="lu-logo"><Icon name="map" size={18} /></span>
-        <div><h2>{valUpper("Lineup")}</h2><small>{list.length ? `${list.length} lineup · ${new Set(list.map((l) => l.map)).size} harita` : "Kütüphane"}</small></div>
+        <div><h2>Lineup</h2><small>{list.length ? `${list.length} lineup · ${new Set(list.map((l) => l.map)).size} harita` : "Kütüphane"}</small></div>
       </div>
       <div className="lu-tabs" role="tablist">
         {TABS.filter(([id]) => id !== "mod" || admin).map(([id, n, ic]) => (
@@ -117,21 +116,15 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
         ))}
       </div>
       <div className="lu-hr">
-        <span className="lu-mode seg" title="Lineup'ları kim anlatsın?">
-          <button type="button" className={me.mode === "celeste" ? "on" : ""} onClick={() => patchMe({ mode: "celeste" })}>Celeste anlatsın</button>
-          <button type="button" className={me.mode === "self" ? "on" : ""} onClick={() => patchMe({ mode: "self" })}>Kendim bakarım</button>
-        </span>
-        {me.mode === "celeste" && hasTurkishVoice() && (
-          <button type="button" className={`ib${me.voice ? " on" : ""}`} onClick={() => patchMe({ voice: !me.voice })} title={me.voice ? "Sesli anlatım açık" : "Sesli anlatım kapalı"} aria-pressed={me.voice}><Icon name={me.voice ? "volume" : "mute"} size={16} /></button>
-        )}
-        <button type="button" className="x go lu-add" onClick={() => setEdit({ editing: null, start: { map: mapId, agent: agentId || undefined } })}><Icon name="plus" size={14} />Lineup ekle</button>
+        <button type="button" className="lu-add" onClick={() => setEdit({ editing: null, start: { map: mapId, agent: agentId || undefined } })}><Icon name="plus" size={14} />Lineup ekle</button>
+        <Prefs />
         <CloseButton onClick={onClose} />
       </div>
     </div>
   );
 
   return (
-    <div className="lu panel fade">
+    <div className={`lu panel fade${tab === "lib" && !openOne ? " fill" : ""}`}>
       {head}
       {!me.seenIntro && (
         <div className="lu-intro">
@@ -162,89 +155,75 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
             {maps.map((m) => {
               const n = list.filter((l) => l.map === m.uuid).length;
               return (
-                <button key={m.uuid} type="button" role="option" aria-selected={mapId === m.uuid} className={`lu-map${mapId === m.uuid ? " on" : ""}${n ? "" : " empty"}`} onClick={() => { setMapId(m.uuid); setAgentId(""); setHover(null); }} style={m.banner ? ({ "--bg": `url(${m.banner})` } as CSSProperties) : undefined}>
-                  {mapId === m.uuid && <i className="lw-tick"><Icon name="check" size={12} /></i>}
-                  <b>{nameUpper(m.name)}</b>{n > 0 && <small>{n}</small>}
+                <button key={m.uuid} type="button" role="option" aria-selected={mapId === m.uuid} className={`lu-map${mapId === m.uuid ? " on" : ""}${n ? "" : " empty"}`} onClick={() => { setMapId(m.uuid); setAgentId(""); setSite(""); setHover(null); }} style={m.banner ? ({ "--bg": `url("${m.banner}")` } as CSSProperties) : undefined}>
+                  <b>{m.name}</b>{n > 0 && <small>{n}</small>}
                 </button>
               );
             })}
-          </div>
-
-          <div className="lu-filters">
-            <div className="lu-agents">
-              <button type="button" className={`lu-ag all${!agentId ? " on" : ""}`} onClick={() => setAgentId("")}><span>Tümü</span><small>{onMap.length}</small></button>
-              {agentsHere.map(([id, n]) => {
-                const a = assets?.agents.get(id);
-                return (
-                  <button key={id} type="button" className={`lu-ag${agentId === id ? " on" : ""}`} onClick={() => setAgentId(agentId === id ? "" : id)} title={a?.name}>
-                    <img src={a?.icon} alt="" /><small>{n}</small>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="lu-chips">
-              <span className="seg">{([["", "Tümü"], ...SIDES] as [string, string][]).map(([id, n]) => <button key={id || "all"} type="button" className={side === id ? "on" : ""} onClick={() => setSide(id as Side | "")}>{n}</button>)}</span>
-              <span className="seg">{SITES.map(([id, n]) => <button key={id} type="button" className={site === id ? "on" : ""} onClick={() => setSite(site === id ? "" : id)}>{n}</button>)}</span>
-              <select className="lu-sel" value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Durum">
-                <option value="">Her durum</option>
-                {KINDS.map(([id, n]) => <option key={id} value={id}>{n}</option>)}
-              </select>
-              <select className="lu-sel" value={diff} onChange={(e) => setDiff(Number(e.target.value))} aria-label="Zorluk">
-                <option value={0}>Her zorluk</option>
-                {DIFFS.map(([id, n]) => <option key={id} value={id}>{n}</option>)}
-              </select>
-              <label className="lu-search"><Icon name="search" size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.stopPropagation()} placeholder="Ara" /></label>
-              <button type="button" className={`ib${onlySet ? " on" : ""}`} onClick={() => setOnlySet(!onlySet)} title="Yalnızca Setim" aria-pressed={onlySet}><Icon name="star" size={15} /></button>
-              <button type="button" className={`ib${callouts ? " on" : ""}`} onClick={() => setCallouts(!callouts)} title="Bölge adları" aria-pressed={callouts}><Icon name="text" size={15} /></button>
-            </div>
           </div>
 
           {error && !list.length ? (
             <Empty title="Kütüphane açılamadı" text={error} tone="err" onRetry={() => void refreshLineups(true)} />
           ) : (
             <div className="lu-main">
-              {map ? (
-                <div className="lu-board">
-                  <div className="lu-hero" key={map.uuid} style={map.splash || map.banner ? ({ "--bg": `url(${map.splash ?? map.banner})` } as CSSProperties) : undefined}>
-                    <div><small>Seçili harita</small><b>{nameUpper(map.name)}</b></div>
-                    <span>{onMap.length} lineup · {agentsHere.length} ajan</span>
+              <div className="lu-board">
+                {map && <MapBoard map={map} assets={assets} lineups={shown} hover={hover} onHover={setHover} onPick={(id) => setOpen(id)} callouts={callouts} done={mastered} />}
+                <div className="lu-board-foot">
+                  <span><i className="lgd land atk" />Saldırı</span><span><i className="lgd land def" />Savunma</span>
+                  <button type="button" className={`lu-tg${callouts ? " on" : ""}`} onClick={() => setCallouts(!callouts)} aria-pressed={callouts}><Icon name="text" size={13} />Bölge adları</button>
+                </div>
+              </div>
+
+              <div className="lu-side">
+                <div className="lu-filters">
+                  <div className="lu-agents">
+                    <button type="button" className={`lu-ag all${!agentId ? " on" : ""}`} onClick={() => setAgentId("")}>Tümü</button>
+                    {agentsHere.map(([id, n]) => {
+                      const a = assets?.agents.get(id);
+                      return (
+                        <button key={id} type="button" className={`lu-ag${agentId === id ? " on" : ""}`} onClick={() => setAgentId(agentId === id ? "" : id)} title={`${a?.name ?? ""} · ${n}`}>
+                          <img src={a?.icon} alt="" />
+                        </button>
+                      );
+                    })}
                   </div>
-                  <MapBoard map={map} assets={assets} lineups={shown} hover={hover} onHover={setHover} onPick={(id) => setOpen(id)} callouts={callouts} done={mastered} />
-                  <div className="lu-board-foot">
-                    <span><i className="lgd land atk" />Saldırı</span><span><i className="lgd land def" />Savunma</span>
-                    <small>Simgeye tıkla · tekerlekle yakınlaş</small>
+                  <div className="lu-chips">
+                    <span className="lu-seg">{([["", "Hepsi"], ...SIDES] as [string, string][]).map(([id, n]) => <button key={id || "all"} type="button" className={side === id ? "on" : ""} onClick={() => setSide(id as Side | "")}>{n}</button>)}</span>
+                    <span className="lu-seg">{sitesFor(map).map(([id, n]) => <button key={id} type="button" className={site === id ? "on" : ""} onClick={() => setSite(site === id ? "" : id)}>{n}</button>)}</span>
+                    <select className="lu-sel" value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Durum">
+                      <option value="">Her durum</option>
+                      {KINDS.map(([id, n]) => <option key={id} value={id}>{n}</option>)}
+                    </select>
+                    <select className="lu-sel" value={diff} onChange={(e) => setDiff(Number(e.target.value))} aria-label="Zorluk">
+                      <option value={0}>Her zorluk</option>
+                      {DIFFS.map(([id, n]) => <option key={id} value={id}>{n}</option>)}
+                    </select>
+                    <label className="lu-search"><Icon name="search" size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.stopPropagation()} placeholder="Ara" /></label>
+                    <button type="button" className={`lu-tg${onlySet ? " on" : ""}`} onClick={() => setOnlySet(!onlySet)} aria-pressed={onlySet}><Icon name="star" size={13} />Setim</button>
                   </div>
                 </div>
-              ) : <div className="lu-board" />}
-              <div className="lu-list">
-                {(shown.length > 0 || filtered) && (
-                  <div className="lu-list-h">
-                    <b>{shown.length} lineup{filtered && onMap.length !== shown.length ? ` / ${onMap.length}` : ""}</b>
-                    {filtered && <button type="button" onClick={clearFilters}><Icon name="x" size={12} />Filtreleri temizle</button>}
-                  </div>
-                )}
-                {loading && !list.length && Array.from({ length: 4 }, (_, i) => <div key={i} className="lu-card sk" />)}
-                {!loading && !shown.length && (
-                  <div className="lu-none">
-                    <Narrator text={onMap.length ? "Bu filtrelerle bir şey bulamadım. Filtreleri biraz gevşetelim mi?" : `${map?.name ?? "Bu harita"} için henüz lineup yok. İlkini sen eklersen adın kütüphanede yazar!`} mood={onMap.length ? "surprised" : "wink"} speak={false} playing={false} small />
-                    {!onMap.length ? <button type="button" className="x go" onClick={() => setEdit({ editing: null, start: { map: mapId } })}><Icon name="plus" size={14} />İlk lineup'ı ekle</button>
-                      : <button type="button" className="x" onClick={clearFilters}>Filtreleri temizle</button>}
-                  </div>
-                )}
-                {shown.map((l, i) => <LineupCard key={l.id} l={l} assets={assets} i={i} hover={hover === l.id} fav={me.fav.includes(l.id)} learned={mastered(l.id)} onHover={setHover} onOpen={() => setOpen(l.id)} />)}
+
+                <div className="lu-list-h">
+                  <b>{shown.length} lineup{filtered && onMap.length !== shown.length ? <small> / {onMap.length}</small> : null}</b>
+                  {filtered && <button type="button" onClick={clearFilters}>Filtreleri temizle</button>}
+                </div>
+                <div className="lu-list">
+                  {loading && !list.length && Array.from({ length: 4 }, (_, i) => <div key={i} className="lu-card sk" />)}
+                  {!loading && !shown.length && (
+                    <div className="lu-none">
+                      <Narrator text={onMap.length ? "Bu filtrelerle bir şey bulamadım. Biraz gevşetelim mi?" : `${map?.name ?? "Bu harita"} için henüz lineup yok. İlkini sen eklersen adın kütüphanede yazar!`} mood={onMap.length ? "surprised" : "wink"} speak={false} playing={false} small />
+                      {!onMap.length ? <button type="button" className="lu-add" onClick={() => setEdit({ editing: null, start: { map: mapId } })}><Icon name="plus" size={14} />İlk lineup'ı ekle</button>
+                        : <button type="button" className="ld-ghost" onClick={clearFilters}>Filtreleri temizle</button>}
+                    </div>
+                  )}
+                  {shown.map((l, i) => <LineupCard key={l.id} l={l} assets={assets} i={i} hover={hover === l.id} fav={me.fav.includes(l.id)} learned={mastered(l.id)} onHover={setHover} onOpen={() => setOpen(l.id)} />)}
+                </div>
               </div>
             </div>
           )}
         </div>
       ) : tab === "learn" ? (
-        <div className="lu-learn">
-          <div className="lu-chips">
-            <select className="lu-sel" value={mapId} onChange={(e) => setMapId(e.target.value)} aria-label="Harita"><option value="">Bütün haritalar</option>{maps.filter((m) => list.some((l) => l.map === m.uuid)).map((m) => <option key={m.uuid} value={m.uuid}>{m.name}</option>)}</select>
-            <select className="lu-sel" value={agentId} onChange={(e) => setAgentId(e.target.value)} aria-label="Ajan"><option value="">Bütün ajanlar</option>{[...new Set(list.map((l) => l.agent))].map((id) => <option key={id} value={id}>{assets?.agents.get(id)?.name ?? id}</option>)}</select>
-            <MainsPicker assets={assets} list={list} />
-          </div>
-          <Practice list={list} assets={assets} maps={maps} mapId={mapId} agentId={agentId} onOpen={go} onToast={onToast} />
-        </div>
+        <Practice list={list} assets={assets} maps={maps} mapId={mapId} agentId={agentId} onMap={setMapId} onAgent={setAgentId} onOpen={go} onToast={onToast} />
       ) : tab === "set" ? (
         <MySet list={list} assets={assets} maps={maps} onOpen={go} onToast={onToast} />
       ) : tab === "com" ? (
@@ -258,6 +237,47 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
 
 /* ------------------------------------------------------------------ */
 
+/** Anlatım tercihleri: üst şeritte yer kaplamasın diye küçük bir açılır menüde. */
+function Prefs() {
+  const me = useMe();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const off = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("mousedown", off);
+    window.addEventListener("keydown", esc);
+    return () => { window.removeEventListener("mousedown", off); window.removeEventListener("keydown", esc); };
+  }, [open]);
+  const voice = hasTurkishVoice();
+  return (
+    <div className="lu-prefs" ref={ref}>
+      <button type="button" className={`lu-pbtn${open ? " on" : ""}`} onClick={() => setOpen(!open)} aria-expanded={open} title="Anlatım">
+        <Icon name={me.mode === "celeste" ? "chat" : "eye"} size={15} /><span>{me.mode === "celeste" ? "Celeste anlatır" : "Kendim bakarım"}</span><Icon name="chevron" size={12} />
+      </button>
+      {open && (
+        <div className="lu-pop" role="menu">
+          <small>Lineup'ları kim anlatsın?</small>
+          <button type="button" role="menuitemradio" aria-checked={me.mode === "celeste"} className={me.mode === "celeste" ? "on" : ""} onClick={() => patchMe({ mode: "celeste" })}>
+            <Icon name="chat" size={15} /><span><b>Celeste anlatsın</b><small>Adım adım, kendiliğinden ilerler</small></span>
+          </button>
+          <button type="button" role="menuitemradio" aria-checked={me.mode === "self"} className={me.mode === "self" ? "on" : ""} onClick={() => patchMe({ mode: "self" })}>
+            <Icon name="eye" size={15} /><span><b>Kendim bakarım</b><small>Adımları sen geçersin</small></span>
+          </button>
+          {me.mode === "celeste" && (
+            <label className={`lu-pv${voice ? "" : " off"}`}>
+              <span><b>Sesli anlatım</b><small>{voice ? "Celeste metni okur" : "Bilgisayarda Türkçe ses yok"}</small></span>
+              <input type="checkbox" checked={me.voice && voice} disabled={!voice} onChange={() => patchMe({ voice: !me.voice })} />
+              <i />
+            </label>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LineupCard({ l, assets, i, hover, fav, learned, onHover, onOpen }: { l: Lineup; assets: Assets | null; i: number; hover: boolean; fav: boolean; learned: boolean; onHover: (id: string | null) => void; onOpen: () => void }) {
   const ab = abilityOf(assets, l);
   const agent = assets?.agents.get(l.agent);
@@ -267,7 +287,7 @@ function LineupCard({ l, assets, i, hover, fav, learned, onHover, onOpen }: { l:
       onMouseEnter={() => onHover(l.id)} onMouseLeave={() => onHover(null)} onFocus={() => onHover(l.id)} onClick={onOpen}>
       <span className="lu-card-ab">{ab?.icon ? <img src={ab.icon} alt="" /> : null}<kbd>{SLOT_KEY[l.slot]}</kbd></span>
       <span className="lu-card-b">
-        <b>{valUpper(l.title)}</b>
+        <b>{l.title}</b>
         <small>
           {agent && <img src={agent.icon} alt="" />}
           {agent?.name} · {l.site ? `${siteName(l.site)} · ` : ""}{kindName(l.kind)}
@@ -285,21 +305,6 @@ function LineupCard({ l, assets, i, hover, fav, learned, onHover, onOpen }: { l:
         </span>
       </span>
     </button>
-  );
-}
-
-function MainsPicker({ assets, list }: { assets: Assets | null; list: Lineup[] }) {
-  const me = useMe();
-  const ids = [...new Set(list.map((l) => l.agent))];
-  return (
-    <span className="lu-mains" title="Ana ajanların: Günün 3 lineup'ı önce bunlardan seçilir">
-      <small>Ajanlarım</small>
-      {ids.map((id) => {
-        const a = assets?.agents.get(id);
-        const on = me.mains.includes(id);
-        return <button key={id} type="button" className={on ? "on" : ""} onClick={() => patchMe({ mains: on ? me.mains.filter((x) => x !== id) : [...me.mains, id] })} title={a?.name} aria-pressed={on}><img src={a?.icon} alt="" /></button>;
-      })}
-    </span>
   );
 }
 

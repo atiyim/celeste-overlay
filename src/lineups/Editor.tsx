@@ -3,10 +3,9 @@ import type { Assets } from "../assets";
 import { currentPatch } from "../assets";
 import { Icon } from "../icons";
 import type { Mood } from "../Mascot";
-import { DIFFS, editLineup, imgUrl, kindName, KINDS, parseYoutube, siteName, SIDES, SITES, SLOT_KEY, submitLineup, THROWS, uploadShot, type Lineup, type LineupDraft, type Pt, type Slot, type Step } from "./api";
+import { DIFFS, editLineup, imgUrl, kindName, KINDS, parseYoutube, siteName, SIDES, sitesFor, SLOT_KEY, submitLineup, THROWS, uploadShot, type Lineup, type LineupDraft, type Pt, type Slot, type Step } from "./api";
 import { MapBoard } from "./MapBoard";
 import { Narrator } from "./Narrator";
-import { nameUpper, valUpper } from "./upper";
 
 /* Lineup ekleme / düzenleme: beş kısa adım. Her adımda tek iş var; Celeste ne yapılacağını söyler,
    adım bitince sevinip bir sonrakini açar. Tamamlanan adımlar üstteki şeritte özet olarak kalır, tıklayınca geri dönülür.
@@ -187,7 +186,7 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
     <div className="led lw">
       <div className="led-top">
         <button type="button" className="lv-back" onClick={onCancel}><Icon name="chevron" size={16} />Vazgeç</button>
-        <h3>{valUpper(editing ? "Lineup düzenle" : "Yeni lineup")}</h3>
+        <h3>{editing ? "Lineup düzenle" : "Yeni lineup"}</h3>
         <span className="led-who">{admin ? <><Icon name="spark" size={13} />Doğrudan yayınlanır</> : <><Icon name="shield" size={13} />Yetkililer kontrol edip yayınlar</>}</span>
       </div>
 
@@ -243,15 +242,15 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
           <>
             <div className="led-maps">
               {maps.map((m) => (
-                <button key={m.uuid} type="button" className={`led-map${d.map === m.uuid ? " on" : ""}`} onClick={() => { if (d.map !== m.uuid) { up({ map: m.uuid, stand: null, land: null }); setPick("stand"); autoDone.current.delete(2); } }} style={m.banner ? ({ "--bg": `url(${m.banner})` } as CSSProperties) : undefined} aria-pressed={d.map === m.uuid}>
+                <button key={m.uuid} type="button" className={`led-map${d.map === m.uuid ? " on" : ""}`} onClick={() => { if (d.map !== m.uuid) { up({ map: m.uuid, stand: null, land: null, ...(d.site && d.site !== "mid" && !m.sites.includes(d.site) ? { site: "A" } : {}) }); setPick("stand"); autoDone.current.delete(2); } }} style={m.banner ? ({ "--bg": `url("${m.banner}")` } as CSSProperties) : undefined} aria-pressed={d.map === m.uuid}>
                   {d.map === m.uuid && <i className="lw-tick"><Icon name="check" size={12} /></i>}
-                  <span>{nameUpper(m.name)}</span>
+                  <span>{m.name}</span>
                 </button>
               ))}
             </div>
             <div className="lw-pairs">
               <div><h5>Taraf</h5><span className="seg">{SIDES.map(([id, n]) => <button key={id} type="button" className={d.side === id ? "on" : ""} onClick={() => up({ side: id })}>{n}</button>)}</span></div>
-              <div><h5>Site</h5><span className="seg">{SITES.map(([id, n]) => <button key={id} type="button" className={d.site === id ? "on" : ""} onClick={() => up({ site: d.site === id ? "" : id })}>{n}</button>)}</span></div>
+              <div><h5>Site</h5><span className="seg">{sitesFor(map).map(([id, n]) => <button key={id} type="button" className={d.site === id ? "on" : ""} onClick={() => up({ site: d.site === id ? "" : id })}>{n}</button>)}</span></div>
             </div>
             <div className="lw-sub">
               <h5>Ne zaman kullanılır</h5>
@@ -336,10 +335,10 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
             </div>
             <aside className={`lw-prev ${d.side}`} style={{ "--ag": agent?.colors?.[0] ?? "var(--accent)" } as CSSProperties}>
               <small>Önizleme</small>
-              <div className="lw-prev-card" style={map?.banner ? ({ "--bg": `url(${map.banner})` } as CSSProperties) : undefined}>
+              <div className="lw-prev-card" style={map?.banner ? ({ "--bg": `url("${map.banner}")` } as CSSProperties) : undefined}>
                 <span className="lu-card-ab">{ability?.icon ? <img src={ability.icon} alt="" /> : null}<kbd>{SLOT_KEY[d.slot]}</kbd></span>
                 <span className="lw-prev-t">
-                  <b>{valUpper(d.title.trim() || "Başlık")}</b>
+                  <b>{d.title.trim() || "Başlık"}</b>
                   <small>{agent?.name ?? "Ajan"} · {map?.name ?? "Harita"}{d.site ? ` · ${siteName(d.site)}` : ""}</small>
                   <small>{kindName(d.kind)} · {shots} görsel</small>
                 </span>

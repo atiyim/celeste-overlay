@@ -30,6 +30,8 @@ export interface Lineup extends Omit<LineupDraft, "stand" | "land"> {
 export const SLOT_KEY: Record<Slot, string> = { Grenade: "C", Ability1: "Q", Ability2: "E", Ultimate: "X" };
 export const SIDES: [Side, string][] = [["atk", "Saldırı"], ["def", "Savunma"]];
 export const SITES: [string, string][] = [["A", "A"], ["B", "B"], ["C", "C"], ["mid", "Orta"]];
+/** Haritada gerçekten olan siteler + Orta (Abyss'te C yok). Harita bilinmiyorsa hepsi. */
+export const sitesFor = (map?: { sites?: string[] } | null): [string, string][] => (map?.sites?.length ? [...map.sites.map((x): [string, string] => [x, x]), ["mid", "Orta"]] : SITES);
 export const KINDS: [Kind, string, string][] = [
   ["execute", "Giriş", "Siteye girmeden önce"],
   ["postplant", "Post-plant", "Spike kurulduktan sonra, çözmeyi engelle"],

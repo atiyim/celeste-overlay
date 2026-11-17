@@ -6,7 +6,6 @@ import { Icon } from "../icons";
 import { DIFFS, imgUrl, kindName, patchLineup, siteName, SLOT_KEY, throwName, voteLineup, type Lineup } from "./api";
 import { abilityOf, MapBoard } from "./MapBoard";
 import { narration, Narrator } from "./Narrator";
-import { nameUpper, valUpper } from "./upper";
 import { dailyDone, getMe, grade, markTried, seen, shareCode, toggleFav, useMe } from "./store";
 
 /* Lineup ayrıntısı: hikâye gibi adım adım. 1) haritada nerede dur, nereye düşer 2) ekran görüntülerinde nişan noktası
@@ -100,10 +99,19 @@ export function LineupView({ l, assets, map, votes, onVotes, canEdit, pos, onPre
   const s = slides[at]!;
   const step = s.kind === "step" ? l.steps[s.i!]! : null;
   const accent = agent?.colors?.[0] ?? "var(--accent)";
+  const celeste = me.mode === "celeste";
+  const go = (i: number) => { setPlaying(false); setAt(Math.max(0, Math.min(slides.length - 1, i))); };
+  const label = (x: Slide) => (x.kind === "map" ? "Yerini bul" : x.kind === "clip" ? "Klipte izle" : `${(x.i ?? 0) + 1}. adım`);
+  const sub = (x: Slide) => {
+    if (x.kind === "map") return "Haritada parlayan yerde dur";
+    if (x.kind === "clip") return l.clip ? `${l.clip.end - l.clip.start} saniyelik klip` : "";
+    const st = l.steps[x.i ?? 0];
+    return st?.text || (st?.aim ? "Halkaya nişan al" : "Görseldeki gibi dur");
+  };
 
   return (
-    <div className={`lv ${l.side}`} style={{ "--ag": accent } as CSSProperties}>
-      <div className="lv-top">
+    <div className={`ld ${l.side}`} style={{ "--ag": accent } as CSSProperties}>
+      <div className="ld-top">
         <button type="button" className="lv-back" onClick={onBack}><Icon name="chevron" size={16} />Kütüphane</button>
         {pos && pos.n > 1 && (
           <span className="lv-nav">
@@ -114,111 +122,120 @@ export function LineupView({ l, assets, map, votes, onVotes, canEdit, pos, onPre
         )}
       </div>
 
-      <header className="lv-head">
-        <span className="lv-ab">
-          {ab?.icon ? <img src={ab.icon} alt="" /> : null}
-          <kbd>{SLOT_KEY[l.slot]}</kbd>
-        </span>
-        <div className="lv-ttl">
-          <h3>{valUpper(l.title)}</h3>
-          <div className="lv-chips">
-            {agent && <span className="lc ag"><img src={agent.icon} alt="" />{nameUpper(agent.name)}</span>}
-            <span className="lc">{valUpper(ab?.name ?? l.slot)}</span>
-            <span className={`lc side ${l.side}`}>{l.side === "atk" ? "Saldırı" : "Savunma"}</span>
-            {l.site && <span className="lc">{siteName(l.site)}</span>}
-            <span className="lc">{kindName(l.kind)}</span>
-            <span className="lc">{throwName(l.throw)}</span>
-            <span className={`lc diff d${l.diff}`} title="Zorluk"><i /><i /><i />{DIFFS.find(([d]) => d === l.diff)?.[1]}</span>
-            {ps && <span className={`lc patch ${ps}`} title={ps === "now" ? "Bu yamada denendi" : "Eski bir yamada eklendi; değişmiş olabilir"}>Yama {l.patch}</span>}
-            {l.official ? <span className="lc off"><Icon name="spark" size={12} />Celeste</span> : <span className="lc">{l.by || "Topluluk"}</span>}
-            {card && card.box >= 3 && <span className="lc mast"><Icon name="check" size={12} />Öğrendin</span>}
+      <div className="ld-grid">
+        {/* sol: görsel */}
+        <div className="ld-media">
+          <div className="ld-slide" key={`${l.id}-${at}`}>
+            {s.kind === "map" && map && (
+              <div className="ld-map">
+                <MapBoard map={map} assets={assets} lineups={[l]} selected={l.id} focus compact />
+                <ul className="ld-legend">
+                  <li><span className={`lgd stand ${l.side}`} />Burada dur</li>
+                  <li><span className="lgd arc" />Atış yolu</li>
+                  <li><span className={`lgd land ${l.side}`} />Buraya düşer</li>
+                </ul>
+              </div>
+            )}
+            {s.kind === "step" && step && (
+              step.img ? (
+                <button type="button" className="lv-shot" onClick={() => setZoom(step.img)} aria-label="Büyüt">
+                  <img src={imgUrl(step.img)} alt={step.text || `Adım ${(s.i ?? 0) + 1}`} draggable={false} />
+                  {step.aim && <span className="lv-aim" style={{ left: `${step.aim.x * 100}%`, top: `${step.aim.y * 100}%` }}><i /><i /><b>Buraya nişan al</b></span>}
+                  <span className="ld-zoomhint"><Icon name="expand" size={13} />Büyüt</span>
+                </button>
+              ) : <div className="lv-textstep"><p>{step.text}</p></div>
+            )}
+            {s.kind === "clip" && l.clip && (
+              clipOn ? (
+                <div className="lv-clip">
+                  <iframe
+                    title="Lineup klibi"
+                    src={`https://www.youtube-nocookie.com/embed/${l.clip.id}?start=${l.clip.start}&end=${l.clip.end}&autoplay=1&mute=1&loop=1&playlist=${l.clip.id}&rel=0&modestbranding=1&playsinline=1`}
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                  />
+                </div>
+              ) : (
+                <button type="button" className="lv-clipthumb" onClick={() => setClipOn(true)}>
+                  <img src={`https://i.ytimg.com/vi/${l.clip.id}/hqdefault.jpg`} alt="" />
+                  <span className="lv-play"><Icon name="play" size={26} /></span>
+                  <small>{l.clip.end - l.clip.start} sn · burada oynat</small>
+                </button>
+              )
+            )}
           </div>
-        </div>
-      </header>
-
-      {l.broken > l.works && l.broken >= 3 && <p className="lv-warn"><Icon name="info" size={14} />Bazı oyuncular bu lineup'ın son yamada çalışmadığını söylüyor.</p>}
-
-      <div className="lv-stage">
-        <div className="lv-bars" role="tablist" aria-label="Adımlar">
-          {slides.map((x, i) => (
-            <button key={i} type="button" role="tab" aria-selected={i === at} className={i < at ? "done" : i === at ? `on${playing ? " run" : ""}` : ""} onClick={() => { setPlaying(false); setAt(i); }}>
-              <span>{x.kind === "map" ? "Harita" : x.kind === "clip" ? "Klip" : `${(x.i ?? 0) + 1}. adım`}</span>
-              <i />
-            </button>
-          ))}
-        </div>
-
-        <div className="lv-slide" key={`${l.id}-${at}`}>
-          {s.kind === "map" && map && (
-            <div className="lv-map">
-              <MapBoard map={map} assets={assets} lineups={[l]} selected={l.id} focus compact />
-              <ul className="lv-legend">
-                <li><span className={`lgd stand ${l.side}`} />Burada dur</li>
-                <li><span className="lgd arc" />Atış yolu</li>
-                <li><span className={`lgd land ${l.side}`} />Buraya düşer</li>
-              </ul>
+          {slides.length > 1 && (
+            <div className="ld-pager">
+              <button type="button" className="ib" onClick={() => go(at - 1)} disabled={at === 0} aria-label="Önceki adım"><Icon name="chevron" size={16} /></button>
+              <span className="ld-dots">{slides.map((_, i) => <i key={i} className={i === at ? "on" : i < at ? "done" : ""} onClick={() => go(i)} />)}</span>
+              <button type="button" className="ib flip" onClick={() => go(at + 1)} disabled={at === slides.length - 1} aria-label="Sonraki adım"><Icon name="chevron" size={16} /></button>
             </div>
           )}
-          {s.kind === "step" && step && (
-            step.img ? (
-              <button type="button" className="lv-shot" onClick={() => setZoom(step.img)} aria-label="Büyüt">
-                <img src={imgUrl(step.img)} alt={step.text || `Adım ${(s.i ?? 0) + 1}`} draggable={false} />
-                {step.aim && (
-                  <span className="lv-aim" style={{ left: `${step.aim.x * 100}%`, top: `${step.aim.y * 100}%` }}>
-                    <i /><i /><b>Buraya nişan al</b>
-                  </span>
-                )}
-                <span className="lv-num">{(s.i ?? 0) + 1}</span>
-              </button>
-            ) : <div className="lv-textstep"><span className="lv-num">{(s.i ?? 0) + 1}</span><p>{step.text}</p></div>
-          )}
-          {s.kind === "clip" && l.clip && (
-            clipOn ? (
-              <div className="lv-clip">
-                <iframe
-                  title="Lineup klibi"
-                  src={`https://www.youtube-nocookie.com/embed/${l.clip.id}?start=${l.clip.start}&end=${l.clip.end}&autoplay=1&mute=1&loop=1&playlist=${l.clip.id}&rel=0&modestbranding=1&playsinline=1`}
-                  allow="autoplay; encrypted-media; picture-in-picture"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                />
-              </div>
-            ) : (
-              <button type="button" className="lv-clipthumb" onClick={() => setClipOn(true)}>
-                <img src={`https://i.ytimg.com/vi/${l.clip.id}/hqdefault.jpg`} alt="" />
-                <span className="lv-play"><Icon name="play" size={26} /></span>
-                <small>{l.clip.end - l.clip.start} sn · burada oynat</small>
-              </button>
-            )
-          )}
-          {at > 0 && <button type="button" className="lv-arrow l" onClick={() => { setPlaying(false); setAt(at - 1); }} aria-label="Önceki adım"><Icon name="chevron" size={22} /></button>}
-          {at < slides.length - 1 && <button type="button" className="lv-arrow r" onClick={() => { setPlaying(false); setAt(at + 1); }} aria-label="Sonraki adım"><Icon name="chevron" size={22} /></button>}
         </div>
 
-        <div className="lv-say">
-          {me.mode === "celeste"
-            ? <Narrator text={lines[at]!.text} mood={lines[at]!.mood} speak={me.voice} playing={playing} onDone={advance} />
-            : <p className="lv-plain">{s.kind === "map" ? <>Haritada parlayan yere geç. Ok, yeteneğin nereye düşeceğini gösteriyor.{l.note && <><br /><b>Ne zaman:</b> {l.note}</>}</> : s.kind === "clip" ? "Klipte izle, sonra özel oyunda dene." : step?.text || "Görseldeki gibi dur ve halkaya nişan al."}</p>}
-          <div className="lv-ctl">
-            {me.mode === "celeste" && (
-              <button type="button" className={`x${playing ? " on" : " go"}`} onClick={() => { if (!playing && finished) setAt(0); setPlaying(!playing); }}>
-                <Icon name={playing ? "pause" : "play"} size={14} />{playing ? "Duraklat" : finished ? "Baştan anlat" : "Anlat"}
-              </button>
-            )}
-            {s.kind === "clip" && <button type="button" className="x" onClick={openClip}><Icon name="link" size={14} />YouTube'da aç</button>}
+        {/* sağ: bilgi, adımlar, Celeste */}
+        <aside className="ld-side">
+          <header className="ld-head">
+            <span className="lv-ab">{ab?.icon ? <img src={ab.icon} alt="" /> : null}<kbd>{SLOT_KEY[l.slot]}</kbd></span>
+            <div>
+              <h3>{l.title}</h3>
+              <p className="ld-sub">{agent && <img src={agent.icon} alt="" />}{agent?.name ?? "Ajan"} · {ab?.name ?? l.slot}</p>
+            </div>
+          </header>
+          <div className="ld-meta">
+            <span className={`ld-pill side ${l.side}`}><i />{l.side === "atk" ? "Saldırı" : "Savunma"}</span>
+            {l.site && <span className="ld-pill">{siteName(l.site)}</span>}
+            <span className="ld-pill">{kindName(l.kind)}</span>
+            <span className="ld-pill">{throwName(l.throw)}</span>
+            <span className={`ld-pill diff d${l.diff}`}><i /><i /><i />{DIFFS.find(([d]) => d === l.diff)?.[1]}</span>
           </div>
-        </div>
+          <p className="ld-by">
+            {l.official ? <><Icon name="spark" size={12} />Celeste lineup'ı</> : <><Icon name="user" size={12} />{l.by || "Topluluk"}</>}
+            {ps && <span className={ps === "old" ? "old" : ""} title={ps === "now" ? "Bu yamada eklendi" : "Eski bir yamada eklendi; değişmiş olabilir"}>· Yama {l.patch}</span>}
+            {card && card.box >= 3 && <span className="ok">· Öğrendin</span>}
+          </p>
+          {l.broken > l.works && l.broken >= 3 && <p className="lv-warn"><Icon name="info" size={14} />Bazı oyuncular son yamada çalışmadığını söylüyor.</p>}
+
+          <ol className="ld-steps">
+            {slides.map((x, i) => (
+              <li key={i} className={i === at ? "on" : i < at ? "done" : ""}>
+                <button type="button" onClick={() => go(i)} aria-current={i === at ? "step" : undefined}>
+                  <em>{i < at ? <Icon name="check" size={12} /> : x.kind === "map" ? <Icon name="map" size={12} /> : x.kind === "clip" ? <Icon name="play" size={11} /> : (x.i ?? 0) + 1}</em>
+                  <span><b>{label(x)}</b><small>{sub(x)}</small></span>
+                </button>
+              </li>
+            ))}
+          </ol>
+
+          <div className="ld-say">
+            {celeste
+              ? <Narrator text={lines[at]!.text} mood={lines[at]!.mood} speak={me.voice} playing={playing} onDone={advance} small />
+              : <p className="lv-plain">{s.kind === "map" ? <>Haritada parlayan yere geç. Ok, yeteneğin nereye düşeceğini gösteriyor.{l.note && <><br /><b>Ne zaman:</b> {l.note}</>}</> : s.kind === "clip" ? "Klipte izle, sonra özel oyunda dene." : step?.text || "Görseldeki gibi dur ve halkaya nişan al."}</p>}
+            <div className="ld-ctl">
+              {celeste && (
+                <button type="button" className={`ld-play${playing ? " on" : ""}`} onClick={() => { if (!playing && finished) setAt(0); setPlaying(!playing); }}>
+                  <Icon name={playing ? "pause" : "play"} size={14} />{playing ? "Duraklat" : finished ? "Baştan anlat" : "Anlat"}
+                </button>
+              )}
+              {s.kind === "clip" && <button type="button" className="ld-ghost" onClick={openClip}><Icon name="link" size={13} />YouTube'da aç</button>}
+            </div>
+          </div>
+        </aside>
       </div>
 
-      <div className="lv-acts">
-        <button type="button" className={`la${fav ? " on fav" : ""}`} onClick={() => onToast(toggleFav(l.id) ? "Setine eklendi" : "Setinden çıkarıldı")}><Icon name="spark" size={15} />{fav ? "Setimde" : "Setime ekle"}</button>
-        <button type="button" className={`la${votes.has(`${l.id}:up`) ? " on" : ""}`} onClick={() => void vote("up")}><Icon name="bolt" size={15} />{l.up || ""} Beğen</button>
-        <span className="la-sep" />
-        <button type="button" className={`la ok${votes.has(`${l.id}:works`) ? " on" : ""}`} onClick={() => void vote("works")} title="Bu yamada denedim, çalışıyor"><Icon name="check" size={15} />Çalışıyor{l.works ? ` · ${l.works}` : ""}</button>
-        <button type="button" className={`la bad${votes.has(`${l.id}:broken`) ? " on" : ""}`} onClick={() => void vote("broken")} title="Denedim, artık çalışmıyor"><Icon name="x" size={15} />Çalışmıyor</button>
-        <span className="la-sep" />
-        <button type="button" className={`la${me.tried[l.id] ? " on" : ""}`} onClick={() => { markTried(l.id); if (!getMe().tried[l.id]) return; const xp = grade(l.id, true); onToast(`Denedin, harika! +${xp} XP`); }}><Icon name="target" size={15} />Özel oyunda denedim</button>
-        <button type="button" className="la" onClick={() => void share()}><Icon name="link" size={15} />Paylaş</button>
-        {canEdit && <button type="button" className="la" onClick={onEdit}><Icon name="sliders" size={15} />Düzenle</button>}
+      <div className="ld-acts">
+        <button type="button" className={`ld-btn main${fav ? " on" : ""}`} onClick={() => onToast(toggleFav(l.id) ? "Setine eklendi" : "Setinden çıkarıldı")}><Icon name="star" size={15} />{fav ? "Setimde" : "Setime ekle"}</button>
+        <button type="button" className={`ld-btn${votes.has(`${l.id}:up`) ? " on" : ""}`} onClick={() => void vote("up")}><Icon name="heart" size={15} />Beğen{l.up ? <small>{l.up}</small> : null}</button>
+        <span className="ld-works">
+          <small>Çalışıyor mu?</small>
+          <button type="button" className={`ok${votes.has(`${l.id}:works`) ? " on" : ""}`} onClick={() => void vote("works")} title="Bu yamada denedim, çalışıyor"><Icon name="check" size={14} />{l.works || ""}</button>
+          <button type="button" className={`bad${votes.has(`${l.id}:broken`) ? " on" : ""}`} onClick={() => void vote("broken")} title="Denedim, artık çalışmıyor"><Icon name="x" size={14} /></button>
+        </span>
+        <span className="ld-acts-r">
+          <button type="button" className={`ld-ghost${me.tried[l.id] ? " on" : ""}`} onClick={() => { markTried(l.id); if (!getMe().tried[l.id]) return; const xp = grade(l.id, true); onToast(`Denedin, harika! +${xp} XP`); }} title="Özel oyunda denedim"><Icon name="target" size={14} />Denedim</button>
+          <button type="button" className="ld-ghost" onClick={() => void share()} title="Paylaşım kodunu kopyala"><Icon name="link" size={14} />Paylaş</button>
+          {canEdit && <button type="button" className="ld-ghost" onClick={onEdit}><Icon name="sliders" size={14} />Düzenle</button>}
+        </span>
       </div>
 
       {zoom && (

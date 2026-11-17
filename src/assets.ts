@@ -56,7 +56,7 @@ export interface LevelInfo { index: number; item: string | null; name: string; i
 export interface ContentTier { name: string; color: string; rank: number; icon?: string }
 export interface Callout { name: string; x: number; y: number }
 /* Minimap + bölge adları. Bölge koordinatı oyun birimidir; minimap oranına çevrilmiş halde tutulur. */
-export interface MapInfo { key: string; uuid: string; name: string; icon: string; splash?: string; banner?: string; callouts: Callout[] }
+export interface MapInfo { key: string; uuid: string; name: string; icon: string; splash?: string; banner?: string; callouts: Callout[]; /** Haritadaki spike bölgeleri (A, B, C). */ sites: string[] }
 export interface ChromaInfo { name: string; render: string; swatch: string; index: number }
 
 export interface Assets {
@@ -184,7 +184,12 @@ export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets>
       if (x < 0 || x > 1 || y < 0 || y > 1) continue;
       callouts.push({ name: c.superRegionName && c.superRegionName !== c.regionName ? `${c.superRegionName} ${c.regionName}` : String(c.regionName ?? ""), x, y });
     }
-    a.mapList.push({ key: String(m.mapUrl).split("/").filter(Boolean).pop()!.toLowerCase(), uuid: k(m.uuid), name: m.displayName, icon: m.displayIcon, splash: m.splash ?? undefined, banner: m.listViewIcon ?? undefined, callouts });
+    // Spike bölgeleri: bölge adlarından (superRegionName) ve "A/B/C Sites" açıklamasından; ikisi de yoksa A ve B.
+    const sites = new Set<string>();
+    for (const c of m.callouts ?? []) if (/^[ABC]$/.test(String(c.superRegionName ?? ""))) sites.add(c.superRegionName);
+    for (const x of String(m.tacticalDescription).match(/\b[ABC]\b/g) ?? []) sites.add(x);
+    if (!sites.size) { sites.add("A"); sites.add("B"); }
+    a.mapList.push({ key: String(m.mapUrl).split("/").filter(Boolean).pop()!.toLowerCase(), uuid: k(m.uuid), name: m.displayName, icon: m.displayIcon, splash: m.splash ?? undefined, banner: m.listViewIcon ?? undefined, callouts, sites: [...sites].sort() });
   }
   return a;
 }
