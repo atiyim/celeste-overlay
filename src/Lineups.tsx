@@ -7,9 +7,9 @@ import { adminLineups, DIFFS, kindName, KINDS, myLineups, refreshLineups, SIDES,
 import { Editor } from "./lineups/Editor";
 import { LineupView, patchState } from "./lineups/LineupView";
 import { abilityOf, MapBoard } from "./lineups/MapBoard";
-import { hasTurkishVoice, Narrator } from "./lineups/Narrator";
+import { Narrator } from "./lineups/Narrator";
 import { Practice } from "./lineups/Practice";
-import { addFavs, mastered, patchMe, readCode, shareCode, streak, useMe } from "./lineups/store";
+import { addFavs, getMe, mastered, patchMe, readCode, shareCode, streak, useMe } from "./lineups/store";
 import "./lineups/lineups.css";
 
 /* Lineup: Celeste'nin ve topluluğun lineup kütüphanesi.
@@ -128,7 +128,7 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
       {head}
       {!me.seenIntro && (
         <div className="lu-intro">
-          <Narrator text="Burası lineup köşemiz! Haritadan bir yetenek seç, adım adım göstereyim. Öğren sekmesinde her gün üç tane çalışırız, seri yaparsan XP kazanırsın." mood="flirt" speak={false} playing={false} />
+          <Narrator text="" clip="acilis" mood="flirt" speak={getMe().voice} playing />
           <button type="button" className="x go" onClick={() => patchMe({ seenIntro: true })}>Hadi başlayalım</button>
         </div>
       )}
@@ -211,7 +211,7 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
                   {loading && !list.length && Array.from({ length: 4 }, (_, i) => <div key={i} className="lu-card sk" />)}
                   {!loading && !shown.length && (
                     <div className="lu-none">
-                      <Narrator text={onMap.length ? "Bu filtrelerle bir şey bulamadım. Biraz gevşetelim mi?" : `${map?.name ?? "Bu harita"} için henüz lineup yok. İlkini sen eklersen adın kütüphanede yazar!`} mood={onMap.length ? "surprised" : "wink"} speak={false} playing={false} small />
+                      <Narrator text="" clip={onMap.length ? "filtre-bos" : "lineup-haritada-yok"} mood={onMap.length ? "surprised" : "wink"} speak={getMe().voice} playing small />
                       {!onMap.length ? <button type="button" className="lu-add" onClick={() => setEdit({ editing: null, start: { map: mapId } })}><Icon name="plus" size={14} />İlk lineup'ı ekle</button>
                         : <button type="button" className="ld-ghost" onClick={clearFilters}>Filtreleri temizle</button>}
                     </div>
@@ -250,7 +250,6 @@ function Prefs() {
     window.addEventListener("keydown", esc);
     return () => { window.removeEventListener("mousedown", off); window.removeEventListener("keydown", esc); };
   }, [open]);
-  const voice = hasTurkishVoice();
   return (
     <div className="lu-prefs" ref={ref}>
       <button type="button" className={`lu-pbtn${open ? " on" : ""}`} onClick={() => setOpen(!open)} aria-expanded={open} title="Anlatım">
@@ -266,9 +265,9 @@ function Prefs() {
             <Icon name="eye" size={15} /><span><b>Kendim bakarım</b><small>Adımları sen geçersin</small></span>
           </button>
           {me.mode === "celeste" && (
-            <label className={`lu-pv${voice ? "" : " off"}`}>
-              <span><b>Sesli anlatım</b><small>{voice ? "Celeste metni okur" : "Bilgisayarda Türkçe ses yok"}</small></span>
-              <input type="checkbox" checked={me.voice && voice} disabled={!voice} onChange={() => patchMe({ voice: !me.voice })} />
+            <label className="lu-pv">
+              <span><b>Sesli anlatım</b><small>Celeste konuşur</small></span>
+              <input type="checkbox" checked={me.voice} onChange={() => patchMe({ voice: !me.voice })} />
               <i />
             </label>
           )}
@@ -337,7 +336,7 @@ function MySet({ list, assets, maps, onOpen, onToast }: { list: Lineup[]; assets
         <button type="button" className="x go" onClick={() => void copy(favs.map((l) => l.id))} disabled={!favs.length}><Icon name="link" size={14} />Setimi kopyala</button>
       </div>
       {!favs.length ? (
-        <div className="lu-none"><Narrator text="Setin boş. Beğendiğin lineup'ta Setime ekle'ye bas; harita harita burada toplanır." mood="wink" speak={false} playing={false} small /></div>
+        <div className="lu-none"><Narrator text="" clip="set-bossa" mood="wink" speak={getMe().voice} playing small /></div>
       ) : byMap.map(([m, ls]) => (
         <section key={m.uuid} className="lu-setmap">
           <h4 style={m.banner ? ({ "--bg": `url(${m.banner})` } as CSSProperties) : undefined}><b>{m.name}</b><small>{ls.length} lineup · {ls.filter((l) => mastered(l.id)).length} öğrenildi</small>
@@ -364,7 +363,7 @@ function Community({ list, assets, maps, mine, onOpen, onEdit, onNew }: { list: 
   return (
     <div className="lu-com">
       <div className="lu-cta">
-        <Narrator text="Bildiğin bir lineup mı var? Gönder, yetkililer bakıp yayınlasın. Adın kütüphanede ve Discord'da görünür!" mood="flirt" speak={false} playing={false} small />
+        <Narrator text="" clip="gonder-sekmesi" mood="flirt" speak={getMe().voice} playing small />
         <button type="button" className="x go" onClick={onNew}><Icon name="upload" size={14} />Lineup gönder</button>
       </div>
       <div className="lu-com-grid">
@@ -418,7 +417,7 @@ function Moderation({ assets, maps, onToast, onOpen }: { assets: Assets | null; 
     catch (e) { onToast(e instanceof Error ? e.message : String(e)); }
   };
   if (!rows) return <p className="d none">Yükleniyor…</p>;
-  if (!rows.length) return <div className="lu-none"><Narrator text="Onay bekleyen gönderi yok. Her şey tertemiz!" mood="happy" speak={false} playing={false} small /></div>;
+  if (!rows.length) return <div className="lu-none"><Narrator text="" clip="onay-bekleyen-yok" mood="happy" speak={getMe().voice} playing small /></div>;
   return (
     <div className="lu-mod">
       {rows.map((l) => {

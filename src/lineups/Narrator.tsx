@@ -1,28 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import type { Assets } from "../assets";
 import { Mascot, type Mood } from "../Mascot";
-import { kindName, siteName, throwName, type Lineup } from "./api";
-import { abilityOf } from "./MapBoard";
+import { throwName, type Lineup } from "./api";
+import { clipText, clipUrl, type ClipId } from "./voice";
 
 /* Celeste anlatıcı: konuşma balonu yazarak dolar, ağzı yazıyla birlikte oynar.
    "Sesli anlat" açıksa ve bilgisayarda Türkçe ses varsa metni okur (Windows: Ayarlar › Saat ve dil › Konuşma). */
 
-export function narration(l: Lineup, assets: Assets | null, slides: { kind: "map" | "step" | "clip"; i?: number }[]): { text: string; mood: Mood }[] {
-  const agent = assets?.agents.get(l.agent)?.name ?? "Ajan";
-  const ab = abilityOf(assets, l)?.name ?? "yetenek";
-  const where = siteName(l.site);
-  const tone = l.diff === 1 ? " Kolay bir tane, hemen kaparsın." : l.diff === 3 ? " Biraz zor, ama sende o el var." : "";
+export function narration(l: Lineup, _assets: Assets | null, slides: { kind: "map" | "step" | "clip"; i?: number }[]): { text: string; mood: Mood; clip?: ClipId[] }[] {
   return slides.map((s, idx) => {
     if (s.kind === "map") {
-      const head = `${agent} ile ${where ? `${where} ` : ""}${kindName(l.kind).toLocaleLowerCase("tr")} lineup'ı: ${ab}.${tone}`;
-      return { text: `${head} Haritada parlayan yere geç; ok, yeteneğin nereye düşeceğini gösteriyor.${l.note ? ` Ne zaman mı? ${l.note}` : ""}`, mood: "happy" };
+      const clip: ClipId[] = [...(l.diff === 1 ? ["kolay" as const] : l.diff === 3 ? ["zor" as const] : []), "harita-ekrani"];
+      return { text: clipText(clip), mood: "happy", clip };
     }
     if (s.kind === "clip") return { text: "Bir de klipte izle, birkaç saniye sürüyor. Sonra özel oyunda iki üç kez dene, maçta kullanmaya hazırsın!", mood: "wink" };
     const step = l.steps[s.i ?? 0];
     const last = !slides.slice(idx + 1).some((x) => x.kind === "step");
-    const base = step?.text || (step?.aim ? "Halkayla gösterdiğim yere tam nişan al." : "Görseldeki gibi dur.");
-    const how = last && l.throw !== "stand" ? ` Unutma, ${throwName(l.throw).toLocaleLowerCase("tr")} atıyorsun.` : "";
-    return { text: `${base}${how}`, mood: last ? "flirt" : "happy" };
+    const special = last && l.throw !== "stand";
+    const mood: Mood = last ? "flirt" : "happy";
+    if (step?.text) return { text: `${step.text}${special ? ` Unutma, ${throwName(l.throw).toLocaleLowerCase("tr")} atıyorsun.` : ""}`, mood };
+    const clip: ClipId[] = [step?.aim ? "adim-metni-yoksa" : "adim-metni-yoksa2", ...(special ? ["son-adim" as const] : [])];
+    return { text: clipText(clip), mood, clip };
   });
 }
 
@@ -39,7 +37,9 @@ export const hasTurkishVoice = () => Boolean(voice());
 interface Props {
   text: string;
   mood: Mood;
-  /** Sesli oku (Türkçe ses varsa). Yalnızca playing açıkken konuşur. */
+  /** Kayıtlı ses(ler). Verilirse balondaki yazı bunlardan gelir; yoksa metin Türkçe bilgisayar sesiyle okunur. */
+  clip?: ClipId | ClipId[];
+  /** Sesli oku (kayıt ya da Türkçe ses). Yalnızca playing açıkken konuşur. */
   speak: boolean;
   /** Anlatım akıyor mu: kapalıyken ses susar ve sonraki adıma geçilmez. */
   playing: boolean;
@@ -47,7 +47,9 @@ interface Props {
   small?: boolean;
 }
 
-export function Narrator({ text, mood, speak, playing, onDone, small }: Props) {
+export function Narrator({ text: textProp, clip, mood, speak, playing, onDone, small }: Props) {
+  const text = clip ? (textProp || clipText(clip)) : textProp;
+  const clipKey = clip ? (Array.isArray(clip) ? clip.join("+") : clip) : "";
   const [n, setN] = useState(0);
   const [spoken, setSpoken] = useState(false);
   const head = useRef<HTMLDivElement>(null);
@@ -68,9 +70,29 @@ export function Narrator({ text, mood, speak, playing, onDone, small }: Props) {
     return () => window.clearInterval(id);
   }, [text]);
 
-  // Ses: yalnızca oynatılırken. Duraklatınca hemen susar, devam edince cümleyi baştan okur.
-  const v = speak ? voice() : null;
+  // Kayıtlı ses: yalnızca oynatılırken. Duraklatınca hemen susar, devam edince cümleyi baştan çalar.
   useEffect(() => {
+    setSpoken(false);
+    if (!clipKey || !speak || !playing) return;
+    const ids = clipKey.split("+") as ClipId[];
+    let k = 0, dead = false;
+    let a: HTMLAudioElement | null = null;
+    const next = () => {
+      if (dead) return;
+      if (k >= ids.length) { setSpoken(true); return; }
+      a = new Audio(clipUrl(ids[k++]!));
+      a.onended = next;
+      a.onerror = () => { if (!dead) setSpoken(true); };
+      a.play().catch(() => { if (!dead) setSpoken(true); });
+    };
+    next();
+    return () => { dead = true; if (a) { a.onended = null; a.pause(); } };
+  }, [clipKey, speak, playing]);
+
+  // Bilgisayar sesi (kaydı olmayan metinler için): yalnızca oynatılırken.
+  const v = speak && !clipKey ? voice() : null;
+  useEffect(() => {
+    if (clipKey) return;
     setSpoken(false);
     if (!v || !playing || typeof speechSynthesis === "undefined") return;
     speechSynthesis.cancel();
@@ -79,14 +101,15 @@ export function Narrator({ text, mood, speak, playing, onDone, small }: Props) {
     u.onend = () => setSpoken(true);
     speechSynthesis.speak(u);
     return () => speechSynthesis.cancel();
-  }, [text, v, playing]);
+  }, [text, v, playing, clipKey]);
 
   // Sonraki adıma geçiş: oynatılıyorsa, yazı bittiyse ve (ses varsa) okuma bittiyse kısa bir nefesten sonra.
+  const talks = clipKey ? speak : Boolean(v);
   useEffect(() => {
-    if (!playing || !typed || (v && !spoken)) return;
-    const id = window.setTimeout(() => doneRef.current?.(), v ? 900 : Math.min(2600, 600 + text.length * 18));
+    if (!playing || !typed || (talks && !spoken)) return;
+    const id = window.setTimeout(() => doneRef.current?.(), talks ? 700 : Math.min(2600, 600 + text.length * 18));
     return () => window.clearTimeout(id);
-  }, [playing, typed, spoken, v, text]);
+  }, [playing, typed, spoken, talks, text]);
 
   return (
     <div className={`lnar${small ? " small" : ""}`} aria-live="polite">

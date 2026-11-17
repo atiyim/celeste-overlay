@@ -5,16 +5,16 @@ import type { Mood } from "../Mascot";
 import { imgUrl, kindName, siteName, type Lineup, type Pt } from "./api";
 import { abilityOf, MapBoard } from "./MapBoard";
 import { Narrator } from "./Narrator";
+import { CHEER_BAD, CHEER_NEAR, CHEER_OK, CLIPS, pick, type ClipId } from "./voice";
 import { dailyThree, dueCards, keepDaily, getMe, grade, level, markTried, mastered, patchMe, rankOf, streak, today, useMe } from "./store";
 
 /* Öğren: günün üç lineup'ı, kart kart tekrar (aralıklı), "Nereye düşer?" sınavı, özel oyun planı ve ustalık.
    Her şey bu bilgisayarda tutulur. */
 
 type Mode = "home" | "cards" | "quiz" | "plan";
-const CHEER_OK = ["İşte bu! Ezberledin bile.", "Tam isabet! Sen bu işi biliyorsun.", "Mükemmel. Bir sonrakine geçelim mi?", "Vay, gözüm kamaştı!"];
-const CHEER_NEAR = ["Çok yakındı! Biraz daha.", "Neredeyse! Bir daha bak.", "Az kaldı, yaklaştın."];
-const CHEER_BAD = ["Olsun, şimdi gördün. Bir dahakine bilirsin.", "Bu zor biriydi. Tekrar sorarım, merak etme.", "Hmm, burası değildi. Birlikte öğreniriz."];
-const pickOne = (a: string[]) => a[Math.floor(Math.random() * a.length)]!;
+type Say = { t: string; m: Mood; c?: ClipId };
+/** Kayıtlı cümle; ekranda kayda ek bilgi (ör. kazanılan XP) varsa sonuna yazılır, ses yalnızca kaydı okur. */
+const sayOf = (c: ClipId, m: Mood, extra = ""): Say => ({ t: extra ? `${CLIPS[c]} ${extra}` : "", m, c });
 
 interface Props {
   list: Lineup[];
@@ -191,14 +191,14 @@ function Flash({ pool, assets, maps, onBack, onToast }: { pool: Lineup[]; assets
   }, [pool]);
   const [i, setI] = useState(0);
   const [show, setShow] = useState(false);
-  const [say, setSay] = useState<{ t: string; m: Mood }>({ t: "Duracağın yere bak. Nişan noktasını hatırlıyor musun?", m: "happy" });
+  const [say, setSay] = useState<Say>(sayOf("flash-kart", "happy"));
   const [score, setScore] = useState(0);
   const l = queue[i];
   if (!l) {
     return (
       <div className="lp-run">
         <Head title="Kart kart tekrar" onBack={onBack} />
-        <div className="lp-end"><Narrator text={queue.length ? `Bitti! ${queue.length} karttan ${score} tanesini bildin. Yarın tekrar sorarım.` : "Şimdilik tekrar edilecek kart yok. Kütüphaneden yeni lineup aç, sonra buraya gel!"} mood="flirt" speak={getMe().voice} playing={false} /></div>
+        <div className="lp-end"><Narrator text={queue.length ? `${CLIPS["gunluk-tekrar-sonu"]} ${queue.length} karttan ${score} tanesini bildin.` : ""} clip={queue.length ? "gunluk-tekrar-sonu" : "kart-yoksa"} mood="flirt" speak={getMe().voice} playing /></div>
         <button type="button" className="x go" onClick={onBack}>Tamam</button>
       </div>
     );
@@ -208,7 +208,7 @@ function Flash({ pool, assets, maps, onBack, onToast }: { pool: Lineup[]; assets
   const answer = (ok: boolean) => {
     const xp = grade(l.id, ok);
     if (ok) setScore((s) => s + 1);
-    setSay({ t: ok ? `${pickOne(CHEER_OK)} +${xp} XP` : pickOne(CHEER_BAD), m: ok ? "wink" : "sad" });
+    setSay(sayOf(ok ? pick(CHEER_OK) : pick(CHEER_BAD), ok ? "wink" : "sad", ok ? `+${xp} XP` : ""));
     if (mastered(l.id) && ok) onToast("Bu lineup'ı öğrendin!");
     setShow(false);
     setI(i + 1);
@@ -235,14 +235,14 @@ function Flash({ pool, assets, maps, onBack, onToast }: { pool: Lineup[]; assets
               ))}
             </div>
           ) : (
-            <button type="button" className="lp-reveal" onClick={() => { setShow(true); setSay({ t: "Hatırladığınla aynı mı? Dürüst ol!", m: "wink" }); }}>
+            <button type="button" className="lp-reveal" onClick={() => { setShow(true); setSay(sayOf("cevabi-goster", "wink")); }}>
               <Icon name="eye" size={22} /><b>Cevabı göster</b><small>Önce kafanda canlandır: nereye nişan alıyordun?</small>
             </button>
           )}
         </div>
       </div>
       <div className="lp-foot">
-        <Narrator text={say.t} mood={say.m} speak={getMe().voice} playing={false} small />
+        <Narrator text={say.t} clip={say.c} mood={say.m} speak={getMe().voice} playing={Boolean(say.c)} small />
         {show && <span className="lp-grade"><button type="button" className="x bad" onClick={() => answer(false)}><Icon name="x" size={14} />Bilemedim</button><button type="button" className="x go" onClick={() => answer(true)}><Icon name="check" size={14} />Bildim</button></span>}
       </div>
     </div>
@@ -258,13 +258,13 @@ function Quiz({ pool, assets, maps, onBack, onToast }: { pool: Lineup[]; assets:
   const [i, setI] = useState(0);
   const [pin, setPin] = useState<Pt | null>(null);
   const [total, setTotal] = useState(0);
-  const [say, setSay] = useState<{ t: string; m: Mood }>({ t: "Bu görsele göre yetenek haritada nereye düşer? Tıkla bakalım.", m: "happy" });
+  const [say, setSay] = useState<Say>(sayOf("sinav-sorusu", "happy"));
   const l = qs[i];
   if (!l) {
     return (
       <div className="lp-run">
         <Head title="Nereye düşer?" onBack={onBack} />
-        <div className="lp-end"><Narrator text={`Sınav bitti! Toplam ${total} XP kazandın. ${total >= qs.length * 15 ? "Harita senin evin olmuş!" : "Biraz daha pratikle tam olacak."}`} mood="flirt" speak={getMe().voice} playing={false} /></div>
+        <div className="lp-end"><Narrator text={`${CLIPS[total >= qs.length * 15 ? "sinav-sonu" : "dusuk-puanda"]} Toplam ${total} XP kazandın.`} clip={total >= qs.length * 15 ? "sinav-sonu" : "dusuk-puanda"} mood="flirt" speak={getMe().voice} playing /></div>
         <button type="button" className="x go" onClick={onBack}>Tamam</button>
       </div>
     );
@@ -281,7 +281,7 @@ function Quiz({ pool, assets, maps, onBack, onToast }: { pool: Lineup[]; assets:
     const xp = grade(l.id, ok);
     const bonus = ok ? 10 : near ? 4 : 0;
     setTotal((t) => t + xp + bonus);
-    setSay({ t: `${ok ? pickOne(CHEER_OK) : near ? pickOne(CHEER_NEAR) : pickOne(CHEER_BAD)}${xp + bonus > 2 ? ` +${xp + bonus} XP` : ""}`, m: ok ? "flirt" : near ? "wink" : "sad" });
+    setSay(sayOf(ok ? pick(CHEER_OK) : near ? pick(CHEER_NEAR) : pick(CHEER_BAD), ok ? "flirt" : near ? "wink" : "sad", xp + bonus > 2 ? `+${xp + bonus} XP` : ""));
     if (ok && mastered(l.id)) onToast("Bu lineup'ı öğrendin!");
   };
   return (
@@ -295,8 +295,8 @@ function Quiz({ pool, assets, maps, onBack, onToast }: { pool: Lineup[]; assets:
         {map && <MapBoard map={map} assets={assets} lineups={[]} quiz={{ pin, answer: pin ? l.land : null }} onPoint={choose} callouts={!!pin} />}
       </div>
       <div className="lp-foot">
-        <Narrator text={say.t} mood={say.m} speak={getMe().voice} playing={false} small />
-        {pin && <span className="lp-grade"><small className="lp-dist">{dist <= 0.05 ? "Tam isabet" : dist <= 0.1 ? "Çok yakın" : dist <= 0.2 ? "Biraz uzak" : "Uzak"}</small><button type="button" className="x go" onClick={() => { setPin(null); setI(i + 1); setSay({ t: "Sıradaki! Nereye düşer?", m: "happy" }); }}>Sonraki<Icon name="chevron" size={14} /></button></span>}
+        <Narrator text={say.t} clip={say.c} mood={say.m} speak={getMe().voice} playing={Boolean(say.c)} small />
+        {pin && <span className="lp-grade"><small className="lp-dist">{dist <= 0.05 ? "Tam isabet" : dist <= 0.1 ? "Çok yakın" : dist <= 0.2 ? "Biraz uzak" : "Uzak"}</small><button type="button" className="x go" onClick={() => { setPin(null); setI(i + 1); setSay(sayOf("sonraki-soru", "happy")); }}>Sonraki<Icon name="chevron" size={14} /></button></span>}
       </div>
     </div>
   );
@@ -333,7 +333,7 @@ function Plan({ pool, assets, maps, onBack, onOpen }: { pool: Lineup[]; assets: 
           );
         })}
       </div>
-      {done === plan.length && plan.length > 0 && <Narrator text="Plan tamam! Artık maçta kullanma zamanı. Ben buradayım." mood="flirt" speak={getMe().voice} playing={false} small />}
+      {done === plan.length && plan.length > 0 && <Narrator text="" clip="plan-tamam" mood="flirt" speak={getMe().voice} playing small />}
     </div>
   );
 }

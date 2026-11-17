@@ -209,8 +209,9 @@ export function LineupView({ l, assets, map, votes, onVotes, canEdit, pos, onPre
 
           <div className="ld-say">
             {celeste
-              ? <Narrator text={lines[at]!.text} mood={lines[at]!.mood} speak={me.voice} playing={playing} onDone={advance} small />
-              : <p className="lv-plain">{s.kind === "map" ? <>Haritada parlayan yere geç. Ok, yeteneğin nereye düşeceğini gösteriyor.{l.note && <><br /><b>Ne zaman:</b> {l.note}</>}</> : s.kind === "clip" ? "Klipte izle, sonra özel oyunda dene." : step?.text || "Görseldeki gibi dur ve halkaya nişan al."}</p>}
+              ? <Narrator text={lines[at]!.text} clip={lines[at]!.clip} mood={lines[at]!.mood} speak={me.voice} playing={playing} onDone={advance} small />
+              : <p className="lv-plain">{s.kind === "map" ? <>Haritada parlayan yere geç. Ok yönü, yeteneğin nereye düşeceğini gösteriyor.{l.note && <><br /><b>Ne zaman:</b> {l.note}</>}</> : s.kind === "clip" ? "Klipte izle, sonra özel oyunda dene." : step?.text || "Görseldeki gibi dur, kıpırdama!"}</p>}
+            {celeste && s.kind === "map" && l.note && <p className="lv-plain"><b>Ne zaman:</b> {l.note}</p>}
             <div className="ld-ctl">
               {celeste && (
                 <button type="button" className={`ld-play${playing ? " on" : ""}`} onClick={() => { if (!playing && finished) setAt(0); setPlaying(!playing); }}>

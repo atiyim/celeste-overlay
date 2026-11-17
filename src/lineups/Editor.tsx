@@ -6,6 +6,8 @@ import type { Mood } from "../Mascot";
 import { DIFFS, editLineup, imgUrl, kindName, KINDS, parseYoutube, siteName, SIDES, sitesFor, SLOT_KEY, submitLineup, THROWS, uploadShot, type Lineup, type LineupDraft, type Pt, type Slot, type Step } from "./api";
 import { MapBoard } from "./MapBoard";
 import { Narrator } from "./Narrator";
+import { CHEER_STEP, pick as pickOne, type ClipId } from "./voice";
+import { getMe } from "./store";
 
 /* Lineup ekleme / düzenleme: beş kısa adım. Her adımda tek iş var; Celeste ne yapılacağını söyler,
    adım bitince sevinip bir sonrakini açar. Tamamlanan adımlar üstteki şeritte özet olarak kalır, tıklayınca geri dönülür.
@@ -26,7 +28,6 @@ const blank = (): ShotState => ({ img: null, text: "", aim: null });
 
 const STEPS = ["Ajan", "Harita", "İşaretle", "Görseller", "Son dokunuş"] as const;
 const LAST = STEPS.length - 1;
-const CHEERS = ["Süper, devam edelim!", "Harika gidiyorsun!", "Tam isabet!", "Bayıldım, devam!", "Çok iyi, sıradaki!"];
 const SHOT_HINT = ["Nerede durduğun", "Nereye nişan aldığın", "Ek görsel", "Ek görsel"];
 
 export function Editor({ assets, admin, start, editing, onDone, onCancel, onToast }: Props) {
@@ -41,7 +42,7 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
   const [steps, setSteps] = useState<ShotState[]>(init.steps?.length ? init.steps.map((s) => ({ ...s })) : [blank(), blank()]);
   const [step, setStep] = useState(0);
   const [reached, setReached] = useState(editing ? LAST : 0);
-  const [cheer, setCheer] = useState<{ at: number; text: string } | null>(null);
+  const [cheer, setCheer] = useState<{ at: number; clip: ClipId } | null>(null);
   const [abPicked, setAbPicked] = useState(Boolean(editing));
   const [pick, setPick] = useState<"stand" | "land" | null>(d.stand ? null : "stand");
   const [aimAt, setAimAt] = useState<number | null>(null);
@@ -75,7 +76,7 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
   const advance = (from: number) => {
     if (from >= LAST) return;
     const next = from + 1;
-    setCheer({ at: next, text: CHEERS[(from + Math.floor(Math.random() * CHEERS.length)) % CHEERS.length]! });
+    setCheer({ at: next, clip: pickOne(CHEER_STEP) });
     setReached((r) => Math.max(r, next));
     setStep(next);
   };
@@ -148,29 +149,31 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
   };
 
   /* ---------- Celeste ne desin ---------- */
-  const say = ((): { text: string; mood: Mood } => {
-    if (err) return { text: `Hımm, ${err.charAt(0).toLocaleLowerCase("tr")}${err.slice(1)}. Birlikte düzeltelim.`, mood: "surprised" };
-    const pre = cheer?.at === step ? `${cheer.text} ` : "";
+  const say = ((): { text: string; mood: Mood; clip?: ClipId } => {
+    if (err) return { text: `Bir sorun var galiba. Birlikte düzeltelim. (${err})`, mood: "surprised", clip: "hata" };
+    // Adım tamamlanınca Celeste önce kısaca över, sonra yeni adımı anlatır.
+    if (cheer?.at === step) return { text: "", mood: "flirt", clip: cheer.clip };
     switch (step) {
       case 0:
-        if (!d.agent) return { text: `${editing ? "" : "Yeni bir lineup, bayıldım! "}Önce ajanını seç.`, mood: "happy" };
-        return { text: `${agent?.name ?? "Ajan"}, güzel seçim! Hangi yeteneğini atıyorsun?`, mood: "wink" };
+        if (!d.agent) return { text: "", mood: "happy", clip: "ajan" };
+        return { text: "", mood: "wink", clip: "ajan-secilince" };
       case 1:
-        if (!d.map) return { text: `${pre}Hangi haritada kullanıyorsun?`, mood: "happy" };
-        return { text: `${pre}${map?.name ?? "Harita"}. Taraf ve siteyi seç, bir de ne zaman kullanıldığını.`, mood: "happy" };
+        if (!d.map) return { text: "", mood: "happy", clip: "harita" };
+        return { text: "", mood: "happy", clip: "harita-secilince" };
       case 2:
-        if (!d.stand) return { text: `${pre}Haritada önce duracağın yere dokun.`, mood: "happy" };
-        if (!d.land) return { text: "Oldu! Şimdi yeteneğin düşeceği yere dokun.", mood: "wink" };
-        return { text: "Ok tam yerinde, harika!", mood: "flirt" };
+        if (!d.stand) return { text: "", mood: "happy", clip: "isaretle-once-dokunma" };
+        if (!d.land) return { text: "", mood: "wink", clip: "isaretle-yetenegin-dusecegi-yer" };
+        return { text: "", mood: "flirt", clip: "isaretle-tam-isabet" };
       case 3:
-        if (!shots) return { text: `${pre}Ekran görüntüsünü Ctrl+V ile yapıştır ya da kutuya sürükle.`, mood: "happy" };
+        if (!shots) return { text: "Ekran görüntüsünü Ctrl+V ile yapıştır ya da kutuya sürükle.", mood: "happy" };
         if (steps.some((s) => (s.img || s.local) && !s.aim)) return { text: "Görsele tıklayıp nişan noktasını göster, oyuncular tam oraya baksın.", mood: "wink" };
         return { text: "Görseller çok net. Bir cümleyle anlatırsan daha da iyi olur.", mood: "happy" };
       default:
-        if (d.title.trim().length < 3) return { text: `${pre}Son dokunuş! Kısa bir başlık yaz, gerisi isteğe bağlı.`, mood: "flirt" };
-        return { text: editing ? "Hazır, kaydedelim mi?" : admin ? "Her şey hazır. Yayınlayalım mı?" : "Her şey hazır! Gönder, yetkililer bakıp yayınlasın.", mood: "flirt" };
+        if (d.title.trim().length < 3) return { text: "", mood: "flirt", clip: "son-dokunus" };
+        return { text: "", mood: "flirt", clip: editing ? "duzenlemede-hazir-kaydedlim-mi" : admin ? "admin-her-sey-hazir" : "son-dokunus2" };
     }
   })();
+
 
   const summary = [
     agent ? `${agent.name}${ability ? ` · ${ability.name}` : ""}` : "",
@@ -207,7 +210,7 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
       </ol>
 
       <div className="lw-guide">
-        <Narrator text={say.text} mood={say.mood} speak={false} playing={false} small />
+        <Narrator text={say.text} clip={say.clip} mood={say.mood} speak={getMe().voice} playing={Boolean(say.clip)} onDone={() => setCheer((c) => (c?.at === step ? null : c))} small />
       </div>
 
       <section className="led-sec lw-body" key={step}>
