@@ -42,6 +42,13 @@ const P: Record<string, ReactNode> = {
   mute: <><path d="M4 9.500v5h3.500L12 18.500v-13L7.500 9.500z" /><path d="M16 9.500l5 5M21 9.500l-5 5" /></>,
   play: <path d="M8 5.500v13l11-6.500z" />,
   pause: <><rect x="6.500" y="5" width="3.800" height="14" rx="1" /><rect x="13.700" y="5" width="3.800" height="14" rx="1" /></>,
+  map: <><path d="M9 4.5L3.5 6.5v13l5.5-2 6 2 5.5-2v-13l-5.5 2z" /><path d="M9 4.5v13M15 6.5v13" /></>,
+  heart: <path d="M12 19.5s-7.5-4.400-7.500-9.800A4.200 4.200 0 0 1 12 7.300a4.200 4.200 0 0 1 7.500 2.400c0 5.400-7.500 9.800-7.500 9.800z" />,
+  star: <path d="M12 3.500l2.600 5.300 5.900.900-4.300 4.100 1 5.800-5.200-2.800-5.200 2.800 1-5.800-4.300-4.100 5.900-.900z" />,
+  image: <><rect x="3.500" y="4.500" width="17" height="15" rx="3.500" /><circle cx="9" cy="10" r="1.800" /><path d="M20.500 15.500l-4.600-4.300-8.900 8.300" /></>,
+  trophy: <><path d="M8 4.500h8v5a4 4 0 0 1-8 0z" /><path d="M8 6.500H5a2.500 2.500 0 0 0 3 3.800M16 6.500h3a2.500 2.500 0 0 1-3 3.800" /><path d="M12 13.500v3M8.500 19.500h7l-.8-3h-5.400z" /></>,
+  flame: <path d="M12 21c-3.900 0-6.500-2.600-6.500-6.200 0-3.900 3.300-5.900 4-10.300 2.300 1.400 3.600 3.300 3.900 5.500.9-.6 1.500-1.600 1.700-2.800 2 1.700 3.400 4.300 3.400 7.200 0 3.800-2.600 6.600-6.500 6.600z" />,
+  upload: <><path d="M12 15.500v-11M7.500 9L12 4.500 16.500 9" /><path d="M4.500 15.500v2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2" /></>,
   collapse: <path d="M6 15l6-6 6 6" />,
   expand: <path d="M6 9l6 6 6-6" />,
 };
@@ -50,7 +57,7 @@ export type IconName = keyof typeof P;
 
 /* Yumuşak dolgulu (duotone) simgeler: kapalı şekillerin içi, çizgi renginin açık tonuyla dolar; böylece küçük boyutta
    da seçilir ve daha dolgun, "tatlı" görünür. Düz çizgi kalması gerekenler (oklar, çarpı, eksi…) listede yok. */
-const SOFT = new Set<string>(["users", "user", "msg", "chat", "spark", "help", "info", "gear", "clock", "shield", "moon", "bolt", "store", "target", "timer", "layers", "lock", "crown", "mouse", "link", "repeat", "chart", "search", "sliders", "power", "text", "eyeoff", "blur", "check", "play", "pause"]);
+const SOFT = new Set<string>(["users", "user", "msg", "chat", "spark", "help", "info", "gear", "clock", "shield", "moon", "bolt", "store", "target", "timer", "layers", "lock", "crown", "mouse", "link", "repeat", "chart", "search", "sliders", "power", "text", "eyeoff", "blur", "check", "play", "pause", "map", "heart", "star", "image", "trophy", "flame"]);
 const NOFILL = new Set<string>(["link", "repeat", "chart", "search", "sliders", "power", "text", "eyeoff", "blur", "check"]);
 
 export function Icon({ name, size = 18, stroke = 2 }: { name: IconName; size?: number; stroke?: number }) {

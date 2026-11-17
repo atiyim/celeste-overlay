@@ -67,6 +67,17 @@ export async function login(): Promise<Me> {
   return me;
 }
 
+/** Akış oturumuyla başka bir Celeste ucuna yazar (ör. Lineup): giriş, oturum yenileme ve hesap değişimi burada. */
+export async function authedPost<T>(url: string, body: object, retry = true): Promise<T> {
+  if (!me) await login();
+  else await fresh();
+  const r = await tfetch(url, { method: "POST", headers: { "content-type": "text/plain" }, body: JSON.stringify({ session: me!.session, ...body }) });
+  if (r.status === 401 && retry) { me = null; notifyMe(); await login(); return authedPost<T>(url, body, false); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error((j as { error?: string }).error ?? (r.status === 404 ? "Servis şu an kapalı." : `Hata (${r.status})`));
+  return j as T;
+}
+
 async function send<T>(path: string, body: object, retry = true): Promise<T> {
   if (!me) await login();
   const r = await tfetch(`${API}/${path}`, { method: "POST", headers: { "content-type": "text/plain" }, body: JSON.stringify({ session: me!.session, ...body }) });

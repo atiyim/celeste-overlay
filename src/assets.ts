@@ -26,6 +26,11 @@ export async function cachedJson<T>(path: string): Promise<T> {
   return data as T;
 }
 
+/** Oyunun yaması ("11.10"): görsel veritabanının sürümünden. Bilinmiyorsa boş. */
+export function currentPatch(): string {
+  try { const m = /^(?:release-)?(\d{1,2})\.(\d{1,2})/.exec(localStorage.getItem("valo-version") ?? ""); return m ? `${Number(m[1])}.${m[2]!.padStart(2, "0")}` : ""; } catch { return ""; }
+}
+
 async function invalidateOnNewVersion() {
   try {
     const res = await tfetch(`${BASE}/version`);
@@ -38,7 +43,8 @@ async function invalidateOnNewVersion() {
 }
 
 export interface Img { name: string; icon: string }
-export interface AgentInfo extends Img { role?: string; roleId?: string; roleIcon?: string; portrait?: string; bust?: string; colors?: string[] }
+export interface Ability { slot: string; name: string; icon: string; desc: string }
+export interface AgentInfo extends Img { role?: string; roleId?: string; roleIcon?: string; portrait?: string; bust?: string; colors?: string[]; abilities?: Ability[] }
 /* Rekabet act'i: "V25 · ACT 2" gibi ad (varsa) ve başlangıç/bitiş zamanı (ms). */
 export interface SeasonInfo { name: string; start: number; end: number }
 export interface Tier { name: string; icon: string; color: string }
@@ -50,7 +56,7 @@ export interface LevelInfo { index: number; item: string | null; name: string; i
 export interface ContentTier { name: string; color: string; rank: number; icon?: string }
 export interface Callout { name: string; x: number; y: number }
 /* Minimap + bölge adları. Bölge koordinatı oyun birimidir; minimap oranına çevrilmiş halde tutulur. */
-export interface MapInfo { key: string; name: string; icon: string; callouts: Callout[] }
+export interface MapInfo { key: string; uuid: string; name: string; icon: string; splash?: string; banner?: string; callouts: Callout[] }
 export interface ChromaInfo { name: string; render: string; swatch: string; index: number }
 
 export interface Assets {
@@ -112,7 +118,8 @@ export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets>
   for (const t of ctiers ?? []) a.contentTiers.set(k(t.uuid), { name: t.displayName, color: `#${String(t.highlightColor ?? "888888").slice(0, 6)}`, rank: TIER_RANK[t.devName] ?? 0, icon: t.displayIcon ?? undefined });
 
   for (const x of agents) a.agents.set(k(x.uuid), { name: x.displayName, icon: x.displayIcon ?? x.displayIconSmall ?? x.killfeedPortrait ?? x.bustPortrait ?? "", role: x.role?.displayName, roleId: String(x.role?.uuid ?? "").toLowerCase() || undefined, roleIcon: x.role?.displayIcon, portrait: x.fullPortrait ?? x.bustPortrait ?? undefined, bust: x.bustPortrait ?? undefined,
-    colors: Array.isArray(x.backgroundGradientColors) ? x.backgroundGradientColors.filter((c: unknown) => typeof c === "string" && /^[0-9a-f]{6,8}$/i.test(c)).map((c: string) => `#${c.slice(0, 6)}`) : undefined });
+    colors: Array.isArray(x.backgroundGradientColors) ? x.backgroundGradientColors.filter((c: unknown) => typeof c === "string" && /^[0-9a-f]{6,8}$/i.test(c)).map((c: string) => `#${c.slice(0, 6)}`) : undefined,
+    abilities: (x.abilities ?? []).filter((ab: any) => ab.slot !== "Passive").map((ab: any) => ({ slot: String(ab.slot), name: String(ab.displayName ?? ""), icon: ab.displayIcon ?? "", desc: String(ab.description ?? "") })) });
 
   /* Act adı: bağlı olduğu bölümle birlikte ("EPISODE 9 · ACT 2"). Ad gelmezse arayüz tarihe döner. */
   const seasonById = new Map<string, any>((seasons ?? []).map((s: any) => [k(s.uuid), s]));
@@ -177,7 +184,7 @@ export async function loadAssets(opts: { lite?: boolean } = {}): Promise<Assets>
       if (x < 0 || x > 1 || y < 0 || y > 1) continue;
       callouts.push({ name: c.superRegionName && c.superRegionName !== c.regionName ? `${c.superRegionName} ${c.regionName}` : String(c.regionName ?? ""), x, y });
     }
-    a.mapList.push({ key: String(m.mapUrl).split("/").filter(Boolean).pop()!.toLowerCase(), name: m.displayName, icon: m.displayIcon, callouts });
+    a.mapList.push({ key: String(m.mapUrl).split("/").filter(Boolean).pop()!.toLowerCase(), uuid: k(m.uuid), name: m.displayName, icon: m.displayIcon, splash: m.splash ?? undefined, banner: m.listViewIcon ?? undefined, callouts });
   }
   return a;
 }

@@ -121,6 +121,18 @@ Hızlı mesajlar: sık yazdığın mesajları ekle, listeden birine tıklayınca
 
 Sağ alttaki Celeste (ay perisi) arada bir kısa bir şey söyler: maçına göre parti uyarısı, galibiyet serisi ya da mola hatırlatması. Tıklarsan rehber yeniden açılır. Ayarlar › Overlay › Köşede Celeste'den kapatabilirsin. Rehber sesli anlatılır; altyazısı hep açıktır ve Ayarlar › Hakkında'dan baştan izlenebilir.
 
+### Lineup
+
+Sol menüdeki **harita** simgesi. Haritada her lineup'ın düştüğü yerde yeteneğin simgesi durur; üstüne gelince nerede duracağın ve atış yolu çizilir. Tıklayınca lineup adım adım açılır: önce haritada duruş ve düşme noktası, sonra ekran görüntülerinde nişan noktası (halkayla işaretli), varsa kısa klip. **Celeste anlatsın** seçiliyse adımları o anlatır ve kendiliğinden ilerler; Windows'ta Türkçe ses yüklüyse sesli de okur. **Kendim bakarım** ile sessizce gezersin (← → tuşları).
+
+- **Filtreler:** ajan, saldırı/savunma, site, durum (giriş, post-plant, retake…), zorluk, arama, yalnızca Setim.
+- **Öğren:** her gün seçilen 3 lineup, kart kart tekrar (bildiklerin seyrekleşir), "Nereye düşer?" sınavı, özel oyun planı; seri, XP ve seviye. Bu ilerleme yalnızca bu bilgisayarda durur.
+- **Setim ve paylaşım kodu:** beğendiğin lineup'ları sakla, `CL1-…` koduyla arkadaşına ver ya da gelen kodu ekle.
+- **Topluluk:** kendi lineup'ını gönder (ekran görüntüsünü Ctrl+V ile yapıştır, nişan noktasına tıkla). Yetkililer onaylayınca adınla yayınlanır; Discord'da da duyurulur.
+- **Çalışıyor / Çalışmıyor:** yamadan sonra bozulan lineup'lar oyuncuların bildirimiyle işaretlenir.
+
+Discord'da: `/lineup harita ajan` kütüphaneden kart gösterir, her gün 20:00'de **Günün Lineup'ı** sorusu sorulur, `/lineup-seri` serileri gösterir.
+
 ### Sayaçlar
 
 **Araçlar › Sayaçlar** sekmesinde süre girip özel sayaç kurabilir ya da hazır sürelerden (30 sn, 45 sn, 1 dk, 2 dk) birini seçebilirsin. Bitince overlay'de bildirim çıkar; oyuna dokunmaz.

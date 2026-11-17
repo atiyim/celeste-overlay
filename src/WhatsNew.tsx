@@ -4,6 +4,9 @@ import { useState } from "react";
 const KEY = "overlay-whatsnew";
 const NOTES: Record<string, string[]> = {
   "0.8.3": [
+    "Yeni: Lineup! Sol menüdeki harita simgesi. Haritada her yeteneğin düştüğü yer işaretli; tıklayınca nerede duracağın, nereye nişan alacağın ve nasıl atacağın adım adım. İstersen Celeste anlatır, istersen kendin bakarsın.",
+    "Öğren: her gün 3 lineup, kart kart tekrar, \"Nereye düşer?\" sınavı ve özel oyun planı. Seri yap, XP topla, seviye atla.",
+    "Setim ve paylaşım kodu: sevdiğin lineup'ları kaydet, kodla arkadaşına ver. Topluluk: kendi lineup'ını gönder; onaylanınca adınla yayınlanır.",
     "Spike sayacı ve oyun üstü şerit kaldırıldı: Riot canlı maçta spike sayaçlarını uygun görmüyor. Özel sayaçlar yerinde duruyor.",
   ],
   "0.8.2": [

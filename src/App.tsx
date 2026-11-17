@@ -39,6 +39,7 @@ import { TrustPanel } from "./TrustPanel";
 import { teamSummary } from "./insights";
 import { FeedbackPanel } from "./FeedbackPanel";
 import { FeedPanel } from "./FeedPanel";
+import { Lineups } from "./Lineups";
 import { useDiscordPresence } from "./discordRpc";
 import { useFeedBadge, type FeedCard } from "./feed";
 import { alertOf, fmtRr, sessionOf, type Session } from "./tilt";
@@ -73,7 +74,7 @@ const PROFILE = [["stats", "İstatistik"], ["store", "Mağaza"], ["account", "He
 const TOOLS = [["chat", "Hızlı mesajlar"], ["cross", "Nişangah"], ["device", "DPI/eDPI"], ["timers", "Sayaçlar"], ["search", "Oyuncu arama"], ["watch", "İzleme listesi"], ["meta", "Meta"]] as const;
 type ProfileView = (typeof PROFILE)[number][0];
 type ToolView = (typeof TOOLS)[number][0];
-type View = "roster" | "report" | "feed" | "feedback" | "premium" | "trust" | "about" | "settings" | ProfileView | ToolView;
+type View = "roster" | "report" | "feed" | "lineup" | "feedback" | "premium" | "trust" | "about" | "settings" | ProfileView | ToolView;
 const groupOf = (v: View): Group =>
   PROFILE.some(([id]) => id === v) ? "profile" : TOOLS.some(([id]) => id === v) ? "tools" : v === "feedback" ? "roster" : (v as Group);
 const saved = <T extends string>(key: string, list: readonly (readonly [T, string])[], fallback: T): T => {
@@ -153,7 +154,8 @@ export function App() {
   const dragAt = useRef(0);
   const toggleFullRef = useRef<(on?: boolean, restore?: boolean) => void>(() => undefined);
   const scr = window.screen as Screen & { availLeft?: number; availTop?: number };
-  const width = full ? Math.floor(scr.availWidth / zoom) : overlayWidth(theme.cols, theme.layout);
+  // Lineup ekranı harita + liste yan yana: biraz daha geniş pencere ister.
+  const width = full ? Math.floor(scr.availWidth / zoom) : view === "lineup" ? Math.max(1060, overlayWidth(theme.cols, theme.layout)) : overlayWidth(theme.cols, theme.layout);
   const fullH = Math.floor(scr.availHeight / zoom);
   const toggleFull = async (force?: boolean, restore = true) => {
     const next = typeof force === "boolean" ? force : !full;
@@ -728,6 +730,8 @@ export function App() {
     <Settings theme={theme} onChange={setTheme} zoom={zoom} onZoom={setZoom} zooms={ZOOMS} onToast={showToast} onClose={() => go("roster")} />
   ) : view === "feed" ? (
     assets ? <FeedPanel assets={assets} draft={feedDraft} onDraftUsed={() => setFeedDraft(null)} onToast={showToast} onClose={() => go("roster")} /> : loading
+  ) : view === "lineup" ? (
+    <Lineups assets={assets} currentMapUrl={snap.mapId} myAgentId={snap.players.find((p) => p.isSelf)?.agentId || null} onToast={showToast} onClose={() => go("roster")} />
   ) : view === "about" ? (
     <AboutPanel updater={updater} onOpen={openTracker} onFeedback={() => go("feedback")} onGuide={() => { setGuide(true); setView("roster"); }} onToast={showToast} onClose={() => go("roster")} />
   ) : view === "feedback" ? (
@@ -808,7 +812,7 @@ export function App() {
   const phaseTone = snap.phase === "pregame" ? "go" : snap.phase === "ingame" ? "live" : snap.phase === "menu" ? "wait" : "off";
 
   return (
-    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}${collapsed ? " mini" : ""}${full ? " fullw" : ""}`} ref={rootRef} style={full ? { width, height: fullH, maxHeight: fullH, borderRadius: 0 } : { width, maxHeight: Math.max(360, Math.floor(Math.min((window.screen?.availHeight ?? 1000) - 24, theme.layout === "cards" && view === "roster" ? MAX_H_CARDS : MAX_H) / zoom)) }}>
+    <main className={`ov${blur ? " blur" : ""}${solid ? " solid" : ""}${collapsed ? " mini" : ""}${full ? " fullw" : ""}`} ref={rootRef} style={full ? { width, height: fullH, maxHeight: fullH, borderRadius: 0 } : { width, maxHeight: Math.max(360, Math.floor(Math.min((window.screen?.availHeight ?? 1000) - 24, (theme.layout === "cards" && view === "roster") || view === "lineup" ? MAX_H_CARDS : MAX_H) / zoom)) }}>
       {!collapsed && !guide && <Rail active={group} onPick={pickGroup} feedCount={feedCount} feedNote={feedNotes > 0} onDrag={startDrag} />}
       <div className="ovm">
         <header className="hd drag" onMouseDown={startDrag} title="Sürükleyerek taşı">
@@ -895,7 +899,7 @@ export function App() {
         {!collapsed && !license.gate && !guide && (outdated ? <ForceUpdate info={outdated} updater={updater} onOpen={openTracker} /> : content)}
         </div>
         {!collapsed && license.unofficial && <UnofficialStrip onOpen={openTracker} />}
-        {!collapsed && !license.gate && !guide && theme.buddy && <Buddy snap={snap} onGuide={() => { setGuide(true); setView("roster"); }} />}
+        {!collapsed && !license.gate && !guide && theme.buddy && view !== "lineup" && <Buddy snap={snap} onGuide={() => { setGuide(true); setView("roster"); }} />}
         {!collapsed && <StatusBar status={snap.status} inApp={inTauri} assetsOk={!!assets} assetsFailed={assetsFailed} version={updater.version} onToast={showToast} onOpen={openTracker} onFeedback={() => { setGuide(false); setCollapsed(false); go("feedback"); }} onTrust={() => go("trust")} />}
       </div>
       <PreviewBar onOpen={openTracker} />
