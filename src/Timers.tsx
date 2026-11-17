@@ -1,71 +1,17 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PanelHead } from "./ui";
-import { setStripOn, stripOn } from "./spikeWindow";
-import { hotkey, hotkeyLabel } from "./hotkey";
-import { accelFromEvent, addTimer, clock, DEFUSE_FULL, DEFUSE_HALF, LAST_FULL, LAST_HALF, markAt, nextLastMark, parseDuration, removeTimer, restartTimer, setSound, setMouseCapture, setSpikeKey, setSpikeMouse, MOUSE_LABEL, useSpikeMouse, SPIKE_NAME, SPIKE_SECONDS, soundOn, spikePhase, spikePhaseOf, startSpike, stopSpike, useSpikeKey, useTimers, type Timer } from "./timerStore";
+import { addTimer, clock, parseDuration, removeTimer, restartTimer, setSound, soundOn, useTimers } from "./timerStore";
 
 const PRESETS = [["30 sn", 30], ["45 sn", 45], ["1 dk", 60], ["2 dk", 120]] as const;
 
-/* Spike göstergesi: her çizgi bir saniye. Geçenler söner, kalanlar aşamasının rengini alır.
-   7 sn: tam çözme sınırı. 3,5 sn: yarım çözme sınırı. */
-function SpikeGauge({ t }: { t: Timer }) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => { if (t.done) return; const id = window.setInterval(() => setNow(Date.now()), 100); return () => clearInterval(id); }, [t.done, t.endsAt]);
-  const left = t.done ? 0 : Math.max(0, t.endsAt - now) / 1000;
-  const ph = spikePhase(left * 1000);
-  return (
-    <div className={`spg ph-${t.done ? "boom" : ph.id}`} role="timer" aria-label={`Spike: ${Math.ceil(left)} saniye, ${ph.label}`}>
-      <div className="spg-top">
-        <b className="spg-n">{t.done ? "0.0" : left.toFixed(1)}<small>sn</small></b>
-        <span className="spg-st"><b>{t.done ? "Patladı" : ph.label}</b><small>{t.done ? "Yeni raunt için tuşa yeniden bas." : ph.hint}{!t.done && (() => { const n = nextLastMark(left); return n ? ` ${n.kind === "full" ? "Tek oturuş" : "Yarım"} için son an ${n.in.toFixed(1)} sn sonra.` : ""; })()}</small></span>
-      </div>
-      <div className="spg-bar">
-        {Array.from({ length: SPIKE_SECONDS }, (_, k) => {
-          const sec = SPIKE_SECONDS - k; // bu çizginin temsil ettiği kalan saniye
-          const gone = left <= sec - 1, cur = !gone && left < sec;
-          const m = markAt(sec);
-          return <i key={k} className={`z-${spikePhaseOf(sec - 0.01)}${gone ? " gone" : ""}${cur ? " cur" : ""}${m ? " mk" : ""}`} style={m ? ({ "--at": `${m.at}%` } as React.CSSProperties) : undefined} />;
-        })}
-      </div>
-      <div className="spg-marks">
-        <span className="z-half"><i />Son {DEFUSE_FULL} sn: yalnızca yarım çözülmüşse</span>
-        <span className="z-dead"><i />Son {String(DEFUSE_HALF).replace(".", ",")} sn: çözülmez</span>
-        <span className="z-last"><i />Mavi çizgi: son an. Çizgide oturursan 0,01 sn kala çözülür (tek oturuş {String(LAST_FULL).replace(".", ",")}, yarım {String(LAST_HALF).replace(".", ",")} sn)</span>
-      </div>
-    </div>
-  );
-}
-
 export function Timers({ onClose }: { onClose: () => void }) {
-  const [strip, setStrip] = useState(stripOn);
   const list = useTimers();
   const [name, setName] = useState("");
   const [dur, setDur] = useState("");
   const [sound, setSnd] = useState(soundOn);
-  const spikeKey = useSpikeKey();
-  const [capture, setCapture] = useState(false);
-  const mouse = useSpikeMouse();
-  useEffect(() => () => setMouseCapture(false), []);
-  const [clash, setClash] = useState(false);
   const secs = parseDuration(dur);
-
-  // "Tuş ata": basılan sonraki tuş kısayol olur. Esc vazgeçer.
-  useEffect(() => {
-    if (!capture) return;
-    const on = (e: KeyboardEvent) => {
-      e.preventDefault(); e.stopPropagation();
-      if (e.key === "Escape") { setCapture(false); return; }
-      if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
-      const a = accelFromEvent(e);
-      if (a === hotkey()) { setClash(true); return; }
-      if (a) { setSpikeKey(a); setCapture(false); }
-    };
-    window.addEventListener("keydown", on, true);
-    return () => window.removeEventListener("keydown", on, true);
-  }, [capture]);
   const now = Date.now();
-  const spike = list.find((t) => t.name === SPIKE_NAME);
-  const others = list.filter((t) => t.name !== SPIKE_NAME);
+  const others = list;
 
   const add = () => { if (!secs) return; addTimer(name, secs); setDur(""); };
 
@@ -78,30 +24,8 @@ export function Timers({ onClose }: { onClose: () => void }) {
         onClose={onClose}
       />
 
-      <div className={spike ? "spk live" : "spk"}>
-        <div className="spk-row">
-        <span className="spi"><b>Spike patlama sayacı</b><small>{SPIKE_SECONDS} saniye. Spike kurulunca tuşa bas; aynı tuşa tekrar basınca durur. Oyundan otomatik okunmaz. Çizgiler çözmenin hâlâ yetişip yetişmediğini gösterir.</small></span>
-        <button className="x go" type="button" onClick={startSpike}>{spike ? "Yeniden" : "Başlat"}</button>
-        {spike && <button className="x" type="button" onClick={stopSpike}>Durdur</button>}
-        <button className={strip ? "x on" : "x"} type="button" aria-pressed={strip} title="Sayaç çalışırken ekranın üst ortasında küçük bir şerit gösterir. Tıklamalar oyuna geçer." onClick={() => { setStripOn(!strip); setStrip(!strip); }}>Oyun üstü şerit {strip ? "açık" : "kapalı"}</button>
-        <span className="spkey">
-          <kbd>{capture ? (clash ? `${hotkeyLabel()} overlay'e ayrılı` : "Bir tuşa bas…") : spikeKey ? spikeKey.replace("Control", "Ctrl") : "Atanmadı"}</kbd>
-          <button className={capture ? "x on" : "x"} type="button" onClick={() => { setClash(false); setCapture((c) => !c); }}>{capture ? "Vazgeç" : "Tuş ata"}</button>
-          {spikeKey && !capture && <button className="x" type="button" onClick={() => setSpikeKey("")}>Kaldır</button>}
-        </span>
-        {"__TAURI_INTERNALS__" in window && (
-          <span className="spkey">
-            <kbd>{mouse.capture ? "Fare tuşuna bas…" : MOUSE_LABEL[mouse.btn]}</kbd>
-            <button className={mouse.capture ? "x on" : "x"} type="button" title="Fare yan tuşlarını (Geri / İleri) ya da orta tuşu atayabilirsin. Tık oyuna da geçer; oyunda başka işe atanmamış bir tuş seç." onClick={() => setMouseCapture(!mouse.capture)}>{mouse.capture ? "Vazgeç" : "Fare tuşu ata"}</button>
-            {mouse.btn && !mouse.capture && <button className="x" type="button" onClick={() => setSpikeMouse("")}>Kaldır</button>}
-          </span>
-        )}
-        </div>
-        {spike && <SpikeGauge t={spike} />}
-      </div>
-
       <div className="note">
-        <input className="short" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.stopPropagation()} placeholder="Ad (ör. Ult)" aria-label="Sayaç adı" />
+        <input className="short" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.stopPropagation()} placeholder="Ad (ör. Yemek)" aria-label="Sayaç adı" />
         <input className="short" value={dur} onChange={(e) => setDur(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") add(); e.stopPropagation(); }} placeholder="1:30 ya da 90" aria-label="Süre" />
         <button className="x go" type="button" onClick={add} disabled={!secs}>Başlat</button>
         <span className="presets">

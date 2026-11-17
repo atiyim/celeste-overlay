@@ -1,5 +1,4 @@
-import { applyHotkey, captureHotkey, DEFAULT_HOTKEY, hotkeyLabel, useHotkey } from "./hotkey";
-import { accelFromEvent, spikeKey_ as spikeKey } from "./timerStore";
+import { applyHotkey, captureHotkey, DEFAULT_HOTKEY, hotkeyLabel, useHotkey, accelFromEvent } from "./hotkey";
 import { useEffect, useState, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { CLASSIC_ACCENT, CLASSIC_SKIN, MAIN_ACCENT, MAIN_SKIN } from "./vip";
@@ -52,7 +51,6 @@ export function Settings({ zoom, onZoom, zooms, theme, onChange, onToast, onClos
       const a = accelFromEvent(e);
       if (!a) { setHkMsg("Bu tuş olmaz"); return; }
       if (!/F\d+$/.test(a) && !/[+]/.test(a)) { setHkMsg("Ctrl, Alt ya da Shift ile birlikte bas"); return; }
-      if (a === spikeKey()) { setHkMsg("Spike tuşuyla aynı"); return; }
       const m = await applyHotkey(a);
       if (m) { setHkMsg(m); return; }
       setHkCapture(false);

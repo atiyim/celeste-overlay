@@ -121,9 +121,9 @@ Hızlı mesajlar: sık yazdığın mesajları ekle, listeden birine tıklayınca
 
 Sağ alttaki Celeste (ay perisi) arada bir kısa bir şey söyler: maçına göre parti uyarısı, galibiyet serisi ya da mola hatırlatması. Tıklarsan rehber yeniden açılır. Ayarlar › Overlay › Köşede Celeste'den kapatabilirsin. Rehber sesli anlatılır; altyazısı hep açıktır ve Ayarlar › Hakkında'dan baştan izlenebilir.
 
-### Sayaçlar ve spike
+### Sayaçlar
 
-**Araçlar › Sayaçlar** sekmesinde süre girip özel sayaç kurabilir ya da hazır sürelerden (30 sn, 45 sn, 1 dk, 2 dk) birini seçebilirsin. Spike sayacı tek tuşla başlar; 45 saniyelik geri sayım çizgilerle gösterilir. Son 7 saniyede yalnızca yarım çözülmüşse yetişir, son 3,5 saniyede çözülmez. Sayaç çalışırken oyunun üstünde küçük bir şerit çıkar; tıklamalar oyuna geçer. Oyundan veri okunmaz: sayaç senin bastığın tuşla başlar.
+**Araçlar › Sayaçlar** sekmesinde süre girip özel sayaç kurabilir ya da hazır sürelerden (30 sn, 45 sn, 1 dk, 2 dk) birini seçebilirsin. Bitince overlay'de bildirim çıkar; oyuna dokunmaz.
 
 ### S.S.S & Panel
 

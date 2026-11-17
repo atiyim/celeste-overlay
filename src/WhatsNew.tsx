@@ -3,6 +3,9 @@ import { useState } from "react";
 /* Güncellemeden sonra bir kez görünen "neler yeni" kartı. Kapatınca bu sürüm için bir daha çıkmaz. */
 const KEY = "overlay-whatsnew";
 const NOTES: Record<string, string[]> = {
+  "0.8.3": [
+    "Spike sayacı ve oyun üstü şerit kaldırıldı: Riot canlı maçta spike sayaçlarını uygun görmüyor. Özel sayaçlar yerinde duruyor.",
+  ],
   "0.8.2": [
     "Güvenlik: Akış, roller, Premium ve diğer Celeste servisleri artık yalnızca resmi sürümle çalışır. Her istek imzalanır; değiştirilmiş kopyalar bağlanamaz.",
     "Kaynak koddan derlenen kopyalar açılışta lisans şartlarını gösterir ve \"Resmi olmayan derleme\" olarak işaretlenir. Resmi sürümde bir değişiklik yok.",

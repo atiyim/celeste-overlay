@@ -38,12 +38,7 @@ function run() {
   tick = window.setInterval(() => {
     const now = Date.now();
     for (const t of list) {
-      if (!t.done && t.endsAt <= now) { t.done = true; beep(t.name === SPIKE_NAME ? [330, 247, 196] : undefined); alertFn?.(t); if (t.name === SPIKE_NAME) { const id = t.id; window.setTimeout(() => { if (list.some((x) => x.id === id && x.done)) stopSpike(); }, SPIKE_CLEAR_MS); } }
-      else if (!t.done && t.name === SPIKE_NAME) {
-        // Aşama değişince kısa uyarı: 7 sn (tam çözme biter) ve 3,5 sn (yarım çözme de biter)
-        const ph = spikePhase(t.endsAt - now).id;
-        if (ph !== lastPhase) { if (ph === "half") beep([660]); else if (ph === "dead") beep([520, 392]); lastPhase = ph; }
-      }
+      if (!t.done && t.endsAt <= now) { t.done = true; beep(); alertFn?.(t); }
     }
     if (!list.some((t) => !t.done)) { window.clearInterval(tick); tick = undefined; }
     emit();
@@ -60,97 +55,6 @@ export function restartTimer(id: number) {
   run(); emit();
 }
 export function removeTimer(id: number) { list = list.filter((t) => t.id !== id); emit(); }
-/* Spike: Valorant'ta spike 45 saniyede patlar. Oyundan plant bilgisi okunmaz; sayaç senin bastığın tuşla ya da düğmeyle başlar. */
-export const SPIKE_NAME = "Spike";
-export const SPIKE_SECONDS = 45;
-const SPIKE_KEY = "overlay-spike-key";
-let spikeKey = (() => { try { return localStorage.getItem(SPIKE_KEY) ?? ""; } catch { return ""; } })();
-const keySubs = new Set<() => void>();
-/** Çözme süreleri: tam 7 sn, yarıdan devam 3,5 sn. */
-/** Patladıktan sonra gösterge bu kadar kalır, sonra kendiliğinden kalkar. */
-const SPIKE_CLEAR_MS = 6000;
-export const DEFUSE_FULL = 7, DEFUSE_HALF = 3.5, SPIKE_HURRY = 12;
-/** Son an çözme çizgileri: bu kalan süreyle çözmeye başlarsan spike 0,01 sn kala çözülür.
- *  Tek oturuş: 7 + 0,01. Yarısı çözülmüşse (3,5 sn'lik ara nokta): 3,5 + 0,01. */
-export const LAST_FULL = DEFUSE_FULL + 0.01, LAST_HALF = DEFUSE_HALF + 0.01;
-/** Bir sonraki son an çizgisine kalan süre ve türü; ikisi de geçtiyse null. */
-export function nextLastMark(leftSec: number): { kind: "full" | "half"; in: number } | null {
-  if (leftSec > LAST_FULL) return { kind: "full", in: leftSec - LAST_FULL };
-  if (leftSec > LAST_HALF) return { kind: "half", in: leftSec - LAST_HALF };
-  return null;
-}
-/** Çubukta (her çizgi bir saniye) son an noktasının, o saniyelik çizgi içindeki yeri (soldan %). Yoksa null. */
-export function markAt(sec: number): { at: number; kind: "full" | "half" } | null {
-  const f = Math.ceil(LAST_FULL), h = Math.ceil(LAST_HALF);
-  if (sec === f) return { at: Math.round((sec - LAST_FULL) * 100), kind: "full" };
-  if (sec === h) return { at: Math.round((sec - LAST_HALF) * 100), kind: "half" };
-  return null;
-}
-export type SpikePhaseId = "safe" | "hurry" | "half" | "dead";
-export interface SpikePhase { id: SpikePhaseId; label: string; hint: string }
-const PHASES: Record<SpikePhaseId, SpikePhase> = {
-  safe: { id: "safe", label: "Çözülebilir", hint: "Tam çözmeye rahatça vakit var." },
-  hurry: { id: "hurry", label: "Acele et", hint: "Tam çözme için son saniyeler. Şimdi başlamalısın." },
-  half: { id: "half", label: "Sadece yarım çözülmüşse", hint: "Sıfırdan çözme yetişmez. Yarısı çözülmüşse hâlâ yetişir." },
-  dead: { id: "dead", label: "Artık çözülmez", hint: "Yarım çözme bile yetişmez. Uzaklaş." },
-};
-export const spikePhaseOf = (sec: number): SpikePhaseId => (sec <= DEFUSE_HALF ? "dead" : sec <= DEFUSE_FULL ? "half" : sec <= SPIKE_HURRY ? "hurry" : "safe");
-export const spikePhase = (leftMs: number): SpikePhase => PHASES[spikePhaseOf(leftMs / 1000)];
-let lastPhase: SpikePhaseId = "safe";
-export function stopSpike() { list = list.filter((t) => t.name !== SPIKE_NAME); emit(); }
-export function startSpike() {
-  lastPhase = "safe";
-  list = list.filter((t) => t.name !== SPIKE_NAME);
-  addTimer(SPIKE_NAME, SPIKE_SECONDS);
-}
-/** Aynı tuş: çalışırken durdurur, durmuşsa (ya da patlamışsa) başlatır. */
-export function toggleSpike() {
-  const t = currentSpike();
-  if (t && !t.done) stopSpike(); else startSpike();
-}
-/* Fare tuşu: "x1" (Geri), "x2" (İleri), "middle" (orta). Yalnızca Windows'ta çalışır. */
-export type MouseBtn = "" | "x1" | "x2" | "middle";
-export const MOUSE_LABEL: Record<MouseBtn, string> = { "": "Atanmadı", x1: "Fare Geri (yan tuş 1)", x2: "Fare İleri (yan tuş 2)", middle: "Fare orta tuş" };
-const SPIKE_MOUSE = "overlay-spike-mouse";
-let spikeMouse: MouseBtn = (() => { try { const v = localStorage.getItem(SPIKE_MOUSE); return v === "x1" || v === "x2" || v === "middle" ? v : ""; } catch { return ""; } })();
-let mouseCapture = false;
-const mouseSubs = new Set<() => void>();
-const mouseEmit = () => mouseSubs.forEach((f) => f());
-export function setSpikeMouse(b: MouseBtn) {
-  spikeMouse = b;
-  try { localStorage.setItem(SPIKE_MOUSE, b); } catch { /* depolama kapalı */ }
-  mouseEmit();
-}
-export function setMouseCapture(on: boolean) { mouseCapture = on; mouseEmit(); }
-/** Rust'tan gelen fare tuşu: atama sırasındaysa tuşu atar, değilse atanmış tuşla eşleşirse sayacı açar/kapatır. */
-export function onMouseBtn(b: MouseBtn) {
-  if (mouseCapture) { setSpikeMouse(b); setMouseCapture(false); return; }
-  if (spikeMouse && b === spikeMouse) toggleSpike();
-}
-export function useSpikeMouse(): { btn: MouseBtn; capture: boolean } {
-  const btn = useSyncExternalStore((f) => { mouseSubs.add(f); return () => { mouseSubs.delete(f); }; }, () => spikeMouse);
-  const capture = useSyncExternalStore((f) => { mouseSubs.add(f); return () => { mouseSubs.delete(f); }; }, () => mouseCapture);
-  return { btn, capture };
-}
-export function setSpikeKey(k: string) {
-  spikeKey = k;
-  try { localStorage.setItem(SPIKE_KEY, k); } catch { /* depolama kapalı */ }
-  keySubs.forEach((f) => f());
-}
-export const spikeKey_ = () => spikeKey;
-export function useSpikeKey(): string {
-  return useSyncExternalStore((f) => { keySubs.add(f); return () => { keySubs.delete(f); }; }, () => spikeKey);
-}
-/** Basılan tuşu global kısayol biçimine çevirir ("Control+Shift+F6"). Desteklenmeyen tuşta null. Overlay'in göster/gizle tuşuyla çakışma çağıran tarafta denetlenir. */
-export function accelFromEvent(e: KeyboardEvent): string | null {
-  const c = e.code;
-  const key = /^Key([A-Z])$/.exec(c)?.[1] ?? /^Digit(\d)$/.exec(c)?.[1] ?? (/^F([1-9]|1[0-9]|2[0-4])$/.test(c) ? c : null);
-  if (!key) return null;
-  return [e.ctrlKey && "Control", e.altKey && "Alt", e.shiftKey && "Shift", key].filter(Boolean).join("+");
-}
-
-/** Spike sayacının o anki hali (yoksa null) ve değişiklik aboneliği: oyun üstü şerit bunu kullanır. */
-export const currentSpike = (): Timer | null => list.find((t) => t.name === SPIKE_NAME) ?? null;
 export function subscribeTimers(f: () => void) { subs.add(f); return () => { subs.delete(f); }; }
 
 export function onTimerDone(fn: ((t: Timer) => void) | null) { alertFn = fn; }

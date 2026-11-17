@@ -30,9 +30,7 @@ import { Timers } from "./Timers";
 import { Search } from "./Search";
 import { Meta } from "./Meta";
 import { TimerPill } from "./TimerPill";
-import { onMouseBtn, onTimerDone, toggleSpike, useSpikeKey, useSpikeMouse, type MouseBtn } from "./timerStore";
-import { initSpikeWindow } from "./spikeWindow";
-import { register, unregister } from "@tauri-apps/plugin-global-shortcut";
+import { onTimerDone } from "./timerStore";
 import { AccountPanel } from "./AccountPanel";
 import { StorePanel } from "./StorePanel";
 import { StatsPanel } from "./StatsPanel";
@@ -548,29 +546,9 @@ export function App() {
   });
 
   const showToast = (t: string) => { setToast(t); window.setTimeout(() => setToast(null), 1800); };
-  // Spike sayacı için atanmış genel kısayol (oyunun üstündeyken de çalışır).
-  const spikeKey = useSpikeKey();
-  useEffect(() => {
-    if (!inTauri || !spikeKey) return;
-    register(spikeKey, (e) => { if (e.state === "Pressed") toggleSpike(); }).catch(() => showToast("Spike tuşu kaydedilemedi, başka bir program kullanıyor olabilir"));
-    return () => { unregister(spikeKey).catch(() => undefined); };
-  }, [spikeKey]);
-  // Fare yan tuşu: Rust yalnızca tuş atanmışken (ya da atama sırasında) dinler.
-  const sm = useSpikeMouse();
-  useEffect(() => {
-    if (!inTauri) return;
-    invoke("mouse_listen", { on: sm.btn !== "" || sm.capture }).catch(() => undefined);
-  }, [sm.btn, sm.capture]);
-  useEffect(() => {
-    if (!inTauri) return;
-    const un = listen<MouseBtn>("mouse-btn", (e) => onMouseBtn(e.payload));
-    return () => { un.then((f) => f()).catch(() => undefined); };
-  }, []);
   useEffect(() => { if (inTauri) restoreHotkey(); }, []);
   const hk = hotkeyLabel(useHotkey());
-  // Oyun üstü spike şeridi: sayaç başlayınca küçük pencereye bildirilir.
-  useEffect(() => (inTauri ? initSpikeWindow() : undefined), []);
-  useEffect(() => { onTimerDone((t) => { setToast(t.name === "Spike" ? "Spike patladı" : `${t.name} bitti`); window.setTimeout(() => setToast(null), 3500); }); return () => onTimerDone(null); }, []);
+  useEffect(() => { onTimerDone((t) => { setToast(`${t.name} bitti`); window.setTimeout(() => setToast(null), 3500); }); return () => onTimerDone(null); }, []);
   const copyName = async (name: string | null, label?: string) => {
     if (!name) { showToast("Bu oyuncunun ismi gizli, kopyalanacak bir şey yok"); return; }
     try {

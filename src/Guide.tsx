@@ -49,7 +49,6 @@ const STEPS: Step[] = [
   { a: "16-menu", ch: 5, tip: "Soldaki soru işareti S.S.S, dişli de Ayarlar.", d: 4.9, scene: "stage", mode: "roster", t: ["rail"], say: "Sol menüde profilin, maç raporun ve Akış var. Hadi gezerek keşfet!" },
   { a: "17-akis", ch: 5, tip: "Görsel ve GIF de ekleyebilirsin. Küfür ve hakaret yazılamaz.", d: 5.1, scene: "stage", mode: "roster", t: ["feed"], say: "Akış'ta maçını paylaşabilir, espriler yapabilir ve gelenlere tepkiler verebilirsin." },
   { a: "20-araclar", ch: 5, tip: "Hepsi overlay'in içinde çalışır; oyuna dokunmaz.", d: 7.4, scene: "tools", t: ["tl-head"], say: "Aaa, unutuyordum! Bir de Araçlar var. Sol menüdeki yıldız simgesinden açılır, içinde yedi küçük yardımcı var." },
-  { a: "21-spike", ch: 5, tip: "Tuşu Araçlar > Sayaçlar'dan atarsın. Oyunun üstünde küçük bir şerit çıkar.", d: 9.4, scene: "tools", t: ["tl-timers"], say: "İşte spike sayacı. Spike kurulunca tek tuşa bas. Çözmeye yetişir mi, rengiyle söylerim. Merak etme, oyuna dokunmuyorum; tuşa senin basman gerekli!" },
   { a: "22-araclar2", ch: 5, tip: "İzleme listesindeki oyuncu lobine girince sesli uyarı da alabilirsin.", d: 4.2, scene: "tools", t: ["tl-cross", "tl-chat", "tl-watch"], say: "Hazır nişangahlar, hızlı mesajlar ve izleme listesi de burada." },
   { a: "23-araclar3", ch: 5, tip: "Meta, son yamaya göre haritalarda öne çıkan ajanları gösterir.", d: 6.7, scene: "tools", t: ["tl-search", "tl-device", "tl-meta"], say: "Oyuncu arama, hassasiyet hesabı ve meta ajanlar. Hepsini bir dene, seveceğinden eminim şapşik." },
   { a: "18-tam-ekran", ch: 4, tip: "Bunu bir kez ayarlaman yeter.", d: 6.0, scene: "note", t: ["note"], say: "Küçük bir not: Overlay görünmüyorsa Valorant'ta Pencereli Tam Ekran'ı seç. Bu kadar." },
@@ -61,7 +60,7 @@ const RAIL: { icon: IconName; k?: string }[] = [
 ];
 /** Araçlar sahnesindeki kutular (uygulamadaki Araçlar sekmeleriyle aynı). */
 const TOOLBOX: { k: string; icon: IconName; n: string; d: string }[] = [
-  { k: "timers", icon: "timer", n: "Spike sayacı", d: "Çözmeye yetişir mi?" },
+  { k: "timers", icon: "timer", n: "Sayaçlar", d: "Kendi geri sayımların" },
   { k: "cross", icon: "target", n: "Nişangah", d: "Hazır kodlar, tek tıkla kopyala" },
   { k: "chat", icon: "chat", n: "Hızlı mesajlar", d: "Kaydet, tıkla, yapıştır" },
   { k: "watch", icon: "eye", n: "İzleme listesi", d: "Etiketlediğin gelince uyarır" },
@@ -303,7 +302,6 @@ export function Guide({ onDone }: Props) {
             <div key={t.k} className={`gs-tl${L(`tl-${t.k}`)}`} style={{ animationDelay: `${k * 60}ms` }}>
               <span className="gs-tli"><Icon name={t.icon} size={16} /></span>
               <span><b>{t.n}</b><small>{t.d}</small></span>
-              {t.k === "timers" && <span className="gs-tlbar" aria-hidden="true">{Array.from({ length: 15 }, (_, n) => <i key={n} className={n > 12 ? "d" : n > 10 ? "h" : n > 8 ? "y" : ""} />)}</span>}
             </div>
           ))}
         </div>

@@ -26,3 +26,11 @@ export function restoreHotkey() {
   if (cur !== DEFAULT_HOTKEY) void invoke("set_hotkey", { accel: cur }).catch(() => undefined);
 }
 export const captureHotkey = (on: boolean) => { void invoke("hotkey_capture", { on }).catch(() => undefined); };
+
+/** Basılan tuşu global kısayol biçimine çevirir ("Control+Shift+F6"). Desteklenmeyen tuşta null. */
+export function accelFromEvent(e: KeyboardEvent): string | null {
+  const c = e.code;
+  const key = /^Key([A-Z])$/.exec(c)?.[1] ?? /^Digit(\d)$/.exec(c)?.[1] ?? (/^F([1-9]|1[0-9]|2[0-4])$/.test(c) ? c : null);
+  if (!key) return null;
+  return [e.ctrlKey && "Control", e.altKey && "Alt", e.shiftKey && "Shift", key].filter(Boolean).join("+");
+}
