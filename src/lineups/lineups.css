@@ -114,11 +114,12 @@
 /* ================================================================
    Harita (MapBoard)
    ================================================================ */
-.lb { position: relative; width: 100%; aspect-ratio: 1; border-radius: 16px; overflow: hidden; touch-action: none; user-select: none;
+.lb { position: relative; width: 100%; aspect-ratio: 1; border-radius: 16px; overflow: hidden; touch-action: none; user-select: none; overscroll-behavior: contain;
   background: radial-gradient(80% 80% at 50% 45%, #1a2032, #0b0e16); box-shadow: inset 0 0 0 1px var(--line), 0 18px 40px -26px rgba(0, 0, 0, .9); }
 .lb.zoomed { cursor: grab; } .lb.zoomed:active { cursor: grabbing; }
 .lb.picking, .lb.quizzing { cursor: crosshair; }
 .lb-in { position: absolute; inset: 0; transform-origin: 0 0; transition: transform .45s var(--lu-ease); }
+.lb.live .lb-in { transition: none; }
 .lb-map { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: .92; filter: drop-shadow(0 0 22px rgba(120, 140, 255, .08)) saturate(.9); pointer-events: none; animation: lu-fade .5s ease both; }
 .lb-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .lb-callout { font: 600 15px/1 "Geist Variable", system-ui, sans-serif; fill: rgba(236, 239, 246, .66); text-anchor: middle; paint-order: stroke; stroke: rgba(6, 8, 14, .85); stroke-width: 4px; font-size: calc(15px / var(--k, 1)); }
@@ -154,6 +155,12 @@
 .lb-hint, .lb-reset { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); padding: 5px 12px; border-radius: 99px; font-size: 11.5px; font-weight: 600; background: rgba(8, 10, 18, .82); box-shadow: inset 0 0 0 1px var(--line-2, #303850); backdrop-filter: blur(6px); }
 .lb-hint { color: var(--accent); animation: lu-rise .3s var(--lu-ease) both; pointer-events: none; }
 .lb-reset { all: unset; position: absolute; right: 10px; top: 10px; padding: 4px 10px; border-radius: 99px; font-size: 11px; color: var(--fg-2); background: rgba(8, 10, 18, .82); box-shadow: inset 0 0 0 1px var(--line-2, #303850); cursor: pointer; }
+.lb-zoom { position: absolute; right: 10px; top: 10px; z-index: 8; display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: 99px; background: rgba(8, 10, 18, .82); box-shadow: inset 0 0 0 1px var(--line-2, #303850); backdrop-filter: blur(6px); }
+.lb-zoom span { min-width: 38px; text-align: center; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--fg-2); }
+.lb-zoom button { all: unset; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; font-size: 15px; line-height: 1; color: var(--fg); cursor: pointer; transition: background .15s, opacity .15s; }
+.lb-zoom button:hover:not(:disabled) { background: var(--s2); }
+.lb-zoom button:disabled { opacity: .35; cursor: default; }
+.lb-zoom button.rs { width: auto; padding: 0 9px; margin-left: 2px; border-radius: 99px; font-size: 11px; color: var(--fg-2); }
 .lb.compact { border-radius: 14px; }
 
 .lgd { display: inline-block; flex: none; }
@@ -604,7 +611,8 @@
 .lb::before, .lb::after { content: ""; position: absolute; z-index: 7; width: 26px; height: 26px; pointer-events: none; border: 2px solid rgba(236, 232, 225, .55); }
 .lb::before { left: 8px; top: 8px; border-right: 0; border-bottom: 0; }
 .lb::after { right: 8px; bottom: 8px; border-left: 0; border-top: 0; }
-.lb-stand em, .lb-hint, .lb-reset { border-radius: 2px; font-family: "Val Cond", sans-serif; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.lb-zoom button.rs { border-radius: 2px; }
+.lb-stand em, .lb-hint, .lb-reset, .lb-zoom, .lb-zoom button { border-radius: 2px; font-family: "Val Cond", sans-serif; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 
 /* harita kartları */
 .lu-map { height: 52px; }

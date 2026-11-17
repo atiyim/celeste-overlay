@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type WheelEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import type { Assets, MapInfo } from "../assets";
 import type { Lineup, Pt } from "./api";
 
@@ -8,6 +8,8 @@ import type { Lineup, Pt } from "./api";
 
 const V = 1000;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+/** Nokta seçerken daha ince ayar için daha fazla yakınlaşılır. */
+const MAX_K = 4, MAX_K_PICK = 8;
 
 export function abilityOf(assets: Assets | null, l: { agent: string; slot: string }) {
   return assets?.agents.get(l.agent)?.abilities?.find((a) => a.slot === l.slot);
@@ -48,6 +50,7 @@ export function MapBoard({ map, assets, lineups, selected, hover, onPick, onHove
   const box = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const [view, setView] = useState({ k: 1, x: 0, y: 0 });
+  const [live, setLive] = useState(false);
   const drag = useRef<{ x: number; y: number; vx: number; vy: number; moved: boolean } | null>(null);
   const sel = lineups.find((l) => l.id === selected) ?? null;
   const hov = lineups.find((l) => l.id === hover) ?? null;
@@ -69,27 +72,54 @@ export function MapBoard({ map, assets, lineups, selected, hover, onPick, onHove
     return { x: clamp((e.clientX - r.left) / r.width, 0, 1), y: clamp((e.clientY - r.top) / r.height, 0, 1) };
   };
 
-  const onWheel = (e: WheelEvent) => {
-    const r = box.current?.getBoundingClientRect();
-    if (!r) return;
-    const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
-    setView((v) => {
-      const k = clamp(v.k * (e.deltaY < 0 ? 1.18 : 1 / 1.18), 1, 4);
-      const x = clamp(px - ((px - v.x) / v.k) * k, 1 - k, 0), y = clamp(py - ((py - v.y) / v.k) * k, 1 - k, 0);
-      return { k, x, y };
-    });
+  // Tekerlek: sayfa kaymasını engelle, imlecin altındaki noktaya doğru yakınlaş.
+  // React onWheel pasif bağlandığı için preventDefault çalışmaz; olay doğrudan, pasif olmayan şekilde bağlanır.
+  const maxK = pick || quiz ? MAX_K_PICK : MAX_K;
+  const idle = useRef<number | undefined>(undefined);
+  const touch = () => {
+    setLive(true);
+    window.clearTimeout(idle.current);
+    idle.current = window.setTimeout(() => setLive(false), 140);
   };
+  useEffect(() => () => window.clearTimeout(idle.current), []);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const wheel = (e: globalThis.WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const r = el.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+      const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      const f = Math.exp(-clamp(dy, -240, 240) * 0.0017);
+      touch();
+      setView((v) => {
+        const k = clamp(v.k * f, 1, maxK);
+        if (k === v.k) return v;
+        const x = clamp(px - ((px - v.x) / v.k) * k, 1 - k, 0), y = clamp(py - ((py - v.y) / v.k) * k, 1 - k, 0);
+        return { k, x, y };
+      });
+    };
+    el.addEventListener("wheel", wheel, { passive: false });
+    return () => el.removeEventListener("wheel", wheel);
+  }, [maxK]); // eslint-disable-line react-hooks/exhaustive-deps
+  const zoomBy = (f: number) => setView((v) => {
+    const k = clamp(v.k * f, 1, maxK);
+    return { k, x: clamp(0.5 - ((0.5 - v.x) / v.k) * k, 1 - k, 0), y: clamp(0.5 - ((0.5 - v.y) / v.k) * k, 1 - k, 0) };
+  });
   const down = (e: PointerEvent) => { drag.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false }; };
   const move = (e: PointerEvent) => {
     const d = drag.current, r = box.current?.getBoundingClientRect();
     if (!d || !r || view.k === 1) return;
     const dx = (e.clientX - d.x) / r.width, dy = (e.clientY - d.y) / r.height;
     if (Math.abs(dx) + Math.abs(dy) > 0.01) d.moved = true;
+    if (d.moved) setLive(true);
     setView((v) => ({ ...v, x: clamp(d.vx + dx, 1 - v.k, 0), y: clamp(d.vy + dy, 1 - v.k, 0) }));
   };
   const up = (e: PointerEvent) => {
     const d = drag.current;
     drag.current = null;
+    setLive(false);
     if (d?.moved) return;
     if ((pick || quiz) && onPoint) { const p = toLocal(e); if (p) onPoint(p); }
   };
@@ -120,12 +150,11 @@ export function MapBoard({ map, assets, lineups, selected, hover, onPick, onHove
   return (
     <div
       ref={box}
-      className={`lb${compact ? " compact" : ""}${pick ? ` picking ${pick}` : ""}${quiz ? " quizzing" : ""}${view.k > 1 ? " zoomed" : ""}`}
-      onWheel={onWheel}
+      className={`lb${compact ? " compact" : ""}${pick ? ` picking ${pick}` : ""}${quiz ? " quizzing" : ""}${view.k > 1 ? " zoomed" : ""}${live ? " live" : ""}`}
       onPointerDown={down}
       onPointerMove={move}
       onPointerUp={up}
-      onPointerLeave={() => { drag.current = null; }}
+      onPointerLeave={() => { drag.current = null; setLive(false); }}
       onDoubleClick={() => setView({ k: 1, x: 0, y: 0 })}
       role="application"
       aria-label={`${map.name} haritası`}
@@ -193,7 +222,14 @@ export function MapBoard({ map, assets, lineups, selected, hover, onPick, onHove
         </div>
       </div>
       {pick && <span className="lb-hint">{pick === "stand" ? "Duracağın yere tıkla" : "Yeteneğin düşeceği yere tıkla"}</span>}
-      {view.k > 1 && !compact && <button type="button" className="lb-reset" onClick={() => setView({ k: 1, x: 0, y: 0 })} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>Sıfırla</button>}
+      {!compact && (
+        <div className="lb-zoom" onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
+          <button type="button" onClick={() => zoomBy(1 / 1.5)} disabled={view.k <= 1} aria-label="Uzaklaş">−</button>
+          <span>{Math.round(view.k * 100)}%</span>
+          <button type="button" onClick={() => zoomBy(1.5)} disabled={view.k >= maxK} aria-label="Yakınlaş">+</button>
+          {view.k > 1 && <button type="button" className="rs" onClick={() => setView({ k: 1, x: 0, y: 0 })}>Sıfırla</button>}
+        </div>
+      )}
     </div>
   );
 }

@@ -176,7 +176,7 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
           <div className="led-pickbar">
             <button type="button" className={`led-pk${pick === "stand" ? " on" : ""}${d.stand ? " ok" : ""}`} onClick={() => setPick("stand")}><span className={`lgd stand ${d.side}`} />Duracağın yer{d.stand && <Icon name="check" size={13} />}</button>
             <button type="button" className={`led-pk${pick === "land" ? " on" : ""}${d.land ? " ok" : ""}`} onClick={() => setPick("land")}><span className={`lgd land ${d.side}`} />Düşeceği yer{d.land && <Icon name="check" size={13} />}</button>
-            <small>Tekerlekle yakınlaş, ince ayar için tekrar tıkla.</small>
+            <small>Tekerlekle yakınlaş, sürükleyerek gez. İnce ayar için tekrar tıkla.</small>
           </div>
         </div>
       </section>
