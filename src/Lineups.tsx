@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { Assets, MapInfo } from "./assets";
 import { Icon, type IconName } from "./icons";
 import { useMe as useFeedMe } from "./vip";
@@ -53,6 +53,11 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
   const [mine, setMine] = useState<{ admin: boolean; lineups: Lineup[] } | null>(null);
   const [votes, setVotes] = useState<Set<string>>(new Set());
   const admin = Boolean(mine?.admin || feedMe?.admin);
+  const mapsRef = useRef<HTMLDivElement>(null);
+  // Seçili harita şeritte görünmüyorsa ortaya kaydır.
+  useEffect(() => { mapsRef.current?.querySelector<HTMLElement>(".lu-map.on")?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }, [mapId, tab]);
+  const filtered = Boolean(agentId || side || site || kind || diff || q.trim() || onlySet);
+  const clearFilters = () => { setAgentId(""); setSide(""); setSite(""); setKind(""); setDiff(0); setQ(""); setOnlySet(false); };
 
   // Harita listesi geç gelirse oyundaki harita sonra seçilir; hiçbiri yoksa lineup'ı en çok olan harita.
   useEffect(() => {
@@ -101,7 +106,7 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
     <div className="lu-head">
       <div className="lu-title">
         <span className="lu-logo"><Icon name="map" size={18} /></span>
-        <div><h2>Lineup</h2><small>{list.length ? `${list.length} lineup · ${new Set(list.map((l) => l.map)).size} harita` : "Kütüphane"}</small></div>
+        <div><h2>{valUpper("Lineup")}</h2><small>{list.length ? `${list.length} lineup · ${new Set(list.map((l) => l.map)).size} harita` : "Kütüphane"}</small></div>
       </div>
       <div className="lu-tabs" role="tablist">
         {TABS.filter(([id]) => id !== "mod" || admin).map(([id, n, ic]) => (
@@ -153,11 +158,12 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
         />
       ) : tab === "lib" ? (
         <div className="lu-lib">
-          <div className="lu-maps" role="listbox" aria-label="Harita">
+          <div className="lu-maps" role="listbox" aria-label="Harita" ref={mapsRef}>
             {maps.map((m) => {
               const n = list.filter((l) => l.map === m.uuid).length;
               return (
                 <button key={m.uuid} type="button" role="option" aria-selected={mapId === m.uuid} className={`lu-map${mapId === m.uuid ? " on" : ""}${n ? "" : " empty"}`} onClick={() => { setMapId(m.uuid); setAgentId(""); setHover(null); }} style={m.banner ? ({ "--bg": `url(${m.banner})` } as CSSProperties) : undefined}>
+                  {mapId === m.uuid && <i className="lw-tick"><Icon name="check" size={12} /></i>}
                   <b>{nameUpper(m.name)}</b>{n > 0 && <small>{n}</small>}
                 </button>
               );
@@ -199,6 +205,10 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
             <div className="lu-main">
               {map ? (
                 <div className="lu-board">
+                  <div className="lu-hero" key={map.uuid} style={map.splash || map.banner ? ({ "--bg": `url(${map.splash ?? map.banner})` } as CSSProperties) : undefined}>
+                    <div><small>Seçili harita</small><b>{nameUpper(map.name)}</b></div>
+                    <span>{onMap.length} lineup · {agentsHere.length} ajan</span>
+                  </div>
                   <MapBoard map={map} assets={assets} lineups={shown} hover={hover} onHover={setHover} onPick={(id) => setOpen(id)} callouts={callouts} done={mastered} />
                   <div className="lu-board-foot">
                     <span><i className="lgd land atk" />Saldırı</span><span><i className="lgd land def" />Savunma</span>
@@ -207,11 +217,18 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
                 </div>
               ) : <div className="lu-board" />}
               <div className="lu-list">
+                {(shown.length > 0 || filtered) && (
+                  <div className="lu-list-h">
+                    <b>{shown.length} lineup{filtered && onMap.length !== shown.length ? ` / ${onMap.length}` : ""}</b>
+                    {filtered && <button type="button" onClick={clearFilters}><Icon name="x" size={12} />Filtreleri temizle</button>}
+                  </div>
+                )}
                 {loading && !list.length && Array.from({ length: 4 }, (_, i) => <div key={i} className="lu-card sk" />)}
                 {!loading && !shown.length && (
                   <div className="lu-none">
                     <Narrator text={onMap.length ? "Bu filtrelerle bir şey bulamadım. Filtreleri biraz gevşetelim mi?" : `${map?.name ?? "Bu harita"} için henüz lineup yok. İlkini sen eklersen adın kütüphanede yazar!`} mood={onMap.length ? "surprised" : "wink"} speak={false} playing={false} small />
-                    {!onMap.length && <button type="button" className="x go" onClick={() => setEdit({ editing: null, start: { map: mapId } })}><Icon name="plus" size={14} />İlk lineup'ı ekle</button>}
+                    {!onMap.length ? <button type="button" className="x go" onClick={() => setEdit({ editing: null, start: { map: mapId } })}><Icon name="plus" size={14} />İlk lineup'ı ekle</button>
+                      : <button type="button" className="x" onClick={clearFilters}>Filtreleri temizle</button>}
                   </div>
                 )}
                 {shown.map((l, i) => <LineupCard key={l.id} l={l} assets={assets} i={i} hover={hover === l.id} fav={me.fav.includes(l.id)} learned={mastered(l.id)} onHover={setHover} onOpen={() => setOpen(l.id)} />)}

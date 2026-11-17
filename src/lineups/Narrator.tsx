@@ -71,9 +71,12 @@ export function Narrator({ text, mood, speak, playing, onDone, small }: Props) {
   return (
     <div className={`lnar${small ? " small" : ""}`} aria-live="polite">
       <div className="lnar-head" ref={head}><Mascot mood={mood} /></div>
-      <div className="lnar-bub">
+      <div className="lnar-bub" key={text}>
+        <span className="lnar-name" aria-hidden="true"><i />Celeste</span>
         <span className="lnar-txt">{text.slice(0, n)}<i className={n < text.length ? "lnar-caret" : "lnar-caret off"} /></span>
         <span className="lnar-ghost" aria-hidden="true">{text}</span>
+        <svg className="lnar-tail" viewBox="0 0 12 18" aria-hidden="true"><path className="f" d="M7 0 Q6 13 0 18 L12 18 L12 0 Z" /><path className="s" d="M7 0 Q6 13 0 18 L12 18" /></svg>
+        <span className="lnar-tw a" aria-hidden="true" /><span className="lnar-tw b" aria-hidden="true" />
       </div>
     </div>
   );

@@ -266,20 +266,7 @@
 /* ================================================================
    Celeste anlatıcı
    ================================================================ */
-.lnar { display: flex; align-items: flex-end; gap: 4px; min-width: 0; }
-.lnar-head { position: relative; flex: none; width: 70px; height: 84px; }
-.lnar-head .mascot { position: static; width: 70px; height: 84px; animation: mcbob 2.6s ease-in-out infinite; }
-.lnar-head .mascot svg { width: 70px; height: 84px; }
-.lnar-bub { position: relative; flex: 1; display: grid; min-width: 0; padding: 12px 14px; margin-bottom: 26px; border-radius: 16px 16px 16px 4px; font-size: 13.5px; line-height: 1.5;
-  color: var(--fg); background: linear-gradient(160deg, color-mix(in srgb, var(--violet, #a78bfa) 16%, var(--s2)), var(--s2)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--violet, #a78bfa) 32%, var(--line)), 0 14px 30px -20px var(--violet, #a78bfa);
-  animation: lu-bub .4s var(--lu-spring) both; }
-.lnar-bub::before { content: ""; position: absolute; left: -7px; bottom: 0; width: 14px; height: 14px; background: inherit; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
-.lnar-txt, .lnar-ghost { grid-area: 1 / 1; }
-.lnar-ghost { visibility: hidden; }
-.lnar-caret { display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -2px; background: var(--violet, #a78bfa); animation: lu-blink .8s steps(1) infinite; }
-.lnar-caret.off { opacity: 0; animation: none; }
-.lnar.small .lnar-head, .lnar.small .lnar-head .mascot, .lnar.small .lnar-head .mascot svg { width: 52px; height: 62px; }
-.lnar.small .lnar-bub { font-size: 12.5px; padding: 9px 12px; margin-bottom: 18px; }
+/* yeni balon tasarımı dosyanın sonunda (Celeste balonu) */
 
 /* ================================================================
    Düzenleyici
@@ -626,9 +613,178 @@
 .lp-st b { font-size: 26px; }
 .lu-fire { border-radius: 2px; background: #ff4655; color: #fff; }
 
-/* Celeste balonu Valorant çizgisinde */
-.lnar-bub { border-radius: 2px; background: rgba(26, 36, 46, .95); box-shadow: inset 0 0 0 1px rgba(236, 232, 225, .16), inset 4px 0 0 #ff4655; }
-.lnar-bub::before { background: rgba(26, 36, 46, .95); }
 
 /* başlık ve adlar JS'te büyütüldü: tarayıcının "MAİN" büyütmesi devre dışı */
 .lv-ttl h3, .lu-map b, .lu-card-b b, .lp-dc-t b, .lp-pi > span b, .lc.ag, .lc:nth-child(2) { text-transform: none; }
+
+/* ================================================================
+   Celeste balonu: yumuşak, yuvarlak, gül pembesi ışıltı
+   Lineup'ın keskin Valorant çizgisi içinde Celeste'nin sesi tatlı kalır.
+   ================================================================ */
+.lnar { --bub: #1c1f2b; --bub-line: rgba(255, 164, 190, .26); --rose: #ff9db5;
+  display: flex; align-items: flex-end; gap: 12px; min-width: 0; }
+.lnar-head { position: relative; flex: none; width: 70px; height: 84px; }
+.lnar-head::after { content: ""; position: absolute; left: 12%; right: 12%; bottom: -2px; height: 10px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 157, 181, .35), transparent); filter: blur(2px); }
+.lnar-head .mascot { position: static; width: 70px; height: 84px; animation: mcbob 2.6s ease-in-out infinite; }
+.lnar-head .mascot svg { width: 70px; height: 84px; }
+.lnar-bub { position: relative; flex: 1; display: grid; min-width: 0; padding: 15px 18px 12px; margin-bottom: 20px; border-radius: 20px 20px 20px 6px;
+  font-size: 13.5px; line-height: 1.55; color: #f4eef0;
+  background: radial-gradient(120% 160% at 100% 0%, rgba(255, 140, 172, .16), transparent 55%), var(--bub);
+  box-shadow: inset 0 0 0 1px var(--bub-line), 0 14px 30px -20px rgba(255, 120, 160, .6);
+  transform-origin: 0 100%; animation: lnar-pop .45s var(--lu-spring) both; }
+.lnar-tail { position: absolute; left: -7px; bottom: 0; width: 12px; height: 18px; overflow: visible; pointer-events: none; }
+.lnar-tail .f { fill: var(--bub); }
+.lnar-tail .s { fill: none; stroke: var(--bub-line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.lnar-name { position: absolute; left: 16px; top: -9px; display: inline-flex; align-items: center; gap: 5px; height: 18px; padding: 0 9px 0 7px; border-radius: 99px;
+  font: 700 10.5px/1 "Val Cond", "Geist Variable", sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #ffd3de;
+  background: #2a2030; box-shadow: inset 0 0 0 1px rgba(255, 164, 190, .4); }
+.lnar-name i, .lnar-tw { display: block; background: var(--rose); clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); }
+.lnar-name i { width: 9px; height: 9px; }
+.lnar-tw { position: absolute; width: 10px; height: 10px; pointer-events: none; opacity: 0; animation: lnar-tw 3.2s ease-in-out infinite; }
+.lnar-tw.a { right: 12px; top: -5px; animation-delay: .6s; }
+.lnar-tw.b { right: 28px; top: 4px; width: 6px; height: 6px; animation-delay: 1.9s; }
+.lnar-txt, .lnar-ghost { grid-area: 1 / 1; }
+.lnar-ghost { visibility: hidden; }
+.lnar-caret { display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -2px; border-radius: 1px; background: var(--rose); animation: lu-blink .8s steps(1) infinite; }
+.lnar-caret.off { opacity: 0; animation: none; }
+.lnar.small .lnar-head, .lnar.small .lnar-head .mascot, .lnar.small .lnar-head .mascot svg { width: 52px; height: 62px; }
+.lnar.small .lnar-bub { font-size: 12.5px; padding: 13px 14px 10px; margin-bottom: 14px; }
+@keyframes lnar-pop { 0% { opacity: 0; transform: translateY(6px) scale(.92); } 60% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+@keyframes lnar-tw { 0%, 70%, 100% { opacity: 0; transform: scale(.4) rotate(0); } 82% { opacity: 1; transform: scale(1) rotate(45deg); } }
+
+/* ================================================================
+   Keşfet: harita seçici, seçili harita başlığı, filtre çubuğu
+   ================================================================ */
+.lu-maps { gap: 10px; padding: 4px 2px 10px; scroll-snap-type: x proximity; scroll-padding: 0 40%; }
+.lu-map { width: 132px; height: 66px; padding: 7px 10px; scroll-snap-align: center; transition: transform .25s var(--lu-spring), box-shadow .2s, opacity .2s; }
+.lu-map::before { filter: grayscale(.75) brightness(.4); }
+.lu-map::after { background: linear-gradient(180deg, transparent 25%, rgba(15, 25, 35, .88)); }
+.lu-map b { color: rgba(236, 232, 225, .62); transition: color .2s; }
+.lu-map small { position: absolute; top: 7px; right: 7px; height: 17px; min-width: 17px; padding: 0 4px; box-sizing: border-box; background: rgba(15, 25, 35, .85); color: var(--val-bone); box-shadow: inset 0 0 0 1px rgba(236, 232, 225, .25); }
+.lu-map:hover::before { filter: grayscale(.25) brightness(.68); }
+.lu-map:hover b { color: var(--val-bone); }
+.lu-map.empty { opacity: .55; } .lu-map.empty:hover { opacity: .85; }
+.lu-map.on { transform: translateY(-3px); box-shadow: inset 0 0 0 2px #ff4655; animation: lu-mapsel .5s var(--lu-spring); }
+.lu-map.on::before { filter: none; transform: scale(1.14); }
+.lu-map.on::after { background: linear-gradient(0deg, #ff4655 0 3px, transparent 3px), linear-gradient(180deg, transparent 30%, rgba(15, 25, 35, .8)); }
+.lu-map.on b { color: #fff; }
+.lu-map.on small { background: #ff4655; color: #fff; box-shadow: none; }
+.lw-tick { position: absolute; left: 7px; top: 7px; width: 18px; height: 18px; display: grid; place-items: center; color: #fff; background: #ff4655; z-index: 1;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px); animation: lu-pop .4s var(--lu-spring) both; }
+@keyframes lu-mapsel { 0% { transform: translateY(0) scale(.96); } 60% { transform: translateY(-4px) scale(1.03); } 100% { transform: translateY(-3px) scale(1); } }
+
+.lu-hero { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; height: 62px; padding: 10px 14px; box-sizing: border-box; overflow: hidden; isolation: isolate;
+  clip-path: polygon(var(--val-cut) 0, 100% 0, 100% calc(100% - var(--val-cut)), calc(100% - var(--val-cut)) 100%, 0 100%, 0 var(--val-cut)); box-shadow: inset 3px 0 0 #ff4655; animation: lu-rise .4s var(--lu-ease) both; }
+.lu-hero::before { content: ""; position: absolute; inset: 0; z-index: -2; background: var(--bg, none) center 40% / cover no-repeat, #1a242e; filter: saturate(.9) brightness(.55); }
+.lu-hero::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(15, 25, 35, .92) 10%, rgba(15, 25, 35, .2)); }
+.lu-hero small { display: block; font: 700 10.5px/1 "Val Cond", sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #ff6b77; margin-bottom: 4px; }
+.lu-hero b { font: 400 28px/1 "Val Display", sans-serif; letter-spacing: .02em; color: #fff; }
+.lu-hero span { font: 700 12px/1 "Val Cond", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: rgba(236, 232, 225, .75); }
+
+.lu-filters { padding: 10px 12px; background: rgba(26, 36, 46, .55); box-shadow: inset 0 0 0 1px rgba(236, 232, 225, .08);
+  clip-path: polygon(var(--val-cut) 0, 100% 0, 100% calc(100% - var(--val-cut)), calc(100% - var(--val-cut)) 100%, 0 100%, 0 var(--val-cut)); }
+.lu-list-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 2px 2px; }
+.lu-list-h b { font: 700 13px/1 "Val Cond", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-2); }
+.lu-list-h button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font: 700 11.5px/1 "Val Cond", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #ff6b77; }
+.lu-list-h button:hover { color: #ff8a94; }
+
+/* ================================================================
+   Lineup ekleme sihirbazı
+   ================================================================ */
+.lw { gap: 12px; }
+.lw-rail { list-style: none; margin: 0; padding: 0; position: relative; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.lw-rail li button { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 9px; padding: 8px 10px; cursor: pointer; background: rgba(26, 36, 46, .6);
+  box-shadow: inset 0 0 0 1px rgba(236, 232, 225, .08), inset 0 -3px 0 rgba(236, 232, 225, .06); transition: background .2s, box-shadow .2s, opacity .2s;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
+.lw-rail li button:hover:not(:disabled) { background: rgba(36, 48, 60, .8); }
+.lw-rail li button:disabled { cursor: default; }
+.lw-rail em { flex: none; width: 24px; height: 24px; display: grid; place-items: center; font: 400 14px/1 "Val Display", sans-serif; font-style: normal; color: var(--fg-3); background: rgba(15, 25, 35, .9); box-shadow: inset 0 0 0 1px rgba(236, 232, 225, .14); transition: background .25s, color .25s; }
+.lw-rail span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.lw-rail b { font: 700 12.5px/1 "Val Cond", sans-serif; letter-spacing: .07em; text-transform: uppercase; color: var(--fg-2); }
+.lw-rail small { font-size: 11px; color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lw-rail li.lock { opacity: .42; }
+.lw-rail li.done em { color: #fff; background: color-mix(in srgb, var(--win) 75%, #0f1923); box-shadow: none; animation: lu-pop .4s var(--lu-spring); }
+.lw-rail li.done small { color: var(--fg-2); }
+.lw-rail li.on button { background: color-mix(in srgb, #ff4655 14%, rgba(26, 36, 46, .9)); box-shadow: inset 0 0 0 1px rgba(255, 70, 85, .55), inset 0 -3px 0 #ff4655; }
+.lw-rail li.on em { color: #fff; background: #ff4655; box-shadow: none; }
+.lw-rail li.on b { color: #fff; }
+
+.lw-guide { min-height: 76px; }
+.lw-body { animation: lw-in .4s var(--lu-ease) both; gap: 12px; }
+@keyframes lw-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+.lw h5 { margin: 0 0 7px; font: 700 11.5px/1 "Val Cond", sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--fg-3); }
+.lw-sub { display: flex; flex-direction: column; animation: lu-rise .35s var(--lu-ease) both; }
+.lw-pairs { display: flex; flex-wrap: wrap; gap: 14px 26px; }
+.lw-row { display: flex; }
+.led-search { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 11px; width: 240px; max-width: 100%; box-sizing: border-box; border: 1px solid var(--line-2, #303850); background: var(--s1); color: var(--fg-3); }
+.led-search input { all: unset; flex: 1; font-size: 12.5px; color: var(--fg); }
+.led-search:focus-within { border-color: rgba(255, 70, 85, .6); color: #ff4655; }
+.lw .led-ag-grid { max-height: 196px; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+.lw .led-ag img { width: 38px; height: 38px; }
+.lw .led-ag.on { background: color-mix(in srgb, #ff4655 16%, var(--s2)); box-shadow: inset 0 0 0 1.5px #ff4655; animation: lu-mapsel .45s var(--lu-spring); }
+.lw .led-ab { padding: 11px 12px; }
+.lw .led-ab img { width: 30px; height: 30px; }
+.lw .led-ab.on { background: color-mix(in srgb, #ff4655 16%, var(--s1)); box-shadow: inset 0 0 0 1.5px #ff4655; }
+
+.led-maps { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.led-map { width: auto; height: 58px; isolation: isolate; background: #1a242e; transition: transform .2s var(--lu-spring); }
+.led-map::before { inset: 0; z-index: -2; background: var(--bg, none) center / cover no-repeat; filter: grayscale(.7) brightness(.42); transition: filter .25s, transform .4s var(--lu-ease); }
+.led-map::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, transparent 30%, rgba(15, 25, 35, .85)); }
+.led-map span { font: 700 13.5px/1 "Val Cond", sans-serif; letter-spacing: .06em; text-transform: uppercase; color: rgba(236, 232, 225, .65); }
+.led-map:hover::before { filter: grayscale(.2) brightness(.66); } .led-map:hover span { color: var(--val-bone); }
+.led-map.on { transform: translateY(-2px); box-shadow: inset 0 0 0 2px #ff4655; animation: lu-mapsel .45s var(--lu-spring); }
+.led-map.on::before { filter: none; transform: scale(1.1); }
+.led-map.on::after { background: linear-gradient(0deg, #ff4655 0 3px, transparent 3px), linear-gradient(180deg, transparent 35%, rgba(15, 25, 35, .75)); }
+.led-map.on span { color: #fff; }
+
+.led-pk em { width: 18px; height: 18px; display: grid; place-items: center; font: 400 12px/1 "Val Display", sans-serif; font-style: normal; color: var(--fg-3); background: rgba(15, 25, 35, .9); }
+.led-pk.on em { color: #fff; background: #ff4655; }
+.led-pk.ok em { color: #fff; background: color-mix(in srgb, var(--win) 75%, #0f1923); }
+
+.lw-tip { display: flex; align-items: center; gap: 10px; padding: 9px 12px; font-size: 12.5px; color: var(--fg-2); background: rgba(15, 25, 35, .6); box-shadow: inset 3px 0 0 #ff4655; }
+.lw-tip svg { color: #ff6b77; flex: none; }
+.lw-tip b { color: var(--fg); font-family: "Geist Mono Variable", ui-monospace, monospace; font-size: 11.5px; padding: 1px 5px; background: var(--s2); }
+.led-step-h b { display: inline-flex; align-items: center; gap: 7px; font: 700 12px/1 "Val Cond", sans-serif; letter-spacing: .07em; text-transform: uppercase; color: var(--fg-2); }
+.led-step-h b em { width: 18px; height: 18px; display: grid; place-items: center; font: 400 12px/1 "Val Display", sans-serif; font-style: normal; color: #fff; background: rgba(236, 232, 225, .14); }
+.led-step.has .led-step-h b em { background: #ff4655; }
+.led-drop { gap: 6px; }
+.led-drop-ic { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; color: #ff6b77; background: rgba(255, 70, 85, .12); transition: transform .25s var(--lu-spring); }
+.led-drop:hover .led-drop-ic { transform: translateY(-3px) scale(1.06); }
+
+.lw-final { display: grid; grid-template-columns: 1fr 250px; gap: 18px; align-items: start; }
+.led-in.big { font-size: 15px; padding: 11px 13px; }
+.lw-more { all: unset; display: inline-flex; align-items: center; gap: 7px; width: fit-content; cursor: pointer; font: 700 12px/1 "Val Cond", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-2); }
+.lw-more svg { transform: rotate(90deg); transition: transform .2s; }
+.lw-more.on svg { transform: rotate(-90deg); }
+.lw-more small { font: 400 11px/1 "Geist Variable", sans-serif; letter-spacing: 0; text-transform: none; color: var(--fg-3); }
+.lw-more:hover { color: var(--fg); }
+.lw-more-body { display: flex; flex-direction: column; gap: 10px; animation: lu-rise .3s var(--lu-ease) both; }
+.lw-more-body label { display: flex; flex-direction: column; gap: 5px; font-size: 11.5px; color: var(--fg-3); }
+.lw-two { display: grid; grid-template-columns: 1fr 120px; gap: 10px; }
+.lw-two small.ok { color: var(--win); } .lw-two small.bad { color: var(--loss); }
+.lw-prev { position: sticky; top: 0; display: flex; flex-direction: column; gap: 7px; }
+.lw-prev > small { font: 700 11px/1 "Val Cond", sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--fg-3); }
+.lw-prev-card { position: relative; display: flex; align-items: center; gap: 12px; padding: 14px 12px; overflow: hidden; isolation: isolate; box-shadow: inset 4px 0 0 var(--side, #ff4655), inset 0 0 0 1px rgba(236, 232, 225, .1);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); animation: lu-in .4s var(--lu-ease) both; }
+.lw-prev-card::before { content: ""; position: absolute; inset: 0; z-index: -2; background: var(--bg, none) center / cover no-repeat, #1a242e; filter: brightness(.38) saturate(.8); }
+.lw-prev-card::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, color-mix(in srgb, var(--side, #ff4655) 18%, transparent), transparent 70%); }
+.lw-prev-t { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.lw-prev-t b { font: 700 16px/1.1 "Val Cond", sans-serif; letter-spacing: .02em; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lw-prev-t small { font-size: 11.5px; color: rgba(236, 232, 225, .7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.lw-foot { justify-content: flex-end; }
+.lw-foot .lw-count { margin-right: auto; order: -1; font: 400 18px/1 "Val Display", sans-serif; color: var(--fg-3); letter-spacing: .04em; }
+.lw-foot .x { display: inline-flex; align-items: center; gap: 6px; }
+.lw-foot .x.go:disabled { opacity: .4; cursor: not-allowed; filter: grayscale(.4); }
+.lw-foot .x.go.ready { animation: lw-ready 2s ease-in-out infinite; }
+@keyframes lw-ready { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.18); } }
+
+@media (max-width: 980px) {
+  .lw-rail { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .lw-rail small { display: none; }
+  .lw-final { grid-template-columns: 1fr; }
+  .lw-prev { position: static; }
+}
+@media (max-width: 720px) { .lw-rail b { display: none; } .lw-rail li button { justify-content: center; } }
+.lw .led-step-h .ib:first-child svg { transform: rotate(180deg); }
+.lw .led-step-h .ib.flip svg { transform: none; }
