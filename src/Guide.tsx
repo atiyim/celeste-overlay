@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "./icons";
-import { audioCtx, music, pop, sfx } from "./sfx";
+import { audioCtx, loadVoice, music, pop, preloadVoices, sfx } from "./sfx";
 import { Mascot, Wand } from "./Mascot";
 
 /* Sesli rehber: gerçek arayüzün küçük bir sahnesinde ok ve ışıkla gösterir, Celeste sesle anlatır, altyazı hep açıktır.
@@ -92,7 +92,9 @@ export function Guide({ onDone }: Props) {
   const analyser = useRef<AnalyserNode | null>(null);
   /** Ağzın nasıl oynayacağı: gerçek ses seviyesi, sessizken sahte konuşma, ya da kapalı */
   const talk = useRef<"audio" | "fake" | null>(null);
-  const audio = useRef<HTMLAudioElement | null>(null);
+  /** Çalan ses; her konuşma için artan sayaç: eski konuşmanın geç kalan geri çağrıları artık hiçbir şey yapamaz. */
+  const voice = useRef<{ src: AudioBufferSourceNode; an: AnalyserNode } | null>(null);
+  const gen = useRef(0);
   const timer = useRef<number | undefined>(undefined);
   const mutedRef = useRef(muted); mutedRef.current = muted;
   const autoRef = useRef(auto); autoRef.current = auto;
@@ -100,27 +102,37 @@ export function Guide({ onDone }: Props) {
   const last = i === STEPS.length - 1;
 
   const stop = () => {
+    gen.current++;
     window.clearTimeout(timer.current);
     music.duck(false);
     talk.current = null; analyser.current = null;
-    if (audio.current) { audio.current.onended = null; audio.current.onerror = null; audio.current.pause(); audio.current = null; }
+    const v = voice.current;
+    voice.current = null;
+    if (v) { v.src.onended = null; try { v.src.stop(); } catch { /* zaten durmuş */ } v.src.disconnect(); v.an.disconnect(); }
     setSpeaking(false);
   };
-  /** Sesi çalar; sessizken ya da çalamazsa `ms` sonra devam eder. */
+  /** Sesi çalar; sessizken ya da çalamazsa `ms` sonra devam eder. Aynı anda yalnızca bir ses çalar. */
   const speak = (file: string, ms: number, then?: () => void) => {
     stop();
-    const fallback = () => { setSpeaking(false); talk.current = ms > 1500 ? "fake" : null; timer.current = window.setTimeout(() => { talk.current = null; then?.(); }, ms); };
+    const my = gen.current;
+    const fallback = () => {
+      if (my !== gen.current) return;
+      setSpeaking(false); talk.current = ms > 1500 ? "fake" : null;
+      timer.current = window.setTimeout(() => { if (my !== gen.current) return; talk.current = null; then?.(); }, ms);
+    };
     if (mutedRef.current) { fallback(); return; }
-    const a = new Audio(`/guide/${file}.mp3`);
-    audio.current = a;
-    try {
+    void loadVoice(file).then((buf) => {
+      if (my !== gen.current) return; // bu arada başka bir konuşma başladı
       const c = audioCtx();
-      if (c) { const src = c.createMediaElementSource(a), an = c.createAnalyser(); an.fftSize = 512; src.connect(an); an.connect(c.destination); analyser.current = an; }
-    } catch { analyser.current = null; }
-    a.onplay = () => { setSpeaking(true); talk.current = analyser.current ? "audio" : "fake"; music.duck(true); };
-    a.onended = () => { setSpeaking(false); talk.current = null; music.duck(false); then?.(); };
-    a.onerror = fallback;
-    a.play().catch(fallback);
+      if (!buf || !c) { fallback(); return; }
+      const src = c.createBufferSource(), an = c.createAnalyser();
+      src.buffer = buf; an.fftSize = 512;
+      src.connect(an); an.connect(c.destination);
+      voice.current = { src, an }; analyser.current = an;
+      src.onended = () => { if (my !== gen.current) return; voice.current = null; setSpeaking(false); talk.current = null; analyser.current = null; music.duck(false); then?.(); };
+      setSpeaking(true); talk.current = "audio"; music.duck(true);
+      src.start();
+    });
   };
   /** Anlatım bitince ne olacağı: son adımda yumuşak kapanış, diğerlerinde (hareket beklenmiyorsa) sıradaki adım. */
   const after = (k: number) => () => {
@@ -144,6 +156,7 @@ export function Guide({ onDone }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i, begun]);
 
+  useEffect(() => { void preloadVoices([...STEPS.map((x) => x.a), "r1-super", "r2-harika", "r3-tamam"]); }, []);
   useEffect(() => () => { stop(); music.stop(0.3); }, []);
   // Ağız: sesin gücüne göre kapalı / yarım / açık. Sessiz modda ritimli sahte konuşma.
   useEffect(() => {

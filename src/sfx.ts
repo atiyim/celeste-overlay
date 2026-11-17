@@ -125,3 +125,24 @@ export const music = {
     window.setTimeout(() => b.disconnect(), fade * 1000 + 300);
   },
 };
+
+/* ---- Rehber sesleri: önceden indirilip çözülür; çalarken ağ beklemez, gecikme olmaz. ---- */
+const voices = new Map<string, Promise<AudioBuffer | null>>();
+export function loadVoice(file: string): Promise<AudioBuffer | null> {
+  let p = voices.get(file);
+  if (!p) {
+    p = (async () => {
+      const c = ac();
+      if (!c) return null;
+      try {
+        const r = await fetch(`/guide/${file}.mp3`);
+        if (!r.ok) return null;
+        return await c.decodeAudioData(await r.arrayBuffer());
+      } catch { return null; }
+    })().then((b) => { if (!b) voices.delete(file); return b; });
+    voices.set(file, p);
+  }
+  return p;
+}
+/** Dosyaları sırayla, ilk adımdan başlayarak önbelleğe alır. */
+export async function preloadVoices(files: string[]) { for (const f of files) await loadVoice(f); }

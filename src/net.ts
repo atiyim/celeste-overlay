@@ -64,19 +64,32 @@ async function celesteUrl(url: string, init?: RequestInit): Promise<string> {
 const UNOFFICIAL_BODY = JSON.stringify({ error: "Bu, Celeste Overlay'in resmi sürümü değil; Celeste servislerine bağlanamaz.", unofficial: true });
 const isCeleste = (url: string) => { try { return new URL(url).host === CELESTE_HOST; } catch { return false; } };
 
+const NET_ERROR = "Sunucuya ulaşılamadı. Bağlantını kontrol edip tekrar dene.";
+const wait = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
+
 export async function tfetch(url: string, init?: RequestInit): Promise<Response> {
   // Resmi olmayan derleme Celeste sunucusuna hiç istek atmaz (LICENSE, madde 4).
   if (isCeleste(url) && !(await officialP)) return new Response(UNOFFICIAL_BODY, { status: 403, headers: { "content-type": "application/json" } });
   url = await celesteUrl(url, init);
-  const t0 = performance.now();
-  const method = init?.method ?? "GET";
-  try {
-    const r = await fetch(url, init);
-    noteNet(method, url, r.status, Math.round(performance.now() - t0));
-    if (r.status === 426) window.dispatchEvent(new CustomEvent(OUTDATED_EVENT));
-    return r;
-  } catch (e) {
-    noteNet(method, url, 0, Math.round(performance.now() - t0));
-    throw e;
+  const method = (init?.method ?? "GET").toUpperCase();
+  // Okuma istekleri ağ kesintisinde bir kez daha denenir (yazma istekleri çift gitmesin diye denenmez). Yanıt vermeyen istek 20 sn'de bırakılır.
+  const tries = method === "GET" ? 2 : 1;
+  let last: unknown;
+  for (let n = 0; n < tries; n++) {
+    if (n) await wait(700);
+    const t0 = performance.now();
+    const ctl = init?.signal ? null : new AbortController();
+    const timer = ctl ? window.setTimeout(() => ctl.abort(), 20_000) : undefined;
+    try {
+      const r = await fetch(url, ctl ? { ...init, signal: ctl.signal } : init);
+      noteNet(method, url, r.status, Math.round(performance.now() - t0));
+      if (r.status === 426) window.dispatchEvent(new CustomEvent(OUTDATED_EVENT));
+      return r;
+    } catch (e) {
+      last = e;
+      noteNet(method, url, 0, Math.round(performance.now() - t0));
+      if (init?.signal?.aborted) throw e;
+    } finally { window.clearTimeout(timer); }
   }
+  throw last instanceof TypeError || (last instanceof DOMException && last.name === "AbortError") ? new Error(NET_ERROR) : last;
 }
