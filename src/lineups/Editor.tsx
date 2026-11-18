@@ -6,7 +6,7 @@ import type { Mood } from "../Mascot";
 import { DIFFS, editLineup, imgUrl, kindName, KINDS, parseYoutube, siteName, SIDES, sitesFor, SLOT_KEY, submitLineup, THROWS, uploadShot, type Lineup, type LineupDraft, type Pt, type Slot, type Step } from "./api";
 import { MapBoard } from "./MapBoard";
 import { Narrator } from "./Narrator";
-import { CHEER_STEP, pick as pickOne, type ClipId } from "./voice";
+import { CHEER_STEP, joinClip, pick as pickOne, type ClipId } from "./voice";
 import { getMe } from "./store";
 
 /* Lineup ekleme / düzenleme: beş kısa adım. Her adımda tek iş var; Celeste ne yapılacağını söyler,
@@ -42,7 +42,7 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
   const [steps, setSteps] = useState<ShotState[]>(init.steps?.length ? init.steps.map((s) => ({ ...s })) : [blank(), blank()]);
   const [step, setStep] = useState(0);
   const [reached, setReached] = useState(editing ? LAST : 0);
-  const [cheer, setCheer] = useState<{ at: number; clip: ClipId } | null>(null);
+  const [cheer, setCheer] = useState<{ at: number; clip: ClipId; base?: string } | null>(null);
   const [abPicked, setAbPicked] = useState(Boolean(editing));
   const [pick, setPick] = useState<"stand" | "land" | null>(d.stand ? null : "stand");
   const [aimAt, setAimAt] = useState<number | null>(null);
@@ -72,7 +72,7 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
   ];
   const firstBad = valid.findIndex((v) => !v);
 
-  const goTo = (i: number) => { if (i <= reached || editing) { setStep(i); setErr(null); } };
+  const goTo = (i: number) => { if (i <= reached || editing) { setStep(i); setErr(null); setCheer(null); } };
   const advance = (from: number) => {
     if (from >= LAST) return;
     const next = from + 1;
@@ -149,10 +149,8 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
   };
 
   /* ---------- Celeste ne desin ---------- */
-  const say = ((): { text: string; mood: Mood; clip?: ClipId } => {
+  const baseSay = ((): { text: string; mood: Mood; clip?: ClipId } => {
     if (err) return { text: `Bir sorun var galiba. Birlikte düzeltelim. (${err})`, mood: "surprised", clip: "hata" };
-    // Adım tamamlanınca Celeste önce kısaca över, sonra yeni adımı anlatır.
-    if (cheer?.at === step) return { text: "", mood: "flirt", clip: cheer.clip };
     switch (step) {
       case 0:
         if (!d.agent) return { text: "", mood: "happy", clip: "ajan" };
@@ -172,7 +170,18 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
         if (d.title.trim().length < 3) return { text: "", mood: "flirt", clip: "son-dokunus" };
         return { text: "", mood: "flirt", clip: editing ? "duzenlemede-hazir-kaydedlim-mi" : admin ? "admin-her-sey-hazir" : "son-dokunus2" };
     }
+  })();  // Adım tamamlanınca övgü, sonraki cümleyle tek kayıtta söylenir ("Harikasın! Şimdi tarafı..."): iki ayrı kayıt arasındaki bekleme olmaz.
+  const MERGE: Record<string, string> = { harita: "harita", "harita-secilince": "harita-secilince-kisa", "isaretle-once-dokunma": "isaretle-once-dokunma", "son-dokunus": "son-dokunus" };
+  const cheerOn = !err && cheer?.at === step && (cheer.base === undefined || cheer.base === (baseSay.clip ?? ""));
+  const say = ((): { text: string; mood: Mood; clip?: ClipId } => {
+    if (!cheerOn || !cheer) return baseSay;
+    const m = baseSay.clip ? MERGE[baseSay.clip] : undefined;
+    return m ? { text: "", mood: baseSay.mood, clip: joinClip(cheer.clip, m) } : { text: "", mood: "flirt", clip: cheer.clip };
   })();
+  useEffect(() => {
+    if (cheer && cheer.at === step && cheer.base === undefined) setCheer({ ...cheer, base: baseSay.clip ?? "" });
+  }, [cheer, step, baseSay.clip]);
+
 
 
   const summary = [
@@ -210,7 +219,7 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
       </ol>
 
       <div className="lw-guide">
-        <Narrator text={say.text} clip={say.clip} mood={say.mood} speak={getMe().voice} playing={Boolean(say.clip)} onDone={() => setCheer((c) => (c?.at === step ? null : c))} small />
+        <Narrator text={say.text} clip={say.clip} mood={say.mood} speak={getMe().voice} playing={Boolean(say.clip)} onDone={() => setCheer((c) => (c?.at === step && !(baseSay.clip && MERGE[baseSay.clip]) ? null : c))} small />
       </div>
 
       <section className="led-sec lw-body" key={step}>

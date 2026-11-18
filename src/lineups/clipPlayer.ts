@@ -37,8 +37,8 @@ let current: { cancel: () => void } | null = null;
 /** Çalan sesi hemen susturur. */
 export function stopClips() { current?.cancel(); current = null; }
 
-/** Kayıtları art arda, boşluksuz çalar. Bitince `onEnd(true)`; çalınamazsa `onEnd(false)`. Dönen işlev sesi keser (geri çağrı çalışmaz). */
-export function playClips(ids: ClipId[], onEnd: (ok: boolean) => void): () => void {
+/** Kayıtları art arda, boşluksuz çalar. Bitince `onEnd(true)`; çalınamazsa `onEnd(false)`. `onStart` ses başladığı anda çağrılır (yazı animasyonunu sese bağlamak için). Dönen işlev sesi keser (geri çağrı çalışmaz). */
+export function playClips(ids: ClipId[], onEnd: (ok: boolean) => void, onStart?: () => void): () => void {
   stopClips();
   let dead = false;
   const sources: AudioBufferSourceNode[] = [];
@@ -69,6 +69,7 @@ export function playClips(ids: ClipId[], onEnd: (ok: boolean) => void): () => vo
       sources.push(s);
       if (k === list.length - 1) s.onended = () => { if (dead) return; dead = true; if (current === me) current = null; onEnd(true); };
     });
+    onStart?.();
   })();
   return me.cancel;
 }

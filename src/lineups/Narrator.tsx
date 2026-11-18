@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Assets } from "../assets";
 import { Mascot, type Mood } from "../Mascot";
 import { throwName, type Lineup } from "./api";
 import { playClips } from "./clipPlayer";
-import { clipText, type ClipId } from "./voice";
+import { clipSecs, clipText, joinClip, type ClipId } from "./voice";
 
 /* Celeste anlatıcı: konuşma balonu yazarak dolar, ağzı yazıyla birlikte oynar.
    "Sesli anlat" açıksa ve bilgisayarda Türkçe ses varsa metni okur (Windows: Ayarlar › Saat ve dil › Konuşma). */
@@ -11,7 +11,8 @@ import { clipText, type ClipId } from "./voice";
 export function narration(l: Lineup, _assets: Assets | null, slides: { kind: "map" | "step" | "clip"; i?: number }[]): { text: string; mood: Mood; clip?: ClipId[] }[] {
   return slides.map((s, idx) => {
     if (s.kind === "map") {
-      const clip: ClipId[] = [...(l.diff === 1 ? ["kolay" as const] : l.diff === 3 ? ["zor" as const] : []), "harita-ekrani"];
+      const tone = l.diff === 1 ? "kolay" : l.diff === 3 ? "zor" : null;
+      const clip: ClipId[] = [tone ? joinClip(tone, "harita-ekrani") : "harita-ekrani"];
       return { text: clipText(clip), mood: "happy", clip };
     }
     if (s.kind === "clip") return { text: "Bir de klipte izle, birkaç saniye sürüyor. Sonra özel oyunda iki üç kez dene, maçta kullanmaya hazırsın!", mood: "wink" };
@@ -20,7 +21,8 @@ export function narration(l: Lineup, _assets: Assets | null, slides: { kind: "ma
     const special = last && l.throw !== "stand";
     const mood: Mood = last ? "flirt" : "happy";
     if (step?.text) return { text: `${step.text}${special ? ` Unutma, ${throwName(l.throw).toLocaleLowerCase("tr")} atıyorsun.` : ""}`, mood };
-    const clip: ClipId[] = [step?.aim ? "adim-metni-yoksa" : "adim-metni-yoksa2", ...(special ? ["son-adim" as const] : [])];
+    const first = step?.aim ? "adim-metni-yoksa" : "adim-metni-yoksa2";
+    const clip: ClipId[] = [special ? joinClip(first, "son-adim") : first];
     return { text: clipText(clip), mood, clip };
   });
 }
@@ -48,35 +50,56 @@ interface Props {
   small?: boolean;
 }
 
+/** Kelimelerin balonda belirme zamanı (0..1): uzun kelime ve noktalama biraz daha geç yer açar. */
+function wordStarts(words: string[]): number[] {
+  const w = words.map((x) => x.length + (/[.!?]$/.test(x) ? 4 : /[,:;]$/.test(x) ? 2 : 0) + 1);
+  const total = w.reduce((t, x) => t + x, 0) || 1;
+  let acc = 0;
+  return w.map((x) => { const at = acc / total; acc += x; return at; });
+}
+
 export function Narrator({ text: textProp, clip, mood, speak, playing, onDone, small }: Props) {
   const text = clip ? (textProp || clipText(clip)) : textProp;
   const clipKey = clip ? (Array.isArray(clip) ? clip.join("+") : clip) : "";
-  const [n, setN] = useState(0);
+  const words = useMemo(() => text.split(" "), [text]);
+  const starts = useMemo(() => wordStarts(words), [words]);
+  const [shown, setShown] = useState(0);
   const [spoken, setSpoken] = useState(false);
   const head = useRef<HTMLDivElement>(null);
+  const beginRef = useRef<() => void>(() => {});
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
-  const typed = n >= text.length;
+  const typed = shown >= words.length;
+  const audible = Boolean(clipKey && speak && playing);
 
-  // Yazma efekti yalnızca metin değişince baştan başlar; duraklatıp devam etmek metni yeniden yazdırmaz.
+  // Yazı sesle birlikte akar: kayıtlı ses varsa süresine yayılır ve ses başlayınca başlar; yoksa okuma hızında kendi akar.
   useEffect(() => {
-    setN(0);
-    let i = 0;
-    const id = window.setInterval(() => {
-      i = Math.min(text.length, i + 2);
-      setN(i);
-      head.current?.querySelector(".mascot")?.setAttribute("data-mouth", i >= text.length ? "0" : String((i >> 1) % 3));
-      if (i >= text.length) window.clearInterval(id);
-    }, 34);
-    return () => window.clearInterval(id);
-  }, [text]);
+    setShown(0);
+    const ms = clipKey ? Math.max(700, clipSecs(clipKey.split("+") as ClipId[]) * 1000 * 0.94) : Math.max(900, text.length * 46);
+    let raf = 0, t0 = 0, started = false, last = 0;
+    const tick = (now: number) => {
+      const p = (now - t0) / ms;
+      let n = 0;
+      while (n < starts.length && starts[n]! <= p) n++;
+      if (n !== last) {
+        last = n;
+        setShown(n);
+        head.current?.querySelector(".mascot")?.setAttribute("data-mouth", n >= words.length ? "0" : String(n % 3));
+      }
+      if (n < words.length) raf = requestAnimationFrame(tick);
+    };
+    beginRef.current = () => { if (started) return; started = true; t0 = performance.now(); raf = requestAnimationFrame(tick); };
+    if (!audible) beginRef.current();
+    const guard = audible ? window.setTimeout(() => beginRef.current(), 1200) : 0; // ses hiç başlamazsa yazı yine akar
+    return () => { cancelAnimationFrame(raf); window.clearTimeout(guard); head.current?.querySelector(".mascot")?.setAttribute("data-mouth", "0"); };
+  }, [text, clipKey, audible, starts, words.length]);
 
   // Kayıtlı ses: yalnızca oynatılırken. Duraklatınca hemen susar, devam edince cümleyi baştan çalar.
   useEffect(() => {
     setSpoken(false);
-    if (!clipKey || !speak || !playing) return;
-    return playClips(clipKey.split("+") as ClipId[], () => setSpoken(true));
-  }, [clipKey, speak, playing]);
+    if (!audible) return;
+    return playClips(clipKey.split("+") as ClipId[], (ok) => { if (!ok) beginRef.current(); setSpoken(true); }, () => beginRef.current());
+  }, [clipKey, audible]);
 
   // Bilgisayar sesi (kaydı olmayan metinler için): yalnızca oynatılırken.
   const v = speak && !clipKey ? voice() : null;
@@ -96,7 +119,7 @@ export function Narrator({ text: textProp, clip, mood, speak, playing, onDone, s
   const talks = clipKey ? speak : Boolean(v);
   useEffect(() => {
     if (!playing || !typed || (talks && !spoken)) return;
-    const id = window.setTimeout(() => doneRef.current?.(), talks ? 700 : Math.min(2600, 600 + text.length * 18));
+    const id = window.setTimeout(() => doneRef.current?.(), talks ? 350 : Math.min(2600, 600 + text.length * 18));
     return () => window.clearTimeout(id);
   }, [playing, typed, spoken, talks, text]);
 
@@ -105,8 +128,9 @@ export function Narrator({ text: textProp, clip, mood, speak, playing, onDone, s
       <div className="lnar-head" ref={head}><Mascot mood={mood} /></div>
       <div className="lnar-bub" key={text}>
         <span className="lnar-name" aria-hidden="true"><i />Celeste</span>
-        <span className="lnar-txt">{text.slice(0, n)}<i className={typed ? "lnar-caret off" : "lnar-caret"} /></span>
-        <span className="lnar-ghost" aria-hidden="true">{text}</span>
+        <span className="lnar-txt" aria-label={text}>
+          {words.map((w, i) => <span key={i} className={i < shown ? "lnar-w on" : "lnar-w"} aria-hidden="true">{w}{i < words.length - 1 ? " " : ""}</span>)}
+        </span>
         <svg className="lnar-tail" viewBox="0 0 12 18" aria-hidden="true"><path className="f" d="M7 0 Q6 13 0 18 L12 18 L12 0 Z" /><path className="s" d="M7 0 Q6 13 0 18 L12 18" /></svg>
         <span className="lnar-tw a" aria-hidden="true" /><span className="lnar-tw b" aria-hidden="true" />
       </div>
