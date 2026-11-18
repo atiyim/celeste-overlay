@@ -203,15 +203,15 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
         if (!d.land) return { text: "", mood: "wink", clip: "isaretle-yetenegin-dusecegi-yer" };
         return { text: "", mood: "flirt", clip: "isaretle-tam-isabet" };
       case 3:
-        if (!shots) return { text: inTauri ? "Win+Shift+S ile ekran görüntüsü al, ben kutuya koyarım. Tek görsel yeter." : "Ekran görüntüsünü Ctrl+V ile yapıştır ya da kutuya sürükle. Tek görsel yeter.", mood: "happy" };
-        if (steps.some((s) => (s.img || s.local) && !s.aim)) return { text: "Görsele tıklayıp nişan noktasını göster, oyuncular tam oraya baksın.", mood: "wink" };
-        return { text: "Görseller çok net. Bir cümleyle anlatırsan daha da iyi olur.", mood: "happy" };
+        if (!shots) return inTauri ? { text: "", mood: "happy", clip: "gorseller-yapistir" } : { text: "Ekran görüntüsünü Ctrl+V ile yapıştır ya da kutuya sürükle. Tek görsel yeter!", mood: "happy" };
+        if (steps.some((s) => (s.img || s.local) && !s.aim)) return { text: "", mood: "wink", clip: "gorseller-nisan" };
+        return { text: "", mood: "happy", clip: "gorseller-hazir" };
       default:
         if (d.title.trim().length < 3) return { text: "", mood: "flirt", clip: "son-dokunus" };
         return { text: "", mood: "flirt", clip: editing ? "duzenlemede-hazir-kaydedlim-mi" : admin ? "admin-her-sey-hazir" : "son-dokunus2" };
     }
   })();  // Adım tamamlanınca övgü, sonraki cümleyle tek kayıtta söylenir ("Harikasın! Şimdi tarafı..."): iki ayrı kayıt arasındaki bekleme olmaz.
-  const MERGE: Record<string, string> = { harita: "harita", "harita-secilince": "harita-secilince-kisa", "isaretle-once-dokunma": "isaretle-once-dokunma", "son-dokunus": "son-dokunus" };
+  const MERGE: Record<string, string> = { harita: "harita", "harita-secilince": "harita-secilince-kisa", "isaretle-once-dokunma": "isaretle-once-dokunma", "son-dokunus": "son-dokunus", "gorseller-yapistir": "gorseller-yapistir" };
   const cheerOn = !err && cheer?.at === step && (cheer.base === undefined || cheer.base === (baseSay.clip ?? ""));
   const say = ((): { text: string; mood: Mood; clip?: ClipId } => {
     if (!cheerOn || !cheer) return baseSay;

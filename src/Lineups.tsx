@@ -154,13 +154,8 @@ export function Lineups({ assets, currentMapUrl, myAgentId, onToast, onClose }: 
         />
       ) : tab === "lib" ? (
         <div className="lu-lib">
-          {me.mode === "celeste" && !(error && !list.length) && (
-            <div className="lu-celeste">
-              <Narrator
-                text={loading && !list.length ? "Kütüphaneyi getiriyorum, bir saniye." : !map ? "Bir harita seç, lineup'ları göstereyim." : onMap.length ? `${map.name} için ${onMap.length} lineup var. Bir simgeye tıkla, adım adım anlatayım.` : `${map.name} için henüz lineup yok.`}
-                mood="happy" speak={false} playing={false} small
-              />
-            </div>
+          {!(error && !list.length) && (
+            <p className="lu-info">{loading && !list.length ? "Kütüphane yükleniyor…" : !map ? "Bir harita seç." : onMap.length ? `${map.name} için ${onMap.length} lineup var. Bir simgeye tıkla.` : `${map.name} için henüz lineup yok.`}</p>
           )}
           <div className="lu-maps" role="listbox" aria-label="Harita" ref={mapsRef}>
             {maps.map((m) => {

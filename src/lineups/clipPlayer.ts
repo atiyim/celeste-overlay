@@ -32,6 +32,21 @@ export async function preloadClips(): Promise<void> {
   await Promise.all([worker(), worker(), worker()]);
 }
 
+let an: AnalyserNode | null = null;
+let abuf: Uint8Array<ArrayBuffer> | null = null;
+function analyser(c: AudioContext): AudioNode {
+  if (!an || an.context !== c) { an = c.createAnalyser(); an.fftSize = 512; an.connect(c.destination); abuf = new Uint8Array(an.fftSize); }
+  return an;
+}
+/** Çalan sesin o anki yüksekliği (0..1): Celeste'nin ağzı buna göre oynar. */
+export function clipLevel(): number {
+  if (!an || !abuf) return 0;
+  an.getByteTimeDomainData(abuf);
+  let sum = 0;
+  for (let i = 0; i < abuf.length; i++) { const v = (abuf[i]! - 128) / 128; sum += v * v; }
+  return Math.sqrt(sum / abuf.length);
+}
+
 let current: { cancel: () => void } | null = null;
 
 /** Çalan sesi hemen susturur. */
@@ -63,7 +78,7 @@ export function playClips(ids: ClipId[], onEnd: (ok: boolean) => void, onStart?:
     list.forEach((buf, k) => {
       const s = c.createBufferSource();
       s.buffer = buf!;
-      s.connect(c.destination);
+      s.connect(analyser(c));
       s.start(at);
       at += buf!.duration;
       sources.push(s);

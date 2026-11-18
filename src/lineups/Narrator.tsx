@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Assets } from "../assets";
 import { Mascot, type Mood } from "../Mascot";
 import { throwName, type Lineup } from "./api";
-import { playClips } from "./clipPlayer";
+import { clipLevel, playClips } from "./clipPlayer";
 import { clipSecs, clipText, joinClip, type ClipId } from "./voice";
 
 /* Celeste anlatıcı: konuşma balonu yazarak dolar, ağzı yazıyla birlikte oynar.
@@ -15,7 +15,7 @@ export function narration(l: Lineup, _assets: Assets | null, slides: { kind: "ma
       const clip: ClipId[] = [tone ? joinClip(tone, "harita-ekrani") : "harita-ekrani"];
       return { text: clipText(clip), mood: "happy", clip };
     }
-    if (s.kind === "clip") return { text: "Bir de klipte izle, birkaç saniye sürüyor. Sonra özel oyunda iki üç kez dene, maçta kullanmaya hazırsın!", mood: "wink" };
+    if (s.kind === "clip") return { text: clipText("klip-ekrani"), mood: "wink", clip: ["klip-ekrani"] };
     const step = l.steps[s.i ?? 0];
     const last = !slides.slice(idx + 1).some((x) => x.kind === "step");
     const special = last && l.throw !== "stand";
@@ -50,9 +50,10 @@ interface Props {
   small?: boolean;
 }
 
-/** Kelimelerin balonda belirme zamanı (0..1): uzun kelime ve noktalama biraz daha geç yer açar. */
+/** Kelimelerin balonda belirme zamanı (0..1): süre hece sayısına göre bölünür, virgülde kısa, noktada uzun duraklama olur. */
+const syllables = (w: string) => Math.max(1, (w.match(/[aeıioöuüâîû]/gi) ?? []).length);
 function wordStarts(words: string[]): number[] {
-  const w = words.map((x) => x.length + (/[.!?]$/.test(x) ? 4 : /[,:;]$/.test(x) ? 2 : 0) + 1);
+  const w = words.map((x) => syllables(x) * 3 + (/[.!?]["”']?$/.test(x) ? 5 : /[,:;]$/.test(x) ? 2.5 : 0));
   const total = w.reduce((t, x) => t + x, 0) || 1;
   let acc = 0;
   return w.map((x) => { const at = acc / total; acc += x; return at; });
@@ -65,6 +66,8 @@ export function Narrator({ text: textProp, clip, mood, speak, playing, onDone, s
   const starts = useMemo(() => wordStarts(words), [words]);
   const [shown, setShown] = useState(0);
   const [spoken, setSpoken] = useState(false);
+  const [talking, setTalking] = useState(false);
+  const skipRef = useRef<() => void>(() => {});
   const head = useRef<HTMLDivElement>(null);
   const beginRef = useRef<() => void>(() => {});
   const doneRef = useRef(onDone);
@@ -84,10 +87,11 @@ export function Narrator({ text: textProp, clip, mood, speak, playing, onDone, s
       if (n !== last) {
         last = n;
         setShown(n);
-        head.current?.querySelector(".mascot")?.setAttribute("data-mouth", n >= words.length ? "0" : String(n % 3));
+        if (!audible) head.current?.querySelector(".mascot")?.setAttribute("data-mouth", n >= words.length ? "0" : String(n % 3));
       }
       if (n < words.length) raf = requestAnimationFrame(tick);
     };
+    skipRef.current = () => { cancelAnimationFrame(raf); started = true; setShown(words.length); };
     beginRef.current = () => { if (started) return; started = true; t0 = performance.now(); raf = requestAnimationFrame(tick); };
     if (!audible) beginRef.current();
     const guard = audible ? window.setTimeout(() => beginRef.current(), 1200) : 0; // ses hiç başlamazsa yazı yine akar
@@ -97,8 +101,20 @@ export function Narrator({ text: textProp, clip, mood, speak, playing, onDone, s
   // Kayıtlı ses: yalnızca oynatılırken. Duraklatınca hemen susar, devam edince cümleyi baştan çalar.
   useEffect(() => {
     setSpoken(false);
+    setTalking(false);
     if (!audible) return;
-    return playClips(clipKey.split("+") as ClipId[], (ok) => { if (!ok) beginRef.current(); setSpoken(true); }, () => beginRef.current());
+    let raf = 0;
+    const mouth = () => {
+      const lv = clipLevel();
+      head.current?.querySelector(".mascot")?.setAttribute("data-mouth", lv < 0.02 ? "0" : lv < 0.08 ? "1" : "2");
+      raf = requestAnimationFrame(mouth);
+    };
+    const stop = playClips(clipKey.split("+") as ClipId[], (ok) => {
+      if (!ok) beginRef.current();
+      cancelAnimationFrame(raf); setTalking(false); setSpoken(true);
+      head.current?.querySelector(".mascot")?.setAttribute("data-mouth", "0");
+    }, () => { beginRef.current(); setTalking(true); raf = requestAnimationFrame(mouth); });
+    return () => { stop(); cancelAnimationFrame(raf); setTalking(false); };
   }, [clipKey, audible]);
 
   // Bilgisayar sesi (kaydı olmayan metinler için): yalnızca oynatılırken.
@@ -124,15 +140,14 @@ export function Narrator({ text: textProp, clip, mood, speak, playing, onDone, s
   }, [playing, typed, spoken, talks, text]);
 
   return (
-    <div className={`lnar${small ? " small" : ""}`} aria-live="polite">
+    <div className={`lnar${small ? " small" : ""}${talking ? " talk" : ""}`} aria-live="polite">
       <div className="lnar-head" ref={head}><Mascot mood={mood} /></div>
-      <div className="lnar-bub" key={text}>
-        <span className="lnar-name" aria-hidden="true"><i />Celeste</span>
-        <span className="lnar-txt" aria-label={text}>
-          {words.map((w, i) => <span key={i} className={i < shown ? "lnar-w on" : "lnar-w"} aria-hidden="true">{w}{i < words.length - 1 ? " " : ""}</span>)}
+      <div className="lnar-bub" onClick={() => skipRef.current()}>
+        <span className="lnar-name" aria-hidden="true"><i />Celeste<span className="lnar-wave"><b /><b /><b /></span></span>
+        <span className="lnar-txt" key={text} aria-label={text}>
+          {words.map((w, i) => <span key={i} className={`lnar-w${i < shown ? " on" : ""}${i === shown - 1 && !typed ? " cur" : ""}`} aria-hidden="true">{w}{i < words.length - 1 ? " " : ""}</span>)}
         </span>
         <svg className="lnar-tail" viewBox="0 0 12 18" aria-hidden="true"><path className="f" d="M7 0 Q6 13 0 18 L12 18 L12 0 Z" /><path className="s" d="M7 0 Q6 13 0 18 L12 18" /></svg>
-        <span className="lnar-tw a" aria-hidden="true" /><span className="lnar-tw b" aria-hidden="true" />
       </div>
     </div>
   );
