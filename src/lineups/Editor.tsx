@@ -336,7 +336,7 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
               {steps.map((s, i) => (
                 <div key={i} className={`led-step${aimAt === i ? " aiming" : ""}${s.img ? " has" : ""}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => drop(e, i)}>
                   <div className="led-step-h">
-                    <b><em>{i + 1}</em>{SHOT_HINT[i]}<small className={`led-need${i === 1 ? " req" : ""}`}>{SHOT_NEED[i]}</small></b>
+                    <b><em>{i + 1}</em><span className="led-tt">{SHOT_HINT[i]}<small className={`led-need${i === 1 ? " req" : ""}`}>{SHOT_NEED[i]}</small></span></b>
                     <span>
                       <button type="button" className="ib" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Sola al"><Icon name="chevron" size={14} /></button>
                       <button type="button" className="ib flip" onClick={() => move(i, 1)} disabled={i === steps.length - 1} aria-label="Sağa al"><Icon name="chevron" size={14} /></button>

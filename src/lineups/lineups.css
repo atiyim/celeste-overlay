@@ -950,3 +950,39 @@
 .lv-clip:fullscreen { width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; background: #000; }
 .led-need { margin-left: 6px; font-size: 10.5px; font-weight: 500; color: var(--fg-3); }
 .led-need.req { color: var(--accent); }
+
+
+/* ================================================================
+   Düzeltme: sakin hareket, okunur yazı, temiz balon
+   ================================================================ */
+/* Yaylanan (taşan) geçişler yerine yumuşak yavaşlama; girişler kısa ve az mesafeli. */
+.lu, .lw, .led, .ld, .lv, .lp-run, .lnar { --lu-spring: cubic-bezier(.2, .8, .2, 1); }
+@keyframes lu-rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes lu-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lu-slide { from { opacity: 0; transform: translateX(6px); } to { opacity: 1; transform: none; } }
+@keyframes lu-pop { from { opacity: 0; scale: .85; } to { opacity: 1; scale: 1; } }
+@keyframes lu-drop { from { opacity: 0; translate: 0 -6px; } to { opacity: 1; translate: 0 0; } }
+@keyframes lu-flip { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lu-zoomin { from { opacity: 0; } to { opacity: 1; } }
+
+/* Balon: isim üstte, yazı altta; kuyruk yerine avatara bakan küçük köşe. Konum hep aynı, hiçbir şey taşmaz. */
+.lnar-bub { gap: 4px; padding: 10px 14px 11px; border-radius: 16px 16px 16px 5px; animation: lnar-fade .22s ease-out both; }
+.lnar.small .lnar-bub { padding: 9px 13px 10px; }
+.lnar-name { position: static; justify-self: start; height: auto; padding: 0; gap: 6px; background: none; box-shadow: none; font-size: 11px; }
+.lnar-txt { grid-area: auto; }
+.lnar-head .mascot { animation-duration: 3.4s; }
+@keyframes mcbob { 50% { transform: translateY(-2px); } }
+@keyframes lnar-fade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+/* Yazı: cümlenin tamamı baştan yerinde durur (satırlar zıplamaz), söylenen kelimeler sesle birlikte aydınlanır. */
+.lnar-w { opacity: .3; transform: none; transition: opacity .28s ease; }
+.lnar-w.on { opacity: 1; }
+.lnar-w.cur::after { display: none; }
+
+/* Görsel kutusu başlığı: numara, başlık ve etiket solda; düğmeler sağda, sıkışmaz. */
+.led-step-h { gap: 6px; align-items: flex-start; }
+.led-step-h b { flex: 1; min-width: 0; align-items: flex-start; }
+.led-step-h b em { flex: none; margin-top: 1px; }
+.led-tt { display: flex; flex-direction: column; gap: 1px; min-width: 0; line-height: 1.3; }
+.led-tt .led-need { margin-left: 0; font-size: 10.5px; }
+.led-step-h > span { flex: none; gap: 2px; }
+.led-step-h .ib { width: 22px; height: 22px; }

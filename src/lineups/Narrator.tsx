@@ -145,9 +145,8 @@ export function Narrator({ text: textProp, clip, mood, speak, playing, onDone, s
       <div className="lnar-bub" onClick={() => skipRef.current()}>
         <span className="lnar-name" aria-hidden="true"><i />Celeste<span className="lnar-wave"><b /><b /><b /></span></span>
         <span className="lnar-txt" key={text} aria-label={text}>
-          {words.map((w, i) => <span key={i} className={`lnar-w${i < shown ? " on" : ""}${i === shown - 1 && !typed ? " cur" : ""}`} aria-hidden="true">{w}{i < words.length - 1 ? " " : ""}</span>)}
+          {words.map((w, i) => <span key={i} className={`lnar-w${i < shown ? " on" : ""}`} aria-hidden="true">{w}{i < words.length - 1 ? " " : ""}</span>)}
         </span>
-        <svg className="lnar-tail" viewBox="0 0 12 18" aria-hidden="true"><path className="f" d="M7 0 Q6 13 0 18 L12 18 L12 0 Z" /><path className="s" d="M7 0 Q6 13 0 18 L12 18" /></svg>
       </div>
     </div>
   );

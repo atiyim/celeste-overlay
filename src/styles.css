@@ -2963,8 +2963,8 @@ html[data-skin="obsidyen"] .step { background: rgba(12, 12, 14, .82); }
 .mascot[data-mouth="0"] .mc-m0, .mascot[data-mouth="1"] .mc-m1, .mascot[data-mouth="2"] .mc-m2 { display: block; }
 .mc-eo { animation: mcblink 4.4s steps(1) infinite; }
 .mc-ec { opacity: 0; animation: mcblink2 4.4s steps(1) infinite; }
-@keyframes mcblink { 0%, 94%, 100% { opacity: 1; } 95%, 98% { opacity: 0; } }
-@keyframes mcblink2 { 0%, 94%, 100% { opacity: 0; } 95%, 98% { opacity: 1; } }
+@keyframes mcblink { 0%, 96%, 100% { opacity: 1; } 96.5%, 98.5% { opacity: 0; } }
+@keyframes mcblink2 { 0%, 96%, 100% { opacity: 0; } 96.5%, 98.5% { opacity: 1; } }
 @keyframes mcbob { 50% { transform: translateY(-3px); } }
 .mascot.cheer { animation: mcjump .65s cubic-bezier(.3, 1.4, .5, 1) 2; }
 .mascot.cheer .mc-eo { opacity: 0; animation: none; } .mascot.cheer .mc-ec { opacity: 1; animation: none; }
@@ -2997,8 +2997,11 @@ html.fps .buddy-anchor { display: none; }
 
 /* Celeste yüz ifadeleri */
 .mc-x { display: none; }
-.mascot[data-mood="happy"] .mc-eo, .mascot[data-mood="wink"] .mc-eo.mc-r, .mascot[data-mood="flirt"] .mc-eo.mc-r { opacity: 0; animation: none; }
-.mascot[data-mood="happy"] .mc-ec, .mascot[data-mood="wink"] .mc-ec.mc-r, .mascot[data-mood="flirt"] .mc-ec.mc-r { opacity: 1; animation: none; }
+/* Gözler hep açık, arada doğal kırpar. Göz kırpma/flört: sağ göz bir kez kırpılır, sonra normal kırpmaya döner. */
+.mascot[data-mood="wink"] .mc-eo.mc-r, .mascot[data-mood="flirt"] .mc-eo.mc-r { animation: mcwink 1.5s steps(1) .25s both, mcblink 4.4s steps(1) 2.2s infinite; }
+.mascot[data-mood="wink"] .mc-ec.mc-r, .mascot[data-mood="flirt"] .mc-ec.mc-r { animation: mcwink2 1.5s steps(1) .25s both, mcblink2 4.4s steps(1) 2.2s infinite; }
+@keyframes mcwink { 0%, 100% { opacity: 1; } 8%, 70% { opacity: 0; } }
+@keyframes mcwink2 { 0%, 100% { opacity: 0; } 8%, 70% { opacity: 1; } }
 .mascot[data-mood="flirt"] .mc-heart, .mascot[data-mood="flirt"] .mc-blush2 { display: block; }
 .mascot[data-mood="flirt"] .mc-heart { animation: mcheart 1.1s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes mcheart { 50% { transform: translateY(-3px) scale(1.18); } }
