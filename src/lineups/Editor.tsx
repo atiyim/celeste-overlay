@@ -28,7 +28,10 @@ const blank = (): ShotState => ({ img: null, text: "", aim: null });
 
 const STEPS = ["Ajan", "Harita", "İşaretle", "Görseller", "Son dokunuş"] as const;
 const LAST = STEPS.length - 1;
+/* Tek görsel yeter: "Nereye nişan aldığın". Nerede durduğun zaten haritada işaretli, bu yüzden isteğe bağlı. */
 const SHOT_HINT = ["Nerede durduğun", "Nereye nişan aldığın", "Ek görsel", "Ek görsel"];
+const SHOT_NEED = ["isteğe bağlı", "zorunlu", "isteğe bağlı", "isteğe bağlı"];
+const inTauri = "__TAURI_INTERNALS__" in window;
 
 export function Editor({ assets, admin, start, editing, onDone, onCancel, onToast }: Props) {
   const maps = assets?.mapList ?? [];
@@ -90,7 +93,9 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
 
   /* ---------- görseller ---------- */
   const addShot = async (file: Blob, at?: number) => {
-    let idx = at ?? steps.findIndex((s) => !s.img && !s.busy);
+    // Önce zorunlu kutu (nişan görseli) dolsun; ikincisi boşsa oraya, değilse ilk boş kutuya.
+    const aimFirst = steps.length > 1 && !steps[1]!.img && !steps[1]!.busy ? 1 : -1;
+    let idx = at ?? (aimFirst >= 0 ? aimFirst : steps.findIndex((s) => !s.img && !s.busy));
     if (idx < 0) {
       if (steps.length >= 4) { onToast("En fazla 4 görsel ekleyebilirsin"); return; }
       idx = steps.length;
@@ -107,6 +112,41 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
       onToast(e instanceof Error ? e.message : String(e));
     }
   };
+
+  // Panodan otomatik yakalama (masaüstü uygulaması): görseller adımındayken Win+Shift+S ile alınan ekran görüntüsü kendiliğinden eklenir.
+  // Yalnızca panoyu okur, oyuna dokunmaz. Adıma girerken panoda zaten duran görsel yok sayılır.
+  const addShotRef = useRef(addShot);
+  addShotRef.current = addShot;
+  useEffect(() => {
+    if (step !== 3 || !inTauri) return;
+    let stop = false, busy = false, first = true, last = "";
+    const tick = async () => {
+      if (stop || busy) return;
+      busy = true;
+      try {
+        const { readImage } = await import("@tauri-apps/plugin-clipboard-manager");
+        const img = await readImage();
+        const { width, height } = await img.size();
+        const px = await img.rgba();
+        let h = (width * 31 + height) >>> 0;
+        for (let i = 0; i < px.length; i += 4099) h = ((h * 33) ^ px[i]!) >>> 0;
+        const sig = `${width}x${height}:${h}`;
+        if (first) { first = false; last = sig; }
+        else if (sig !== last && !stop) {
+          last = sig;
+          const c = document.createElement("canvas");
+          c.width = width; c.height = height;
+          c.getContext("2d")!.putImageData(new ImageData(new Uint8ClampedArray(px.buffer, px.byteOffset, px.length), width, height), 0, 0);
+          const blob = await new Promise<Blob | null>((r) => c.toBlob(r, "image/png"));
+          if (blob && !stop) { onToast("Ekran görüntüsü panodan eklendi"); void addShotRef.current(blob); }
+        }
+      } catch { /* pano boş ya da görsel değil */ }
+      busy = false;
+    };
+    void tick();
+    const id = window.setInterval(() => void tick(), 1000);
+    return () => { stop = true; window.clearInterval(id); };
+  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Ctrl+V: görseller adımındayken panodaki ekran görüntüsü ilk boş kutuya eklenir.
   useEffect(() => {
@@ -163,7 +203,7 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
         if (!d.land) return { text: "", mood: "wink", clip: "isaretle-yetenegin-dusecegi-yer" };
         return { text: "", mood: "flirt", clip: "isaretle-tam-isabet" };
       case 3:
-        if (!shots) return { text: "Ekran görüntüsünü Ctrl+V ile yapıştır ya da kutuya sürükle.", mood: "happy" };
+        if (!shots) return { text: inTauri ? "Win+Shift+S ile ekran görüntüsü al, ben kutuya koyarım. Tek görsel yeter." : "Ekran görüntüsünü Ctrl+V ile yapıştır ya da kutuya sürükle. Tek görsel yeter.", mood: "happy" };
         if (steps.some((s) => (s.img || s.local) && !s.aim)) return { text: "Görsele tıklayıp nişan noktasını göster, oyuncular tam oraya baksın.", mood: "wink" };
         return { text: "Görseller çok net. Bir cümleyle anlatırsan daha da iyi olur.", mood: "happy" };
       default:
@@ -296,7 +336,7 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
               {steps.map((s, i) => (
                 <div key={i} className={`led-step${aimAt === i ? " aiming" : ""}${s.img ? " has" : ""}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => drop(e, i)}>
                   <div className="led-step-h">
-                    <b><em>{i + 1}</em>{SHOT_HINT[i]}</b>
+                    <b><em>{i + 1}</em>{SHOT_HINT[i]}<small className={`led-need${i === 1 ? " req" : ""}`}>{SHOT_NEED[i]}</small></b>
                     <span>
                       <button type="button" className="ib" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Sola al"><Icon name="chevron" size={14} /></button>
                       <button type="button" className="ib flip" onClick={() => move(i, 1)} disabled={i === steps.length - 1} aria-label="Sağa al"><Icon name="chevron" size={14} /></button>
@@ -311,7 +351,7 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
                     </div>
                   ) : (
                     <button type="button" className="led-drop" onClick={() => { fileFor.current = i; fileRef.current?.click(); }}>
-                      <span className="led-drop-ic"><Icon name="upload" size={18} /></span><span>Görsel ekle</span><small>Ctrl+V · sürükle · tıkla</small>
+                      <span className="led-drop-ic"><Icon name="upload" size={18} /></span><span>Görsel ekle</span><small>{inTauri ? "Win+Shift+S ile çek, kendiliğinden eklenir" : "Ctrl+V · sürükle · tıkla"}</small>
                     </button>
                   )}
                   <input className="led-in" value={s.text} maxLength={160} onKeyDown={(e) => e.stopPropagation()} onChange={(e) => setSteps((x) => x.map((y, j) => (j === i ? { ...y, text: e.target.value } : y)))}
@@ -337,8 +377,8 @@ export function Editor({ assets, admin, start, editing, onDone, onCancel, onToas
                 <div className="wide lw-more-body">
                   <label><span>Not</span><textarea className="led-in" maxLength={240} rows={2} value={d.note} onKeyDown={(e) => e.stopPropagation()} onChange={(e) => up({ note: e.target.value })} placeholder="Ör. Takım A Main'e girmeden 2 saniye önce. Rakip Heaven'dan bakamaz." /></label>
                   <div className="lw-two">
-                    <label><span>Klip (YouTube)</span><input className="led-in" value={clipRaw} onKeyDown={(e) => e.stopPropagation()} onChange={(e) => setClipRaw(e.target.value)} placeholder="https://youtu.be/…?t=42" />
-                      {clipRaw && <small className={clip ? "ok" : "bad"}>{clip ? `${clip.start}. saniyeden başlar, 12 saniye oynar` : "YouTube bağlantısı tanınmadı"}</small>}
+                    <label><span>Klip bağlantısı</span><input className="led-in" value={clipRaw} onKeyDown={(e) => e.stopPropagation()} onChange={(e) => setClipRaw(e.target.value)} placeholder="https://youtu.be/…?t=42" />
+                      {clipRaw && <small className={clip ? "ok" : "bad"}>{clip ? `${clip.start}. saniyeden başlar, 12 saniye oynar. Lineup içinde gömülü oynar.` : "Şimdilik YouTube bağlantısı kabul ediliyor"}</small>}
                     </label>
                     <label><span>Yama</span><input className="led-in" value={d.patch} maxLength={5} onKeyDown={(e) => e.stopPropagation()} onChange={(e) => up({ patch: e.target.value })} placeholder="11.10" /></label>
                   </div>

@@ -25,6 +25,7 @@
     "core:window:allow-outer-size",
     "core:webview:allow-set-webview-zoom",
     "clipboard-manager:allow-write-text",
+    "clipboard-manager:allow-read-image",
     {
       "identifier": "opener:allow-open-url",
       "allow": [

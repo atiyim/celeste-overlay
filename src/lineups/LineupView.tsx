@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { Assets, MapInfo } from "../assets";
 import { currentPatch } from "../assets";
 import { Icon } from "../icons";
@@ -44,14 +43,13 @@ export function LineupView({ l, assets, map, votes, onVotes, canEdit, pos, onPre
   const [at, setAt] = useState(0);
   const [playing, setPlaying] = useState(me.mode === "celeste");
   const [zoom, setZoom] = useState<string | null>(null);
-  const [clipOn, setClipOn] = useState(false);
   const agent = assets?.agents.get(l.agent);
   const ab = abilityOf(assets, l);
   const fav = me.fav.includes(l.id);
   const card = me.cards[l.id];
   const ps = patchState(l.patch);
 
-  useEffect(() => { setAt(0); setClipOn(false); setPlaying(getMe().mode === "celeste"); seen(l.id); }, [l.id]);
+  useEffect(() => { setAt(0); setBig(false); setPlaying(getMe().mode === "celeste"); seen(l.id); }, [l.id]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.closest("input, textarea")) return;
@@ -94,7 +92,22 @@ export function LineupView({ l, assets, map, votes, onVotes, canEdit, pos, onPre
       onToast("Paylaşım kodu kopyalandı");
     } catch { onToast("Kopyalanamadı"); }
   };
-  const openClip = () => { if (!l.clip) return; const u = `https://youtu.be/${l.clip.id}?t=${l.clip.start}`; inTauri ? void openUrl(u) : window.open(u, "_blank"); };
+  // Klip tam ekranı: önce tarayıcı tam ekranı, olmazsa pencereyi dolduran büyük görünüm. Esc ile çıkılır.
+  const clipBox = useRef<HTMLDivElement>(null);
+  const [big, setBig] = useState(false);
+  const toggleBig = () => {
+    if (big) { if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined); setBig(false); return; }
+    setBig(true);
+    void clipBox.current?.requestFullscreen?.().catch(() => undefined);
+  };
+  useEffect(() => {
+    if (!big) return;
+    const key = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); setBig(false); } };
+    const fs = () => { if (!document.fullscreenElement) setBig(false); };
+    window.addEventListener("keydown", key, true);
+    document.addEventListener("fullscreenchange", fs);
+    return () => { window.removeEventListener("keydown", key, true); document.removeEventListener("fullscreenchange", fs); };
+  }, [big]);
 
   const s = slides[at]!;
   const step = s.kind === "step" ? l.steps[s.i!]! : null;
@@ -146,22 +159,16 @@ export function LineupView({ l, assets, map, votes, onVotes, canEdit, pos, onPre
               ) : <div className="lv-textstep"><p>{step.text}</p></div>
             )}
             {s.kind === "clip" && l.clip && (
-              clipOn ? (
-                <div className="lv-clip">
-                  <iframe
-                    title="Lineup klibi"
-                    src={`https://www.youtube-nocookie.com/embed/${l.clip.id}?start=${l.clip.start}&end=${l.clip.end}&autoplay=1&mute=1&loop=1&playlist=${l.clip.id}&rel=0&modestbranding=1&playsinline=1`}
-                    allow="autoplay; encrypted-media; picture-in-picture"
-                    referrerPolicy="strict-origin-when-cross-origin"
-                  />
-                </div>
-              ) : (
-                <button type="button" className="lv-clipthumb" onClick={() => setClipOn(true)}>
-                  <img src={`https://i.ytimg.com/vi/${l.clip.id}/hqdefault.jpg`} alt="" />
-                  <span className="lv-play"><Icon name="play" size={26} /></span>
-                  <small>{l.clip.end - l.clip.start} sn · burada oynat</small>
-                </button>
-              )
+              <div className={`lv-clip${big ? " big" : ""}`} ref={clipBox}>
+                <iframe
+                  title="Lineup klibi"
+                  src={`https://www.youtube-nocookie.com/embed/${l.clip.id}?start=${l.clip.start}&end=${l.clip.end}&autoplay=1&mute=1&loop=1&playlist=${l.clip.id}&rel=0&modestbranding=1&playsinline=1&fs=1`}
+                  allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                  allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
+                />
+                <button type="button" className="lv-fs" onClick={toggleBig} aria-label={big ? "Tam ekrandan çık" : "Tam ekran"} title={big ? "Tam ekrandan çık (Esc)" : "Tam ekran"}><Icon name={big ? "x" : "expand"} size={15} /></button>
+              </div>
             )}
           </div>
           {slides.length > 1 && (
@@ -218,7 +225,6 @@ export function LineupView({ l, assets, map, votes, onVotes, canEdit, pos, onPre
                   <Icon name={playing ? "pause" : "play"} size={14} />{playing ? "Duraklat" : finished ? "Baştan anlat" : "Anlat"}
                 </button>
               )}
-              {s.kind === "clip" && <button type="button" className="ld-ghost" onClick={openClip}><Icon name="link" size={13} />YouTube'da aç</button>}
             </div>
           </div>
         </aside>
